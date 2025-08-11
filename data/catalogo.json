@@ -220,5 +220,53 @@
       "Vincitore Trofeo Cittadella"
     ],
     "id": "b1754909589295"
+  },
+  {
+    "title": "Shadow People",
+    "author": "Therry Romano",
+    "year": 2023,
+    "publisher": "Independently published",
+    "isbn": "979-8326266361",
+    "storeUrl": "https://www.amazon.it/Shadow-People-Therry-Romano/dp/B0D5V5WZZ9",
+    "coverUrl": "https://m.media-amazon.com/images/I/61VTH3Z23tL._SL1499_.jpg",
+    "description": "Il Waverly Hills Sanatorium di Lousville è un istituto che ospita persone affette da malattie mentali e da disturbi di comportamento.\nLa diciassettenne Reina vi è stata ricoverata un anno prima, dopo la morte improvvisa della nonna materna a cui era molto legata. Quella prematura scomparsa ha provocato in lei un trauma violento che l’ha portata a contatto con ombre dal tocco gelido e dalle urla spaventose che l’hanno gettata nello sconforto e disperazione.\nIl ricovero in istituto è sembrato la soluzione ideale e la presenza costante del dottor Arkham, che l’ha in cura con una diagnosi di schizofrenia, sembra ridarle un graduale ritorno alla normalità.\nMa non è il solo che si prende cura di lei.\nAl suo fianco c’è la silenziosa e impalpabile presenza di Luca, un timido dodicenne che la segue ovunque e le da un certo conforto con le presenze che le ruotano attorno.\nPerché Luca è un fantasma, ma sembra non sia la sola a vederlo.",
+    "isDebut": true,
+    "status": "approved",
+    "labels": [
+      "2° posto Trofeo Cittadella"
+    ],
+    "id": "b1754909589297"
+  },
+  {
+    "title": "Witch Hunters: Esilio",
+    "author": "Eireann Leah Reid",
+    "year": 2023,
+    "publisher": "Independently published",
+    "isbn": "979-8873108978",
+    "storeUrl": "https://www.amazon.com/WITCH-HUNTERS-Eireann-Leah-Reid/dp/B0CR1QJ9NJ",
+    "coverUrl": "https://m.media-amazon.com/images/I/71EIp3+LdsL._SL1419_.jpg",
+    "description": "Il mondo ha equilibri che il comune essere umano ignora, come l'eterna lotta tra Streghe e Cacciatori. A volte, però, le regole vanno sovvertite, soprattutto se a farlo è il più forte dei sentimenti: l'amore. È questo ciò che unisce in maniera profonda la famiglia Reed, in particolare Ann, Tom e Chris, fratellastri dal legame indissolubile nonostante la loro natura diversa.\nÈ una notte d'autunno quando Ann scopre i propri poteri e, incapace di gestirli, per poco non uccide i fratelli.\nLa madre Kathleen, che per anni ha cercato di farle condurre una vita normale, comprende di non poter più arginare la predisposizione della figlia. Così la obbliga a trasferirsi in Irlanda, dal ricco e burbero Lord Hector Castleville, suo nonno, per imparare a governarli.\nUna maledizione oscura e secolare, però, si annida in quelle terre...",
+    "isDebut": true,
+    "status": "approved",
+    "labels": [
+      "3° posto Trofeo Cittadella"
+    ],
+    "id": "b1754909589298"
+  },
+  {
+    "title": "L'arma del druido",
+    "author": "Marco Di Giaimo & Giuseppe Bono",
+    "year": 2024,
+    "publisher": "Angolazioni",
+    "isbn": "978-8898993673",
+    "storeUrl": "https://www.amazon.it/Larma-del-druido-Marco-Giaimo/dp/8898993676/ref=sr_1_1?__mk_it_IT=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=10SPUCOYKRTY9&dib=eyJ2IjoiMSJ9.5wjzvxvAs7XuJkVS4qI0IcXD9x1NRRFPqGOVlAE5RjtBAYJNEsCfMSi28_u_1SPB.y6wS4eNSqk_PYKF0EOfueXuoOQgAewEV15h7XjEk6Lg&dib_tag=se&keywords=l%27arma%2Bdel%2Bdruido&qid=1714642676&sprefix=l%27arma%2Bdel%2Bdruido%2Caps%2C113&sr=8-1",
+    "coverUrl": "https://angolazioni.it/wp-content/uploads/2024/05/larma-del-druido-copertina-600x922.png",
+    "description": "Il tempo scorre tranquillo nel regno di Hinson, dove Re Hutc conduce una vita agiata e noiosa finché, un giorno, arrivano notizie inquietanti dalle terre dei druidi.\n\nFogurrander, un druido rinnegato che si dedica allo studio della magia nera, si è armato di un immenso potere distruttivo ed è fuggito nascondendosi nel regno degli uomini lucertola. Il suo piano è quello di organizzare un attacco combinato con i rettili e conquistare i quattro regni delle terre paludose. Solo l’esercito di Hinson e una missione segreta con a capo il Re Hutc saranno in grado si fermare la minaccia del druido oscuro. Tra mille avventure, a volte umoristiche, a volte drammatiche, il manipolo di eroi formato dal Re e da un accozzaglia di personaggi molto variegati, attraverserà le terre paludose fino alla tana del nemico, nel tentativo di scovare e annientare Fogurrander.",
+    "isDebut": false,
+    "status": "approved",
+    "labels": [
+      "Premio Ernesto Vegetti"
+    ],
+    "id": "b1754909589299"
   }
 ]
