@@ -1,8 +1,8 @@
 [
-  {
-    "u": "s.grosso",
-    "salt": "6aba43a735968e6b76316ef674095e9a",
-    "iter": 120000,
-    "hash": "e873715eea300197d54014d70d706484da6e858efa9bd1fca61c18450a4a2b77"
-  }
+ {
+  "u": "s.grosso",
+  "salt": "c2fa977222f10606de8a3e22c0619317",
+  "iter": 120000,
+  "hash": "87c4e117a22c6ed88da65686bc40e12dc7f2220b82c683317ed396eca1cb6b8a"
+ }
 ]
