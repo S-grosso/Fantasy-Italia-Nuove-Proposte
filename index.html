@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fantasy Italia - Nuove proposte</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#7aa6ff">
+<style>
+  :root{
+    --bg:#0f1013; --panel:#171923; --ink:#e7e9ee; --muted:#a9adbb;
+    --accent:#7aa6ff; --danger:#ff6b6b; --border:#232635;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,Noto Sans;background:linear-gradient(180deg,#0f1013,#0d0e12 140vh);color:var(--ink)}
+  header{position:sticky;top:0;z-index:5;background:rgba(13,14,18,.9);backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px;display:flex;align-items:center;gap:12px}
+  h1{font-size:20px;margin:0;letter-spacing:.2px;flex:1}
+  nav{display:flex;gap:8px;flex-wrap:wrap}
+  nav button{background:var(--panel);color:var(--ink);border:1px solid var(--border);padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:600}
+  nav button.active{outline:2px solid var(--accent)}
+  .adminBadge{font-size:12px;border:1px solid var(--border);padding:6px 9px;border-radius:999px;color:#cfe;opacity:.9}
+  .adminToggle{background:#132033;border:1px solid var(--border);color:#dfe;padding:8px 12px;border-radius:10px;cursor:pointer}
+  main{padding:20px 16px}
+  section{max-width:1100px;margin:0 auto;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+  .card{background:#10121a;border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:flex-start;min-height:140px}
+  img.cover{display:block;border-radius:8px;border:1px solid var(--border);max-height:16.6vh;width:auto;object-fit:cover;background:#080a0f}
+  .meta{flex:1;min-width:0}
+  .meta h3{margin:0 0 6px 0;font-size:16px;line-height:1.2}
+  .meta .by{color:var(--muted);font-size:13px;margin-bottom:6px}
+  .meta .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .tag{font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
+  .tag.ok{color:#0d3;border-color:#174}
+  .tag.pending{color:#fa6;border-color:#542}
+  .tag.label{color:#9fc8ff;border-color:#2854aa}
+  .actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .btn{background:#151826;border:1px solid var(--border);color:var(--ink);padding:6px 10px;border-radius:10px;cursor:pointer;font-size:13px}
+  .btn.primary{outline:2px solid var(--accent)}
+  .btn.danger{outline:1px solid #402;color:#ff9aa9}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:180px}
+  .field label{font-size:13px;color:var(--muted)}
+  input[type="text"], input[type="url"], input[type="number"], textarea, select{background:#0f1119;color:var(--ink);border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:14px;width:100%}
+  textarea{height:90px;resize:vertical}
+  .hint{color:var(--muted);font-size:12px}
+  .right{margin-left:auto}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
+  .divider{height:1px;background:var(--border);margin:12px 0}
+  .adminRow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .list{border:1px solid var(--border);border-radius:10px;padding:8px}
+  .list .item{display:flex;align-items:center;justify-content:space-between;border-bottom:1px dashed var(--border);padding:6px 4px}
+  .list .item:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Fantasy Italia — Nuove proposte</h1>
+    <span id="adminBadge" class="adminBadge" style="display:none"></span>
+    <button id="adminToggle" class="adminToggle" title="Accedi/Esci come admin">Accedi admin</button>
+  </div>
+  <div class="wrap" style="padding-top:0">
+    <nav id="navPublic">
+      <button data-tab="catalogo" class="active">Catalogo</button>
+      <button data-tab="nuovo">Nuovo titolo</button>
+    </nav>
+    <nav id="navAdmin" style="display:none">
+      <button data-tab="moderazione">Moderazione</button>
+      <button data-tab="impostazioni">Impostazioni</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section id="catalogo" class="tab">
+    <div class="toolbar">
+      <div class="field" style="max-width:200px">
+        <label>Anno ≥</label>
+        <select id="filterYear">
+          <option value="2025">2025</option>
+          <option value="2024">2024</option>
+          <option value="2023">2023</option>
+          <option value="all" selected>Tutti</option>
+        </select>
+      </div>
+      <div class="field" style="max-width:220px">
+        <label>Stato</label>
+        <select id="filterStatus">
+          <option value="approved" selected>Approvati</option>
+          <option value="pending">In revisione</option>
+          <option value="all">Tutti</option>
+        </select>
+      </div>
+      <input id="q" type="text" placeholder="Cerca titolo, autore, editore…" style="flex:1;min-width:200px">
+      <span id="adminTools" style="display:none;display:flex;gap:8px">
+        <button class="btn right" id="btnExport">Esporta JSON</button>
+        <input id="fileImport" type="file" accept="application/json" style="display:none">
+        <button class="btn" id="btnImport">Importa JSON</button>
+      </span>
+    </div>
+    <div id="gridCatalogo" class="grid"></div>
+  </section>
+
+  <section id="nuovo" class="tab" style="display:none">
+    <div class="row">
+      <div class="field"><label>Titolo</label><input id="f_title" type="text"></div>
+      <div class="field"><label>Autore</label><input id="f_author" type="text"></div>
+      <div class="field"><label>Anno</label><input id="f_year" type="number" min="1900" max="2100" value="2025"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Editore</label><input id="f_publisher" type="text"></div>
+      <div class="field"><label>ISBN</label><input id="f_isbn" type="text" placeholder="es. 978..."></div>
+      <div class="field"><label>Link store</label><input id="f_store" type="url" placeholder="https://..."></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>URL copertina</label><input id="f_cover" type="url" placeholder="https://..."></div>
+      <div class="field"><label>Confermo che è romanzo d’esordio (nel fantasy)</label>
+        <select id="f_debut">
+          <option value="unknown" selected>Da verificare</option>
+          <option value="yes">Sì</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Descrizione (sinossi)</label>
+      <textarea id="f_desc"></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btnSaveNew">Salva (in revisione)</button>
+      <span class="hint">I contenuti inviati dagli utenti restano in “Revisione” finché non li approva un admin.</span>
+    </div>
+  </section>
+
+  <section id="moderazione" class="tab" style="display:none">
+    <div class="toolbar">
+      <div class="field" style="max-width:220px">
+        <label>Mostra</label>
+        <select id="moderationFilter">
+          <option value="pending" selected>In revisione</option>
+          <option value="approved">Approvati</option>
+          <option value="all">Tutti</option>
+        </select>
+      </div>
+    </div>
+    <div id="gridModeration" class="grid"></div>
+  </section>
+
+  <section id="impostazioni" class="tab" style="display:none">
+    <h3>Amministratori</h3>
+    <div class="small muted" style="margin-bottom:10px">Gestisci gli account admin. L’utente fondatore <b>s.grosso</b> non può essere rimosso né rinominato.</div>
+    <div class="adminRow">
+      <div class="field">
+        <label>Il tuo username</label>
+        <input id="meUser" type="text" placeholder="Nuovo username">
+      </div>
+      <div class="field">
+        <label>La tua password</label>
+        <input id="mePass" type="text" placeholder="Nuova password">
+      </div>
+      <button class="btn" id="btnUpdateMe">Aggiorna le mie credenziali</button>
+    </div>
+
+    <div class="divider"></div>
+    <div class="adminRow">
+      <div class="field">
+        <label>Nuovo admin — username</label>
+        <input id="newUser" type="text" placeholder="es. nome.cognome">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="newPass" type="text" placeholder="password temporanea">
+      </div>
+      <button class="btn" id="btnAddAdmin">Aggiungi admin</button>
+    </div>
+
+    <div class="divider"></div>
+    <div class="list" id="adminList"></div>
+
+    <div class="divider"></div>
+    <div class="row">
+      <div class="field">
+        <label>Anno minimo per il catalogo (default filtro)</label>
+        <input id="minYear" type="number" min="1900" max="2100" value="2024">
+      </div>
+      <div class="field">
+        <label>URL catalogo remoto (JSON)</label>
+        <input id="remoteUrl" type="url" placeholder="https://tuo-dominio/catalogo.json">
+        <span class="hint">L’app scarica il JSON e unisce i record (ISBN o titolo+autore) al catalogo locale.</span>
+      </div>
+      <button class="btn" id="btnSync" style="align-self:flex-end">Sincronizza ora</button>
+    </div>
+    <div id="syncMsg" class="small muted" style="margin-top:6px"></div>
+
+    <div class="actions" style="margin-top:12px">
+      <button class="btn primary" id="btnSaveSettings">Salva impostazioni</button>
+      <button class="btn danger" id="btnReset">Svuota database locale</button>
+    </div>
+    <p class="muted small">I dati restano sul dispositivo (localStorage). Puoi esportare/importare JSON dal Catalogo (strumenti visibili solo agli admin).</p>
+  </section>
+</main>
+
+<footer>
+  Fantasy Italia — Nuove proposte è un catalogo collaborativo dedicato alla narrativa fantasy italiana contemporanea.
+</footer>
+
+<script>
+(function(){
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+  const ADMIN_TIMEOUT_MS = 30 * 60 * 1000; // 30 minuti
+
+  const state = {
+    books: loadBooks(),
+    nextId: Date.now(),
+    settings: loadSettings(),
+    isAdmin: false,
+    meUser: null
+  };
+
+  if(!state.settings.admins || !Array.isArray(state.settings.admins) || !state.settings.admins.length){
+    state.settings.admins = [{u:'s.grosso', p:'admin'}];
+    saveSettings();
+  }
+
+  function now(){ return Date.now(); }
+  function sessionIsValid(){
+    const u = sessionStorage.getItem('fi_admin_user');
+    const t = parseInt(sessionStorage.getItem('fi_admin_time')||'0',10);
+    if(!u || !t) return false;
+    if(now() - t > ADMIN_TIMEOUT_MS) return false;
+    // user must still exist
+    const exists = (state.settings.admins||[]).some(a=>a.u===u);
+    return !!exists;
+  }
+  function touchSession(){
+    sessionStorage.setItem('fi_admin_time', String(now()));
+  }
+  function clearSession(){
+    sessionStorage.removeItem('fi_admin_user');
+    sessionStorage.removeItem('fi_admin_time');
+  }
+
+  function applyAdminUI(){
+    const isOn = state.isAdmin;
+    $('#navAdmin').style.display = isOn ? '' : 'none';
+    $('#adminBadge').style.display = isOn ? '' : 'none';
+    $('#adminBadge').textContent = isOn ? ('Admin: '+state.meUser) : '';
+    $('#adminToggle').textContent = isOn ? 'Esci admin' : 'Accedi admin';
+    $('#adminTools').style.display = isOn ? 'flex' : 'none';
+  }
+  applyAdminUI();
+
+  function doLoginFlow(){
+    const u = prompt('Inserisci username admin');
+    if(u===null || !u.trim()) return false;
+    const p = prompt('Inserisci password admin');
+    if(p===null) return false;
+    const ok = (state.settings.admins||[]).some(a => a.u===u && a.p===p);
+    if(ok){
+      state.isAdmin = true; state.meUser = u;
+      sessionStorage.setItem('fi_admin_user', u);
+      touchSession();
+      applyAdminUI();
+      return true;
+    } else {
+      alert('Credenziali non valide.');
+      return false;
+    }
+  }
+
+  $('#adminToggle').addEventListener('click', async ()=>{
+    if(state.isAdmin){
+      state.isAdmin = false;
+      state.meUser = null;
+      clearSession();
+      applyAdminUI();
+      $$('.tab').forEach(s => s.style.display = 'none');
+      $('#catalogo').style.display='';
+      $$('#navPublic button').forEach(b=>b.classList.remove('active'));
+      $$('#navAdmin button').forEach(b=>b.classList.remove('active'));
+      $$('#navPublic button[data-tab="catalogo"]')[0].classList.add('active');
+      return;
+    } else {
+      doLoginFlow();
+    }
+  });
+
+  // No auto-restore across browser restarts: we only consider sessionStorage.
+  // If a session exists and is valid within 30 minutes, keep it; otherwise clear.
+  (function checkExistingSession(){
+    if(sessionIsValid()){
+      state.isAdmin = true; state.meUser = sessionStorage.getItem('fi_admin_user');
+      applyAdminUI();
+      touchSession();
+    } else {
+      clearSession();
+    }
+  })();
+
+  function guardAdminAccess(){
+    if(!sessionIsValid()){
+      state.isAdmin = false; state.meUser = null; clearSession(); applyAdminUI();
+      alert('Sessione admin scaduta. Effettua di nuovo l’accesso.');
+      return doLoginFlow();
+    } else {
+      touchSession();
+      return true;
+    }
+  }
+
+  $$('#navPublic button, #navAdmin button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if(btn.parentElement.id==='navAdmin'){
+        if(!guardAdminAccess()) return;
+      }
+      $$('#navPublic button, #navAdmin button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      $$('.tab').forEach(s => s.style.display = 'none');
+      $('#'+tab).style.display = '';
+      if(tab==='catalogo') renderCatalogo();
+      if(tab==='moderazione') renderModeration();
+      if(tab==='impostazioni') renderSettings();
+    });
+  });
+
+  // SETTINGS
+  function loadSettings(){ try{ return JSON.parse(localStorage.getItem('fi_settings_site_v372')||'{}'); }catch(e){ return {}; } }
+  function saveSettings(){ localStorage.setItem('fi_settings_site_v372', JSON.stringify(state.settings)); }
+  function renderSettings(){
+    $('#meUser').value = state.meUser || '';
+    $('#meUser').disabled = (state.meUser==='s.grosso');
+    $('#mePass').value = '';
+    const box = $('#adminList'); box.innerHTML='';
+    (state.settings.admins||[]).forEach(a => {
+      const row = document.createElement('div'); row.className='item';
+      const left = document.createElement('div'); left.textContent = a.u + (a.u==='s.grosso'?'  • fondatore':'');
+      const right = document.createElement('div');
+      if(a.u!=='s.grosso'){
+        const rm = document.createElement('button'); rm.className='btn danger'; rm.textContent='Rimuovi';
+        rm.addEventListener('click', ()=>{
+          if(confirm('Rimuovere admin '+a.u+'?')){
+            state.settings.admins = state.settings.admins.filter(x => x.u!==a.u);
+            saveSettings(); renderSettings();
+          }
+        });
+        right.appendChild(rm);
+      } else {
+        const lock = document.createElement('span'); lock.className='small muted'; lock.textContent='non rimovibile';
+        right.appendChild(lock);
+      }
+      row.appendChild(left); row.appendChild(right); box.appendChild(row);
+    });
+    $('#minYear').value = state.settings.minYear || 2024;
+    $('#remoteUrl').value = state.settings.remoteUrl || '';
+  }
+
+  $('#btnUpdateMe').addEventListener('click', () => {
+    if(!guardAdminAccess()) return;
+    const newU = $('#meUser').value.trim();
+    const newP = $('#mePass').value.trim();
+    const admins = state.settings.admins||[];
+    const meIdx = admins.findIndex(a => a.u===state.meUser);
+    if(meIdx<0){ alert('Sessione non valida.'); return; }
+    if(state.meUser==='s.grosso' && newU && newU!=='s.grosso'){
+      alert('Il fondatore non può essere rinominato.'); return;
+    }
+    if(newU){
+      if(admins.some(a => a.u===newU && a.u!==state.meUser)){
+        alert('Username già esistente.'); return;
+      }
+      admins[meIdx].u = newU; state.meUser = newU;
+      sessionStorage.setItem('fi_admin_user', newU);
+      touchSession();
+    }
+    if(newP){ admins[meIdx].p = newP; }
+    state.settings.admins = admins; saveSettings(); renderSettings(); applyAdminUI();
+    alert('Credenziali aggiornate.');
+  });
+
+  $('#btnAddAdmin').addEventListener('click', () => {
+    if(!guardAdminAccess()) return;
+    const u = $('#newUser').value.trim();
+    const p = $('#newPass').value.trim();
+    if(!u || !p){ alert('Inserisci username e password.'); return; }
+    const admins = state.settings.admins||[];
+    if(admins.some(a => a.u===u)){ alert('Username già esistente.'); return; }
+    admins.push({u, p}); state.settings.admins = admins; saveSettings(); renderSettings();
+    $('#newUser').value=''; $('#newPass').value='';
+    alert('Admin aggiunto: '+u);
+  });
+
+  $('#btnSaveSettings').addEventListener('click', () => {
+    if(!guardAdminAccess()) return;
+    state.settings.minYear = parseInt($('#minYear').value||'2024',10);
+    state.settings.remoteUrl = $('#remoteUrl').value.trim();
+    saveSettings();
+    alert('Impostazioni salvate.');
+  });
+
+  $('#btnReset').addEventListener('click', () => {
+    if(!guardAdminAccess()) return;
+    if(confirm('Sicuro di voler svuotare il database locale?')){
+      state.books = []; saveBooks(); renderCatalogo(); renderModeration();
+    }
+  });
+
+  $('#btnSync').addEventListener('click', async () => {
+    if(!guardAdminAccess()) return;
+    const url = ($('#remoteUrl').value||'').trim();
+    if(!url){ alert('Imposta prima l’URL del catalogo remoto.'); return; }
+    const msg = $('#syncMsg'); msg.textContent = 'Sincronizzazione in corso…';
+    try{
+      const res = await fetch(url, {cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      if(!Array.isArray(data)) throw new Error('JSON non è un array');
+      let added=0, skipped=0;
+      for(const r of data){
+        const exists = state.books.some(b => sameKey(b,r));
+        if(exists){ skipped++; continue; }
+        const b = {
+          id: 'b'+(state.nextId++),
+          title: r.title||'',
+          author: r.author||'',
+          year: parseInt(r.year||'0',10),
+          publisher: r.publisher||'',
+          isbn: r.isbn||'',
+          storeUrl: r.storeUrl||'',
+          coverUrl: r.coverUrl||'',
+          description: r.description||'',
+          isDebut: (typeof r.isDebut==='boolean'? r.isDebut : null),
+          labels: Array.isArray(r.labels)? r.labels.slice(0,8) : [],
+          status: r.status||'approved'
+        };
+        state.books.push(b); added++;
+      }
+      saveBooks(); renderCatalogo(); renderModeration();
+      msg.textContent = 'Sincronizzazione completata. Aggiunti: '+added+' • Ignorati: '+skipped+'.';
+    }catch(e){
+      msg.textContent = 'Errore sincronizzazione: '+ (e && e.message ? e.message : e);
+    }
+  });
+
+  // DATA
+  function loadBooks(){ try{ return JSON.parse(localStorage.getItem('fi_books_site_v372')||'[]'); }catch(e){ return []; } }
+  function saveBooks(){ localStorage.setItem('fi_books_site_v372', JSON.stringify(state.books)); }
+
+  function addBook(b){
+    b.id = 'b'+(state.nextId++);
+    if(!Array.isArray(b.labels)) b.labels = [];
+    state.books.push(b); saveBooks();
+    renderCatalogo();
+  }
+
+  function collectForm(){
+    return {
+      title: $('#f_title').value.trim(),
+      author: $('#f_author').value.trim(),
+      year: parseInt($('#f_year').value||'0',10),
+      publisher: $('#f_publisher').value.trim(),
+      isbn: $('#f_isbn').value.trim(),
+      storeUrl: $('#f_store').value.trim(),
+      coverUrl: $('#f_cover').value.trim(),
+      description: $('#f_desc').value.trim(),
+      isDebut: (function(){
+        const v = $('#f_debut').value;
+        if(v==='yes') return true;
+        if(v==='no') return false;
+        return null;
+      })(),
+      status: 'pending',
+      labels: []
+    };
+  }
+  function clearForm(){
+    ['f_title','f_author','f_publisher','f_isbn','f_store','f_cover','f_desc'].forEach(id=> $('#'+id).value='');
+    $('#f_year').value = new Date().getFullYear();
+    $('#f_debut').value = 'unknown';
+  }
+  const btnSaveNew = $('#btnSaveNew');
+  if(btnSaveNew){
+    btnSaveNew.addEventListener('click', () => {
+      const b = collectForm();
+      if(!b.title || !b.author){
+        alert('Titolo e Autore sono obbligatori.'); return;
+      }
+      addBook(b);
+      clearForm();
+      alert('Titolo salvato in Revisione.');
+    });
+  }
+
+  // CATALOGO
+  $('#filterYear').addEventListener('change', renderCatalogo);
+  $('#filterStatus').addEventListener('change', renderCatalogo);
+  $('#q').addEventListener('input', debounce(renderCatalogo, 200));
+
+  const btnExport = $('#btnExport');
+  const btnImport = $('#btnImport');
+  const fileImport = $('#fileImport');
+  if(btnExport){
+    btnExport.addEventListener('click', () => {
+      if(!guardAdminAccess()) return;
+      const blob = new Blob([JSON.stringify(state.books, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'fantasy-italia-nuove-proposte.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    });
+  }
+  if(btnImport){
+    btnImport.addEventListener('click', () => {
+      if(!guardAdminAccess()) return;
+      fileImport.click();
+    });
+    fileImport.addEventListener('change', async (e) => {
+      if(!guardAdminAccess()) return;
+      const file = e.target.files[0]; if(!file) return;
+      const text = await file.text();
+      try{
+        const data = JSON.parse(text);
+        if(Array.isArray(data)){
+          data.forEach((b)=>{ if(!b.id) b.id='b'+(state.nextId++); if(!b.status) b.status='approved'; if(!Array.isArray(b.labels)) b.labels=[]; });
+          state.books = data; saveBooks();
+          alert('Import riuscito: '+data.length+' record.');
+          renderCatalogo();
+        } else alert('JSON non valido.');
+      } catch(err){ alert('Errore nel parsing JSON.'); }
+    });
+  }
+
+  function renderCatalogo(){
+    const grid = $('#gridCatalogo'); grid.innerHTML='';
+    const q = $('#q').value.toLowerCase().trim();
+    const fy = $('#filterYear').value;
+    const fs = $('#filterStatus').value;
+    let list = [...state.books];
+    if(fy!=='all') {
+      const y = parseInt(fy,10);
+      list = list.filter(b => (parseInt(b.year,10)||0) >= y);
+    }
+    if(fs!=='all'){ list = list.filter(b => b.status===fs); }
+    if(q){
+      list = list.filter(b => 
+        (b.title||'').toLowerCase().includes(q) ||
+        (b.author||'').toLowerCase().includes(q) ||
+        (b.publisher||'').toLowerCase().includes(q)
+      );
+    }
+    if(!list.length){ grid.innerHTML = '<div class="muted">Nessun risultato. Aggiungi titoli dalla sezione “Nuovo titolo” o contatta un admin per importare/sincronizzare un JSON.</div>'; return; }
+    list.sort((a,b)=>{
+      const ya = parseInt(a.year,10)||0;
+      const yb = parseInt(b.year,10)||0;
+      if(yb!==ya) return yb - ya;
+      const ta = (a.title||'').toLocaleLowerCase();
+      const tb = (b.title||'').toLocaleLowerCase();
+      return ta.localeCompare(tb,'it');
+    });
+    for(const b of list){
+      grid.appendChild(bookCard(b, {showModeration:false}));
+    }
+  }
+
+  function tagEl(text, cls='tag'){
+    const t = document.createElement('span');
+    t.className = cls;
+    t.textContent = text;
+    return t;
+  }
+
+  function bookCard(b, opts){
+    const el = document.createElement('div');
+    el.className='card';
+    const img = document.createElement('img');
+    img.className='cover';
+    img.alt = 'Copertina';
+    img.src = b.coverUrl || placeholderCover();
+    const meta = document.createElement('div'); meta.className='meta';
+    const h3 = document.createElement('h3'); h3.textContent = b.title || '(Senza titolo)';
+    const by = document.createElement('div'); by.className='by';
+    by.textContent = [b.author, b.publisher, b.year].filter(Boolean).join(' • ');
+    const desc = document.createElement('div'); desc.className='small muted';
+    desc.textContent = b.description ? truncate(b.description, 200) : '';
+    const tags = document.createElement('div'); tags.className='tags';
+    const st = tagEl((b.status==='approved')?'Approvato':'In revisione', 'tag '+(b.status==='approved'?'ok':'pending'));
+    const db = tagEl((b.isDebut===true)?'Esordio: sì' : (b.isDebut===false?'Esordio: no':'Esordio: ?'));
+    tags.appendChild(st); tags.appendChild(db);
+    if(Array.isArray(b.labels)){ b.labels.slice(0,6).forEach(l => tags.appendChild(tagEl(l, 'tag label'))); }
+    const actions = document.createElement('div'); actions.className='actions';
+    if(b.storeUrl){ const a = document.createElement('a'); a.href=b.storeUrl; a.target='_blank'; a.rel='noopener'; a.textContent='Apri store'; a.className='btn'; actions.appendChild(a); }
+    if(opts.showModeration){
+      const approve = document.createElement('button'); approve.className='btn primary'; approve.textContent='Approva';
+      approve.addEventListener('click', ()=>{ b.status='approved'; saveBooks(); renderModeration(); });
+      const del = document.createElement('button'); del.className='btn danger'; del.textContent='Elimina';
+      del.addEventListener('click', ()=>{ if(confirm('Eliminare questo titolo?')){ state.books = state.books.filter(x => x.id!==b.id); saveBooks(); renderModeration(); }});
+      const toggleDeb = document.createElement('button'); toggleDeb.className='btn'; toggleDeb.textContent='Toggle esordio';
+      toggleDeb.addEventListener('click', ()=>{ b.isDebut = (b.isDebut===true)?false:(b.isDebut===false?null:true); saveBooks(); renderModeration(); });
+      const labelIn = document.createElement('input'); labelIn.type='text'; labelIn.placeholder='Aggiungi etichetta (es. Vincitore Premio Odissea)';
+      labelIn.className='btn'; labelIn.style.minWidth='240px';
+      const addLabel = document.createElement('button'); addLabel.className='btn'; addLabel.textContent='Aggiungi etichetta';
+      addLabel.addEventListener('click', ()=>{
+        const t = (labelIn.value||'').trim();
+        if(!t) return;
+        if(!Array.isArray(b.labels)) b.labels = [];
+        if(b.labels.length>=12){ alert('Troppi tag.'); return; }
+        if(!b.labels.includes(t)){ b.labels.push(t); saveBooks(); renderModeration(); }
+        labelIn.value='';
+      });
+      actions.appendChild(approve); actions.appendChild(del); actions.appendChild(toggleDeb);
+      actions.appendChild(labelIn); actions.appendChild(addLabel);
+    }
+    meta.appendChild(h3); meta.appendChild(by); meta.appendChild(desc); meta.appendChild(tags); meta.appendChild(actions);
+    el.appendChild(img); el.appendChild(meta);
+    if(opts.showModeration && Array.isArray(b.labels) && b.labels.length){
+      const wrap = document.createElement('div'); wrap.className='tags';
+      b.labels.forEach((t,i)=>{
+        const chip = document.createElement('span'); chip.className='tag label'; chip.textContent=t+' ✕';
+        chip.style.cursor='pointer';
+        chip.addEventListener('click', ()=>{
+          b.labels = b.labels.filter(x=>x!==t);
+          saveBooks(); renderModeration();
+        });
+        wrap.appendChild(chip);
+      });
+      meta.appendChild(wrap);
+    }
+    return el;
+  }
+
+  function renderModeration(){
+    const grid = $('#gridModeration'); grid.innerHTML='';
+    const f = $('#moderationFilter').value;
+    let list = [...state.books];
+    if(f!=='all') list = list.filter(b => b.status===f);
+    list.sort((a,b)=>{
+      const ya = parseInt(a.year,10)||0;
+      const yb = parseInt(b.year,10)||0;
+      if(yb!==ya) return yb - ya;
+      const ta = (a.title||'').toLocaleLowerCase();
+      const tb = (b.title||'').toLocaleLowerCase();
+      return ta.localeCompare(tb,'it');
+    });
+    if(!list.length){ grid.innerHTML = '<div class="muted">Nulla da mostrare.</div>'; return; }
+    for(const b of list){
+      grid.appendChild(bookCard(b, {showModeration:true}));
+    }
+  }
+
+  // HELPERS
+  function sameKey(b, r){
+    const t1 = (b.title||'').toLowerCase().trim();
+    const a1 = (b.author||'').toLowerCase().trim();
+    const i1 = (b.isbn||'').replace(/[^0-9xX]+/g,'');
+    const t2 = (r.title||'').toLowerCase().trim();
+    const a2 = (r.author||'').toLowerCase().trim();
+    const i2 = (r.isbn||'').replace(/[^0-9xX]+/g,'');
+    return (i1 && i2 && i1===i2) || (t1===t2 && a1===a2);
+  }
+  function truncate(s, n){ return (s && s.length>n) ? (s.slice(0,n-1)+'…') : (s||''); }
+  function placeholderCover(){
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="240" height="360"><rect width="100%" height="100%" fill="#0a0c12"/><rect x="1" y="1" width="238" height="358" fill="none" stroke="#232635"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#5e657a">Copertina</text></svg>`);
+  }
+  function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); } }
+
+  (function init(){
+    $$('.tab').forEach(s => s.style.display = 'none');
+    $('#catalogo').style.display='';
+    renderCatalogo();
+  })();
+})();
+</script>
+</body>
+</html>
