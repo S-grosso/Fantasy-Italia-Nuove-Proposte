@@ -49,6 +49,8 @@
   .muted{color:var(--muted)}
   .small{font-size:12px}
   footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
+  footer a{color:#9fc8ff;text-decoration:none}
+  footer .sep{opacity:.4;margin:0 8px}
   .divider{height:1px;background:var(--border);margin:12px 0}
   .adminRow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
   .list{border:1px solid var(--border);border-radius:10px;padding:8px}
@@ -205,7 +207,11 @@
 </main>
 
 <footer>
-  Fantasy Italia — Nuove proposte è un catalogo collaborativo dedicato alla narrativa fantasy italiana contemporanea.
+  <div>Fantasy Italia — Nuove proposte è un catalogo collaborativo dedicato alla narrativa fantasy italiana contemporanea.</div>
+  <div style="margin-top:6px">
+    <a href="legal.html">Note legali & privacy</a><span class="sep">•</span>
+    <a href="mailto:simonegrosso.writer@gmail.com">Contatti</a>
+  </div>
 </footer>
 
 <script>
@@ -234,7 +240,6 @@
     const t = parseInt(sessionStorage.getItem('fi_admin_time')||'0',10);
     if(!u || !t) return false;
     if(now() - t > ADMIN_TIMEOUT_MS) return false;
-    // user must still exist
     const exists = (state.settings.admins||[]).some(a=>a.u===u);
     return !!exists;
   }
@@ -291,8 +296,6 @@
     }
   });
 
-  // No auto-restore across browser restarts: we only consider sessionStorage.
-  // If a session exists and is valid within 30 minutes, keep it; otherwise clear.
   (function checkExistingSession(){
     if(sessionIsValid()){
       state.isAdmin = true; state.meUser = sessionStorage.getItem('fi_admin_user');
@@ -331,8 +334,8 @@
   });
 
   // SETTINGS
-  function loadSettings(){ try{ return JSON.parse(localStorage.getItem('fi_settings_site_v372')||'{}'); }catch(e){ return {}; } }
-  function saveSettings(){ localStorage.setItem('fi_settings_site_v372', JSON.stringify(state.settings)); }
+  function loadSettings(){ try{ return JSON.parse(localStorage.getItem('fi_settings_site_v373b')||'{}'); }catch(e){ return {}; } }
+  function saveSettings(){ localStorage.setItem('fi_settings_site_v373b', JSON.stringify(state.settings)); }
   function renderSettings(){
     $('#meUser').value = state.meUser || '';
     $('#meUser').disabled = (state.meUser==='s.grosso');
@@ -449,8 +452,8 @@
   });
 
   // DATA
-  function loadBooks(){ try{ return JSON.parse(localStorage.getItem('fi_books_site_v372')||'[]'); }catch(e){ return []; } }
-  function saveBooks(){ localStorage.setItem('fi_books_site_v372', JSON.stringify(state.books)); }
+  function loadBooks(){ try{ return JSON.parse(localStorage.getItem('fi_books_site_v373b')||'[]'); }catch(e){ return []; } }
+  function saveBooks(){ localStorage.setItem('fi_books_site_v373b', JSON.stringify(state.books)); }
 
   function addBook(b){
     b.id = 'b'+(state.nextId++);
