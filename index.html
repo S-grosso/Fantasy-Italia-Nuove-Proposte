@@ -56,6 +56,7 @@
   .list{border:1px solid var(--border);border-radius:10px;padding:8px}
   .list .item{display:flex;align-items:center;justify-content:space-between;border-bottom:1px dashed var(--border);padding:6px 4px}
   .list .item:last-child{border-bottom:none}
+  .banner{background:#142036;border:1px solid #223a66;color:#cfe;border-radius:12px;padding:8px 12px;margin:8px 0}
 </style>
 </head>
 <body>
@@ -79,6 +80,7 @@
 
 <main>
   <section id="catalogo" class="tab">
+    <div id="banner" class="banner" style="display:none"></div>
     <div class="toolbar">
       <div class="field" style="max-width:200px">
         <label>Anno ≥</label>
@@ -153,56 +155,25 @@
   </section>
 
   <section id="impostazioni" class="tab" style="display:none">
-    <h3>Amministratori</h3>
-    <div class="small muted" style="margin-bottom:10px">Gestisci gli account admin. L’utente fondatore <b>s.grosso</b> non può essere rimosso né rinominato.</div>
-    <div class="adminRow">
-      <div class="field">
-        <label>Il tuo username</label>
-        <input id="meUser" type="text" placeholder="Nuovo username">
-      </div>
-      <div class="field">
-        <label>La tua password</label>
-        <input id="mePass" type="text" placeholder="Nuova password">
-      </div>
-      <button class="btn" id="btnUpdateMe">Aggiorna le mie credenziali</button>
-    </div>
-
-    <div class="divider"></div>
-    <div class="adminRow">
-      <div class="field">
-        <label>Nuovo admin — username</label>
-        <input id="newUser" type="text" placeholder="es. nome.cognome">
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <input id="newPass" type="text" placeholder="password temporanea">
-      </div>
-      <button class="btn" id="btnAddAdmin">Aggiungi admin</button>
-    </div>
-
-    <div class="divider"></div>
-    <div class="list" id="adminList"></div>
-
-    <div class="divider"></div>
+    <h3>Impostazioni sito</h3>
+    <div class="small muted" style="margin-bottom:10px">Gli URL remoti consentono di centralizzare credenziali e catalogo.</div>
     <div class="row">
       <div class="field">
-        <label>Anno minimo per il catalogo (default filtro)</label>
-        <input id="minYear" type="number" min="1900" max="2100" value="2024">
+        <label>URL remoto admins.json</label>
+        <input id="adminsUrl" type="url" placeholder="https://tuodominio/data/admins.json">
       </div>
       <div class="field">
-        <label>URL catalogo remoto (JSON)</label>
-        <input id="remoteUrl" type="url" placeholder="https://tuo-dominio/catalogo.json">
-        <span class="hint">L’app scarica il JSON e unisce i record (ISBN o titolo+autore) al catalogo locale.</span>
+        <label>URL remoto catalogo.json</label>
+        <input id="catalogUrl" type="url" placeholder="https://tuodominio/data/catalogo.json">
       </div>
-      <button class="btn" id="btnSync" style="align-self:flex-end">Sincronizza ora</button>
+      <button class="btn" id="btnSaveUrls">Salva URL</button>
     </div>
-    <div id="syncMsg" class="small muted" style="margin-top:6px"></div>
-
+    <div class="divider"></div>
+    <h3>Amministratori (browser corrente)</h3>
+    <div class="small muted">Per cambiare password globalmente, genera un nuovo salt/hash con <a href="admin-tool.html" target="_blank" rel="noopener">admin‑tool</a> e aggiorna <code>admins.json</code> nel repository.</div>
     <div class="actions" style="margin-top:12px">
-      <button class="btn primary" id="btnSaveSettings">Salva impostazioni</button>
-      <button class="btn danger" id="btnReset">Svuota database locale</button>
+      <button class="btn danger" id="btnLogout">Esci dalla sessione admin</button>
     </div>
-    <p class="muted small">I dati restano sul dispositivo (localStorage). Puoi esportare/importare JSON dal Catalogo (strumenti visibili solo agli admin).</p>
   </section>
 </main>
 
@@ -220,35 +191,82 @@
   const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
   const ADMIN_TIMEOUT_MS = 30 * 60 * 1000; // 30 minuti
+  const DEFAULT_ADMINS_URL = location.origin + location.pathname.replace(/\/[^\/]*$/, '/') + 'data/admins.json';
+  const DEFAULT_CATALOG_URL = location.origin + location.pathname.replace(/\/[^\/]*$/, '/') + 'data/catalogo.json';
 
   const state = {
     books: loadBooks(),
     nextId: Date.now(),
     settings: loadSettings(),
     isAdmin: false,
-    meUser: null
+    meUser: null,
+    remoteAdmins: []
   };
 
-  if(!state.settings.admins || !Array.isArray(state.settings.admins) || !state.settings.admins.length){
-    state.settings.admins = [{u:'s.grosso', p:'admin'}];
-    saveSettings();
+  function showBanner(msg){ const b = $('#banner'); b.textContent = msg; b.style.display=''; setTimeout(()=>{b.style.display='none';}, 4000); }
+
+  // ---- Remote URLs settings ----
+  if(!state.settings.adminsUrl) state.settings.adminsUrl = DEFAULT_ADMINS_URL;
+  if(!state.settings.catalogUrl) state.settings.catalogUrl = DEFAULT_CATALOG_URL;
+  saveSettings();
+
+  // ---- Startup: load remote catalog for everyone ----
+  syncCatalogOnStartup();
+
+  // ---- Admins remote load ----
+  loadRemoteAdmins();
+
+  function loadSettings(){ try{ return JSON.parse(localStorage.getItem('fi_settings_site_v38')||'{}'); }catch(e){ return {}; } }
+  function saveSettings(){ localStorage.setItem('fi_settings_site_v38', JSON.stringify(state.settings)); }
+
+  function loadBooks(){ try{ return JSON.parse(localStorage.getItem('fi_books_site_v38')||'[]'); }catch(e){ return []; } }
+  function saveBooks(){ localStorage.setItem('fi_books_site_v38', JSON.stringify(state.books)); }
+
+  async function fetchJson(url){
+    const res = await fetch(url, {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    return await res.json();
   }
 
-  function now(){ return Date.now(); }
-  function sessionIsValid(){
-    const u = sessionStorage.getItem('fi_admin_user');
-    const t = parseInt(sessionStorage.getItem('fi_admin_time')||'0',10);
-    if(!u || !t) return false;
-    if(now() - t > ADMIN_TIMEOUT_MS) return false;
-    const exists = (state.settings.admins||[]).some(a=>a.u===u);
-    return !!exists;
+  async function syncCatalogOnStartup(){
+    try{
+      const data = await fetchJson(state.settings.catalogUrl);
+      if(Array.isArray(data)){
+        let added=0, skipped=0;
+        for(const r of data){
+          const exists = state.books.some(b => sameKey(b,r));
+          if(exists){ skipped++; continue; }
+          const b = {
+            id: r.id || ('b'+(state.nextId++)),
+            title: r.title||'',
+            author: r.author||'',
+            year: parseInt(r.year||'0',10),
+            publisher: r.publisher||'',
+            isbn: r.isbn||'',
+            storeUrl: r.storeUrl||'',
+            coverUrl: r.coverUrl||'',
+            description: r.description||'',
+            isDebut: (typeof r.isDebut==='boolean'? r.isDebut : null),
+            labels: Array.isArray(r.labels)? r.labels.slice(0,12) : [],
+            status: r.status||'approved'
+          };
+          state.books.push(b); added++;
+        }
+        if(added>0){ saveBooks(); showBanner('Catalogo aggiornato dal remoto (+'+added+')'); }
+        renderCatalogo();
+      }
+    }catch(e){
+      console.warn('Catalog remote load failed:', e);
+    }
   }
-  function touchSession(){
-    sessionStorage.setItem('fi_admin_time', String(now()));
-  }
-  function clearSession(){
-    sessionStorage.removeItem('fi_admin_user');
-    sessionStorage.removeItem('fi_admin_time');
+
+  async function loadRemoteAdmins(){
+    try{
+      const data = await fetchJson(state.settings.adminsUrl);
+      if(Array.isArray(data)){ state.remoteAdmins = data; }
+    }catch(e){
+      console.warn('Admins remote load failed:', e);
+    }
   }
 
   function applyAdminUI(){
@@ -261,22 +279,46 @@
   }
   applyAdminUI();
 
-  function doLoginFlow(){
+  function now(){ return Date.now(); }
+  function sessionIsValid(){
+    const u = sessionStorage.getItem('fi_admin_user');
+    const t = parseInt(sessionStorage.getItem('fi_admin_time')||'0',10);
+    if(!u || !t) return false;
+    if(now() - t > ADMIN_TIMEOUT_MS) return false;
+    const exists = (state.remoteAdmins||[]).some(a=>a.u===u);
+    return !!exists;
+  }
+  function touchSession(){
+    sessionStorage.setItem('fi_admin_time', String(now()));
+  }
+  function clearSession(){
+    sessionStorage.removeItem('fi_admin_user');
+    sessionStorage.removeItem('fi_admin_time');
+  }
+
+  async function pbkdf2Hex(pass, saltHex, iters, length=32){
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey('raw', enc.encode(pass), {name:'PBKDF2'}, false, ['deriveBits']);
+    const salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(b=>parseInt(b,16)));
+    const bits = await crypto.subtle.deriveBits({name:'PBKDF2', hash:'SHA-256', salt, iterations:iters}, key, length*8);
+    const b = new Uint8Array(bits);
+    return [...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+  }
+
+  async function doLoginFlow(){
     const u = prompt('Inserisci username admin');
     if(u===null || !u.trim()) return false;
     const p = prompt('Inserisci password admin');
     if(p===null) return false;
-    const ok = (state.settings.admins||[]).some(a => a.u===u && a.p===p);
-    if(ok){
-      state.isAdmin = true; state.meUser = u;
-      sessionStorage.setItem('fi_admin_user', u);
-      touchSession();
-      applyAdminUI();
-      return true;
-    } else {
-      alert('Credenziali non valide.');
-      return false;
-    }
+    const rec = (state.remoteAdmins||[]).find(a => a.u===u);
+    if(!rec){ alert('Credenziali non valide.'); return false; }
+    const h = await pbkdf2Hex(p, rec.salt, rec.iter||120000, 32);
+    if(h !== rec.hash){ alert('Credenziali non valide.'); return false; }
+    state.isAdmin = true; state.meUser = u;
+    sessionStorage.setItem('fi_admin_user', u);
+    touchSession();
+    applyAdminUI();
+    return true;
   }
 
   $('#adminToggle').addEventListener('click', async ()=>{
@@ -292,11 +334,12 @@
       $$('#navPublic button[data-tab="catalogo"]')[0].classList.add('active');
       return;
     } else {
-      doLoginFlow();
+      await doLoginFlow();
     }
   });
 
-  (function checkExistingSession(){
+  (async function checkExistingSession(){
+    await loadRemoteAdmins();
     if(sessionIsValid()){
       state.isAdmin = true; state.meUser = sessionStorage.getItem('fi_admin_user');
       applyAdminUI();
@@ -309,8 +352,8 @@
   function guardAdminAccess(){
     if(!sessionIsValid()){
       state.isAdmin = false; state.meUser = null; clearSession(); applyAdminUI();
-      alert('Sessione admin scaduta. Effettua di nuovo l’accesso.');
-      return doLoginFlow();
+      alert('Sessione admin scaduta o credenziali cambiate. Accedi di nuovo.');
+      return false;
     } else {
       touchSession();
       return true;
@@ -318,7 +361,7 @@
   }
 
   $$('#navPublic button, #navAdmin button').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       if(btn.parentElement.id==='navAdmin'){
         if(!guardAdminAccess()) return;
       }
@@ -333,127 +376,31 @@
     });
   });
 
-  // SETTINGS
-  function loadSettings(){ try{ return JSON.parse(localStorage.getItem('fi_settings_site_v373b')||'{}'); }catch(e){ return {}; } }
-  function saveSettings(){ localStorage.setItem('fi_settings_site_v373b', JSON.stringify(state.settings)); }
+  // Impostazioni (URL remoti)
   function renderSettings(){
-    $('#meUser').value = state.meUser || '';
-    $('#meUser').disabled = (state.meUser==='s.grosso');
-    $('#mePass').value = '';
-    const box = $('#adminList'); box.innerHTML='';
-    (state.settings.admins||[]).forEach(a => {
-      const row = document.createElement('div'); row.className='item';
-      const left = document.createElement('div'); left.textContent = a.u + (a.u==='s.grosso'?'  • fondatore':'');
-      const right = document.createElement('div');
-      if(a.u!=='s.grosso'){
-        const rm = document.createElement('button'); rm.className='btn danger'; rm.textContent='Rimuovi';
-        rm.addEventListener('click', ()=>{
-          if(confirm('Rimuovere admin '+a.u+'?')){
-            state.settings.admins = state.settings.admins.filter(x => x.u!==a.u);
-            saveSettings(); renderSettings();
-          }
-        });
-        right.appendChild(rm);
-      } else {
-        const lock = document.createElement('span'); lock.className='small muted'; lock.textContent='non rimovibile';
-        right.appendChild(lock);
-      }
-      row.appendChild(left); row.appendChild(right); box.appendChild(row);
-    });
-    $('#minYear').value = state.settings.minYear || 2024;
-    $('#remoteUrl').value = state.settings.remoteUrl || '';
+    $('#adminsUrl').value = state.settings.adminsUrl || DEFAULT_ADMINS_URL;
+    $('#catalogUrl').value = state.settings.catalogUrl || DEFAULT_CATALOG_URL;
   }
-
-  $('#btnUpdateMe').addEventListener('click', () => {
-    if(!guardAdminAccess()) return;
-    const newU = $('#meUser').value.trim();
-    const newP = $('#mePass').value.trim();
-    const admins = state.settings.admins||[];
-    const meIdx = admins.findIndex(a => a.u===state.meUser);
-    if(meIdx<0){ alert('Sessione non valida.'); return; }
-    if(state.meUser==='s.grosso' && newU && newU!=='s.grosso'){
-      alert('Il fondatore non può essere rinominato.'); return;
-    }
-    if(newU){
-      if(admins.some(a => a.u===newU && a.u!==state.meUser)){
-        alert('Username già esistente.'); return;
-      }
-      admins[meIdx].u = newU; state.meUser = newU;
-      sessionStorage.setItem('fi_admin_user', newU);
-      touchSession();
-    }
-    if(newP){ admins[meIdx].p = newP; }
-    state.settings.admins = admins; saveSettings(); renderSettings(); applyAdminUI();
-    alert('Credenziali aggiornate.');
-  });
-
-  $('#btnAddAdmin').addEventListener('click', () => {
-    if(!guardAdminAccess()) return;
-    const u = $('#newUser').value.trim();
-    const p = $('#newPass').value.trim();
-    if(!u || !p){ alert('Inserisci username e password.'); return; }
-    const admins = state.settings.admins||[];
-    if(admins.some(a => a.u===u)){ alert('Username già esistente.'); return; }
-    admins.push({u, p}); state.settings.admins = admins; saveSettings(); renderSettings();
-    $('#newUser').value=''; $('#newPass').value='';
-    alert('Admin aggiunto: '+u);
-  });
-
-  $('#btnSaveSettings').addEventListener('click', () => {
-    if(!guardAdminAccess()) return;
-    state.settings.minYear = parseInt($('#minYear').value||'2024',10);
-    state.settings.remoteUrl = $('#remoteUrl').value.trim();
+  $('#btnSaveUrls').addEventListener('click', ()=>{
+    state.settings.adminsUrl = $('#adminsUrl').value.trim() || DEFAULT_ADMINS_URL;
+    state.settings.catalogUrl = $('#catalogUrl').value.trim() || DEFAULT_CATALOG_URL;
     saveSettings();
-    alert('Impostazioni salvate.');
+    alert('URL salvati. Ricarica la pagina per ricaricare le sorgenti remote.');
+  });
+  $('#btnLogout').addEventListener('click', ()=>{
+    clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.');
   });
 
-  $('#btnReset').addEventListener('click', () => {
-    if(!guardAdminAccess()) return;
-    if(confirm('Sicuro di voler svuotare il database locale?')){
-      state.books = []; saveBooks(); renderCatalogo(); renderModeration();
-    }
-  });
-
-  $('#btnSync').addEventListener('click', async () => {
-    if(!guardAdminAccess()) return;
-    const url = ($('#remoteUrl').value||'').trim();
-    if(!url){ alert('Imposta prima l’URL del catalogo remoto.'); return; }
-    const msg = $('#syncMsg'); msg.textContent = 'Sincronizzazione in corso…';
-    try{
-      const res = await fetch(url, {cache:'no-store'});
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      const data = await res.json();
-      if(!Array.isArray(data)) throw new Error('JSON non è un array');
-      let added=0, skipped=0;
-      for(const r of data){
-        const exists = state.books.some(b => sameKey(b,r));
-        if(exists){ skipped++; continue; }
-        const b = {
-          id: 'b'+(state.nextId++),
-          title: r.title||'',
-          author: r.author||'',
-          year: parseInt(r.year||'0',10),
-          publisher: r.publisher||'',
-          isbn: r.isbn||'',
-          storeUrl: r.storeUrl||'',
-          coverUrl: r.coverUrl||'',
-          description: r.description||'',
-          isDebut: (typeof r.isDebut==='boolean'? r.isDebut : null),
-          labels: Array.isArray(r.labels)? r.labels.slice(0,8) : [],
-          status: r.status||'approved'
-        };
-        state.books.push(b); added++;
-      }
-      saveBooks(); renderCatalogo(); renderModeration();
-      msg.textContent = 'Sincronizzazione completata. Aggiunti: '+added+' • Ignorati: '+skipped+'.';
-    }catch(e){
-      msg.textContent = 'Errore sincronizzazione: '+ (e && e.message ? e.message : e);
-    }
-  });
-
-  // DATA
-  function loadBooks(){ try{ return JSON.parse(localStorage.getItem('fi_books_site_v373b')||'[]'); }catch(e){ return []; } }
-  function saveBooks(){ localStorage.setItem('fi_books_site_v373b', JSON.stringify(state.books)); }
+  // DATA helpers
+  function sameKey(b, r){
+    const t1 = (b.title||'').toLowerCase().trim();
+    const a1 = (b.author||'').toLowerCase().trim();
+    const i1 = (b.isbn||'').replace(/[^0-9xX]+/g,'');
+    const t2 = (r.title||'').toLowerCase().trim();
+    const a2 = (r.author||'').toLowerCase().trim();
+    const i2 = (r.isbn||'').replace(/[^0-9xX]+/g,'');
+    return (i1 && i2 && i1===i2) || (t1===t2 && a1===a2);
+  }
 
   function addBook(b){
     b.id = 'b'+(state.nextId++);
@@ -462,6 +409,7 @@
     renderCatalogo();
   }
 
+  // NEW
   function collectForm(){
     return {
       title: $('#f_title').value.trim(),
@@ -500,7 +448,7 @@
     });
   }
 
-  // CATALOGO
+  // Catalogo
   $('#filterYear').addEventListener('change', renderCatalogo);
   $('#filterStatus').addEventListener('change', renderCatalogo);
   $('#q').addEventListener('input', debounce(renderCatalogo, 200));
@@ -558,7 +506,7 @@
         (b.publisher||'').toLowerCase().includes(q)
       );
     }
-    if(!list.length){ grid.innerHTML = '<div class="muted">Nessun risultato. Aggiungi titoli dalla sezione “Nuovo titolo” o contatta un admin per importare/sincronizzare un JSON.</div>'; return; }
+    if(!list.length){ grid.innerHTML = '<div class="muted">Nessun risultato. Il catalogo viene caricato dal server all’avvio: assicurati che <code>data/catalogo.json</code> sia popolato.</div>'; return; }
     list.sort((a,b)=>{
       const ya = parseInt(a.year,10)||0;
       const yb = parseInt(b.year,10)||0;
@@ -658,21 +606,13 @@
   }
 
   // HELPERS
-  function sameKey(b, r){
-    const t1 = (b.title||'').toLowerCase().trim();
-    const a1 = (b.author||'').toLowerCase().trim();
-    const i1 = (b.isbn||'').replace(/[^0-9xX]+/g,'');
-    const t2 = (r.title||'').toLowerCase().trim();
-    const a2 = (r.author||'').toLowerCase().trim();
-    const i2 = (r.isbn||'').replace(/[^0-9xX]+/g,'');
-    return (i1 && i2 && i1===i2) || (t1===t2 && a1===a2);
-  }
   function truncate(s, n){ return (s && s.length>n) ? (s.slice(0,n-1)+'…') : (s||''); }
   function placeholderCover(){
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="240" height="360"><rect width="100%" height="100%" fill="#0a0c12"/><rect x="1" y="1" width="238" height="358" fill="none" stroke="#232635"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#5e657a">Copertina</text></svg>`);
   }
   function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); } }
 
+  // init
   (function init(){
     $$('.tab').forEach(s => s.style.display = 'none');
     $('#catalogo').style.display='';

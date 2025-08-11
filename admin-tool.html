@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin tool • Genera hash PBKDF2</title>
+<style>
+body{font-family:system-ui,Segoe UI,Roboto;background:#0f1013;color:#e7e9ee;margin:0}
+main{max-width:720px;margin:0 auto;padding:24px}
+.panel{background:#171923;border:1px solid #232635;border-radius:14px;padding:20px}
+input,button{padding:10px;border-radius:10px;border:1px solid #232635;background:#0f1119;color:#e7e9ee;width:100%}
+button{cursor:pointer;background:#151826}
+.small{color:#a9adbb;font-size:12px}
+code{background:#0b0d12;border:1px solid #232635;border-radius:8px;padding:2px 6px}
+</style>
+</head>
+<body>
+<main>
+  <div class="panel">
+    <h2>Genera salt + hash PBKDF2 (SHA‑256)</h2>
+    <p class="small">Usa questo strumento **in locale** per creare le credenziali da inserire in <code>data/admins.json</code>. Non inviamo nulla a server esterni.</p>
+    <label>Username <input id="u" placeholder="es. s.grosso"></label><br><br>
+    <label>Nuova password <input id="p" type="password" placeholder="password"></label><br><br>
+    <button id="go">Genera</button>
+    <pre id="out" class="small"></pre>
+  </div>
+</main>
+<script>
+async function pbkdf2Hex(pass, saltHex, iters, length=32){
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(pass), {name:'PBKDF2'}, false, ['deriveBits']);
+  const salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(b=>parseInt(b,16)));
+  const bits = await crypto.subtle.deriveBits({name:'PBKDF2', hash:'SHA-256', salt, iterations:iters}, key, length*8);
+  const b = new Uint8Array(bits);
+  return [...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function randHex(n){ const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+document.getElementById('go').onclick = async ()=>{
+  const u = document.getElementById('u').value.trim();
+  const p = document.getElementById('p').value;
+  if(!u || !p){ alert('Inserisci username e password'); return; }
+  const iter = 120000;
+  const salt = randHex(16);
+  const h = await pbkdf2Hex(p, salt, iter, 32);
+  const out = { u, salt, iter, hash: h };
+  document.getElementById('out').textContent = JSON.stringify(out, null, 2);
+};
+</script>
+</body>
+</html>
