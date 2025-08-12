@@ -11,7 +11,8 @@
     "description": "Nella notte di un’eclissi di luna, la baleniera portoghese Lâmina salpa da un’isola africana, trasportando una intera tribù di schiavi. Tra di loro c’è Abayomi, un ragazzo che sognava la libertà dalle tradizioni e dai miti del suo popolo. Ma quel rapimento segna l’inizio di un incubo. Qualcosa si è risvegliato nel profondo della stiva: una maschera sacra e proibita, che custodisce il potere di rivelare la vera natura dietro ogni apparenza, di trasformare gli uomini in dèi o in mostri.\nMentre la nave muta attorno a lui in un teatro di ossessioni, possessioni e metamorfosi, Abayomi si rende conto che l’unica speranza di salvezza risiede in un’antica profezia alla quale non ha mai creduto. Insieme a Ismael – il novello mozzo della Lâmina – e Joao – il suo primo ufficiale – il giovane africano affronterà divinità vendicative, pirati senza scrupoli, spiriti ribelli e animali totemici, in una feroce epopea dove ogni scelta costa un sacrificio, ogni alleanza è fragile, e la linea che divide realtà e leggenda si fa sempre più sottile.",
     "isDebut": true,
     "labels": [],
-    "status": "approved"
+    "status": "approved",
+    "featured": false
   },
   {
     "id": "b1754853922089",
@@ -91,7 +92,8 @@
     "labels": [
       "Finalista Premio Italia"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false
   },
   {
     "id": "b1754904564139",
@@ -107,7 +109,8 @@
     "labels": [
       "Vincitore Premio Italia"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false
   },
   {
     "id": "b1754904564140",
@@ -155,9 +158,11 @@
     "labels": [
       "Finalista Premio Italia"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false
   },
   {
+    "id": "b1754909589292",
     "title": "Il pittore delle fate",
     "author": "Simona Cremonini",
     "year": 2022,
@@ -167,13 +172,13 @@
     "coverUrl": "https://m.media-amazon.com/images/I/516mXw6McPL.jpg",
     "description": "Avventura, folklore, esoterismo, pittura, fantasy e steampunk: dall'autrice della Saga delle Streghe dei Quinti una storia immersa nel fascino dell'epoca vittoriana e del \"fairy painting\", corrente artistica nata nell'Ottocento e legata anche al movimento dei Preraffaelliti.",
     "isDebut": false,
-    "status": "approved",
     "labels": [
       "Vincitore Trofeo Cittadella"
     ],
-    "id": "b1754909589292"
+    "status": "approved"
   },
   {
+    "id": "b1754909589293",
     "title": "Le storie di Selot - L'inizio",
     "author": "Perla giannotti",
     "year": 2022,
@@ -183,13 +188,13 @@
     "coverUrl": "https://m.media-amazon.com/images/I/71aVGDqjeXL._SL1447_.jpg",
     "description": "Un piccolo marchesato, un territorio quasi del tutto montano, mantiene con fierezza la sua indipendenza. Sulle sue impervie cime è sepolto un potere terribile. Var, il Marchese guerriero signore di Atiarav, è chiamato a consegnare le chiavi di questo potere al tirannico re di Dar. Per compiere la sua impresa prende come unico compagno Selot, un giovane frate custode inconsapevole di un segreto che affonda le sue radici in una razza estinta e misteriosa.\n\nUn orfano vissuto dai primi mesi di vita in un’abbazia della pianura che si estende ai piedi del territorio di Atiarav. Un destino comune li trascina in una corsa contro il tempo ad affrontare la più terribile minaccia che si sia mai abbattuta sul popolo di Atiarav.\nIncontreranno due amici speciali, un avventuriero d’eccezione e il bambino orfano che ha preso sotto la sua protezione.Il cuore di ognuno di loro, il loro coraggio, l’onore e il grande segreto celato negli occhi del giovane Selot li porteranno a non cedere anche nei momenti più difficili, a sfidare il destino, la guerra e la morte.",
     "isDebut": null,
-    "status": "approved",
     "labels": [
       "2° posto Trofeo Cittadella"
     ],
-    "id": "b1754909589293"
+    "status": "approved"
   },
   {
+    "id": "b1754909589294",
     "title": "Saga della Fenice - Zenath degli Aelish Odil",
     "author": "Alessio Signoriello",
     "year": 2022,
@@ -199,13 +204,13 @@
     "coverUrl": "https://m.media-amazon.com/images/I/71-o2UT0QXL._SL1500_.jpg",
     "description": "Feroci creature e spietati malviventi sono il pane quotidiano di Zenath e i suoi compagni Ann e Gorl, membri della famosa Aelish Odil, una tra le più rinomate gilde di avventurieri presenti a Fingol.\nSebbene abbia coronato le aspirazioni di quando era bambino, il giovane è ancora tormentato dal proprio passato, rimanendo schivo e diffidente verso il prossimo. Sarà forse l’arrivo di un nuovo membro nel gruppo a spronarlo a fare quel passo avanti necessario per affrontarlo.\nIn un susseguirsi di avventure, costellate di nuovi e vecchi incontri, Zenath e la sua squadra dovranno fare i conti con oscuri presagi che si annidano nell’ombra, echi di un antico male pronto a stravolgere per sempre il mondo di Keythia.",
     "isDebut": true,
-    "status": "approved",
     "labels": [
       "3° posto Trofeo Cittadella"
     ],
-    "id": "b1754909589294"
+    "status": "approved"
   },
   {
+    "id": "b1754909589295",
     "title": "Il priore oscuro",
     "author": "Jack Roland",
     "year": 2023,
@@ -215,13 +220,14 @@
     "coverUrl": "https://m.media-amazon.com/images/I/91EKZfiPC5L._SL1500_.jpg",
     "description": "Un cavaliere senza nome torna a casa dalla guerra, ma non è più lo stesso uomo.\nForse non è più nemmeno un uomo.\nLa sua anima e il suo corpo sono stati reclamati per arrestare il declino del mondo, il cui equilibrio basato sui dodici elementi è corrotto dalla creazione di un tredicesimo elemento: la stregoneria.\nI Dodici Priori stanno morendo, mentre un nuovo ordine si diffonde sotto forma di un morbo che fa impazzire gli uomini e trasforma le donne in mostri sanguinari.\nPer contrastare questa marea oscura, un eroe è costretto a risorgere; né vivo né morto, né uomo né dio, inquisitore e boia, temuto dai mortali e odiato dagli immortali. Aiutato da Vesper, una gatta mutaforma, e da Averil, una veggente senza un occhio, il Priore oscuro dà la caccia a untori, vampiri e demoni ancestrali, mentre i regni dell’Espero continuano a farsi la guerra tra loro per il predominio su un mondo prossimo alla rovina.\nNell’ora più buia, Valka, una regina decaduta, trova il coraggio di affrontare il proprio destino e abbracciare la causa del Priore oscuro, ma la stregoneria ormai cammina per il mondo sotto mentite spoglie, seminando fuoco e orrore. Le speranze del futuro sono minacciate dai segreti del passato, perché il filo rosso che separa bene e male si intreccia con i legami di sangue.",
     "isDebut": true,
-    "status": "approved",
     "labels": [
       "Vincitore Trofeo Cittadella"
     ],
-    "id": "b1754909589295"
+    "status": "approved",
+    "featured": false
   },
   {
+    "id": "b1754909589297",
     "title": "Shadow People",
     "author": "Therry Romano",
     "year": 2023,
@@ -231,13 +237,13 @@
     "coverUrl": "https://m.media-amazon.com/images/I/61VTH3Z23tL._SL1499_.jpg",
     "description": "Il Waverly Hills Sanatorium di Lousville è un istituto che ospita persone affette da malattie mentali e da disturbi di comportamento.\nLa diciassettenne Reina vi è stata ricoverata un anno prima, dopo la morte improvvisa della nonna materna a cui era molto legata. Quella prematura scomparsa ha provocato in lei un trauma violento che l’ha portata a contatto con ombre dal tocco gelido e dalle urla spaventose che l’hanno gettata nello sconforto e disperazione.\nIl ricovero in istituto è sembrato la soluzione ideale e la presenza costante del dottor Arkham, che l’ha in cura con una diagnosi di schizofrenia, sembra ridarle un graduale ritorno alla normalità.\nMa non è il solo che si prende cura di lei.\nAl suo fianco c’è la silenziosa e impalpabile presenza di Luca, un timido dodicenne che la segue ovunque e le da un certo conforto con le presenze che le ruotano attorno.\nPerché Luca è un fantasma, ma sembra non sia la sola a vederlo.",
     "isDebut": true,
-    "status": "approved",
     "labels": [
       "2° posto Trofeo Cittadella"
     ],
-    "id": "b1754909589297"
+    "status": "approved"
   },
   {
+    "id": "b1754909589298",
     "title": "Witch Hunters: Esilio",
     "author": "Eireann Leah Reid",
     "year": 2023,
@@ -247,13 +253,14 @@
     "coverUrl": "https://m.media-amazon.com/images/I/71EIp3+LdsL._SL1419_.jpg",
     "description": "Il mondo ha equilibri che il comune essere umano ignora, come l'eterna lotta tra Streghe e Cacciatori. A volte, però, le regole vanno sovvertite, soprattutto se a farlo è il più forte dei sentimenti: l'amore. È questo ciò che unisce in maniera profonda la famiglia Reed, in particolare Ann, Tom e Chris, fratellastri dal legame indissolubile nonostante la loro natura diversa.\nÈ una notte d'autunno quando Ann scopre i propri poteri e, incapace di gestirli, per poco non uccide i fratelli.\nLa madre Kathleen, che per anni ha cercato di farle condurre una vita normale, comprende di non poter più arginare la predisposizione della figlia. Così la obbliga a trasferirsi in Irlanda, dal ricco e burbero Lord Hector Castleville, suo nonno, per imparare a governarli.\nUna maledizione oscura e secolare, però, si annida in quelle terre...",
     "isDebut": true,
-    "status": "approved",
     "labels": [
       "3° posto Trofeo Cittadella"
     ],
-    "id": "b1754909589298"
+    "status": "approved",
+    "featured": false
   },
   {
+    "id": "b1754909589299",
     "title": "L'arma del druido",
     "author": "Marco Di Giaimo & Giuseppe Bono",
     "year": 2024,
@@ -263,10 +270,84 @@
     "coverUrl": "https://m.media-amazon.com/images/I/716ID7Qkk4L._SL1500_.jpg",
     "description": "Il tempo scorre tranquillo nel regno di Hinson, dove Re Hutc conduce una vita agiata e noiosa finché, un giorno, arrivano notizie inquietanti dalle terre dei druidi.\n\nFogurrander, un druido rinnegato che si dedica allo studio della magia nera, si è armato di un immenso potere distruttivo ed è fuggito nascondendosi nel regno degli uomini lucertola. Il suo piano è quello di organizzare un attacco combinato con i rettili e conquistare i quattro regni delle terre paludose. Solo l’esercito di Hinson e una missione segreta con a capo il Re Hutc saranno in grado si fermare la minaccia del druido oscuro. Tra mille avventure, a volte umoristiche, a volte drammatiche, il manipolo di eroi formato dal Re e da un accozzaglia di personaggi molto variegati, attraverserà le terre paludose fino alla tana del nemico, nel tentativo di scovare e annientare Fogurrander.",
     "isDebut": false,
-    "status": "approved",
     "labels": [
       "Premio Ernesto Vegetti"
     ],
-    "id": "b1754909589299"
+    "status": "approved"
+  },
+  {
+    "title": "Gli eroi perduti. La saga completa",
+    "author": "Simone Laudiero",
+    "year": 2024,
+    "publisher": "Acheron Books",
+    "isbn": "979-1254980781",
+    "storeUrl": "https://www.amazon.it/Gli-eroi-perduti-saga-completa/dp/B0CS4T6WLF",
+    "coverUrl": "https://m.media-amazon.com/images/I/71HrhYqvKqL._SL1447_.jpg",
+    "description": "Sono ormai anni che si protrae l'assedio alla libera città di Cartavel, ma l'esercito di Sarmora non può rinunciare: oltre queste mura millenarie si stende il braccio meridionale della Croce Azzurra con le sue sterminate riserve di itri, senza le quali la macchina da guerra sarmoriana è destinata a fermarsi. Sulle mura di Cartavel, Ronac cammina su uno strapiombo in cerca della tomba di un grande eroe del passato. Asul è in viaggio con un messaggio che fa luce su una minaccia antica. Il vecchio Sahon affronta il suo esilio. Rovaine sta partendo per dare la caccia a una spia. Ancora non lo sanno, ma è già cominciata una corsa contro il tempo: le barriere tra passato e presente stanno crollando, di fronte all'inarrestabile ritorno del mare.",
+    "isDebut": false,
+    "status": "approved",
+    "labels": [],
+    "featured": false,
+    "id": "b1755029691071"
+  },
+  {
+    "title": "Dalla morte e dalla vendetta",
+    "author": "Greta Cipriano",
+    "year": 2025,
+    "publisher": "La Corte Editore",
+    "isbn": "979-1281109704",
+    "storeUrl": "https://www.amazon.it/Dalla-morte-dalla-vendetta-Cipriano/dp/B0DV5J3HW5",
+    "coverUrl": "https://m.media-amazon.com/images/I/71EzdLSJBwL._SL1399_.jpg",
+    "description": "La promessa è spezzata, così come il cuore di Alya. E ora la principessa del regno di Glaecis vuole solo una cosa: vendetta. Non conta se per ottenerla dovrà uccidere Dastan, l'amore della sua vita e suo Donedair, che l'ha tradita, ferendola come mai nessuno era riuscito a fare prima. Non è facile però affrontare la guerra e gestire tali sentimenti. Per questo motivo, quando Erlaeth, un misterioso guerriero, si presenta a lei per offrile il suo aiuto e la sua alleanza, Alya deciderà di accettare. Nonostante il vuoto che sente dentro, non può perdere di vista il suo obiettivo perché la battaglia finale contro Moreor è sempre più vicina, ma lei e i Defector non sono ancora in possesso di tutte le Armi Perpetue. Così, per riuscire a conquistare l'agognato trono che le spetta di diritto, proteggere la sua gente e salvare il popolo di Glaecis dall'Usurpatore, sa di non avere scelta: dovrà stringere un patto con la morte stessa. Anche a costo di perdere ogni cosa.",
+    "isDebut": false,
+    "status": "approved",
+    "labels": [],
+    "featured": false,
+    "id": "b1755029691072"
+  },
+  {
+    "title": "Megàlo - Olio e sangue",
+    "author": "Enzo De Simone",
+    "year": 2024,
+    "publisher": "Lumien",
+    "isbn": "979-1281256187",
+    "storeUrl": "https://www.amazon.it/Meg%C3%A0lo-sangue-fantasy-storico-dieselpunk/dp/B0D3JKLG35",
+    "coverUrl": "https://m.media-amazon.com/images/I/71V71IH8UrL._SL1500_.jpg",
+    "description": "I secolo a.C. Nella guerrafondaia repubblica di Roma, l’olio di pietra e le conoscenze tecnologiche donate dal dio Vulcano sono potere militare. Le lance della terra trivellano la crosta del mondo conosciuto e le raffinerie producono keros insozzando il cielo e inquinando il mare nostrum.\nIl fumo nero dell’olio di pietra combusto è fitto e dolciastro, il rombo crescente delle pile a ipocausto un grido di libertà. Il grido di Mater Pandora, l’agile megàlo, automa antropomorfo di legno e metallo, della gladiatrice Crissa. L’amazzone di Capua è alla sua ventiduesima vittoria, ma gliene mancano ancora troppe per riscuotere la propria libertà, ancora troppe per credere di riuscire a non cadere prima.\nI Saturnali, i festeggiamenti in cui l’ordine sociale è rovesciato, sono però vicini, e così il piano di fuga degli schiavi del ludo di Capua architettato dal maestro Enomao, Ciclope di Roma.\nCrissa è però costretta, insieme al resto dei gladiatori, a partire per la battaglia di Metapontum. Qui si trova a combattere con il tribuno Glabro, prossimo a diventare comandante della legione Macedonica, e il suo megàlo Vis Veritatis, con il quale già si era scontrata nell’arena. Il loro immortale legame di appartenenza si salda tra vite reclamate, arti meccanici mozzati e conflitti di visioni. L’odio di Crissa per Roma è viscerale, il rispetto di Glabro per gli ideali della Repubblica assoluto. E, presto o tardi, saranno questi punti di vista a doversi scontrare, e allora sì sarà olio e sangue!",
+    "isDebut": true,
+    "status": "approved",
+    "labels": [],
+    "featured": false,
+    "id": "b1755029691073"
+  },
+  {
+    "title": "Namirya. L'enigma degli Elfi",
+    "author": "Riccardo Dini",
+    "year": 2025,
+    "publisher": "La Corte Editore",
+    "isbn": "979-1281109766",
+    "storeUrl": "https://www.amazon.it/Namirya-Lenigma-degli-Elfi-Riccardo/dp/B0F3B3NNNS",
+    "coverUrl": "https://www.lacorteditore.it/wp-content/uploads/2025/05/Cover-NAMIRYA.jpg",
+    "description": "Un'accusa ingiusta. Una guerra che divora ogni cosa. Un segreto che cambierà tutto. Mentre nel cielo di Namirya brilla una cometa azzurra, presagio di sciagure, Alfein, adolescente accusato ingiustamente di furto, viene deportato al fronte insieme a ladri, spie e assassini. Armato solo di ingenuità e coraggio, scopre un mondo in rovina, dilaniato da due invasioni: a sud l'esercito invincibile degli hakemenidi, a nord le tribù primitive degli järnuk, che combattono come bestie e lasciano dietro di sé una misteriosa maledizione. In un campo militare abbandonato a se stesso, Alfein incontra Roderic, la guaritrice Saphirya, e Thalon, cavaliere idealista con un oscuro passato. Quando Alfein viene scelto per una pericolosa missione oltre le terre conosciute, nulla sarà più come prima. Nel cuore dell'accademia elfica di Alexandria, invece, l'ambiguo console Cosimo indaga sulla morte di una studentessa e comincia a intuire che dietro a questo caso si cela una verità che potrebbe cambiare tutto il loro mondo. Altrove, in un tempo remoto, il capitano Reeves affronta una guerra tra uomini e elfi, in un mondo che ha perso ogni contatto con la verità. Ma cosa lega Alfein, Cosimo e Reeves? E cosa si cela dietro l'energia azzurra della cometa?",
+    "isDebut": true,
+    "status": "approved",
+    "labels": [],
+    "featured": false,
+    "id": "b1755029691074"
+  },
+  {
+    "title": "Ira Dei",
+    "author": "Giada Abbiati",
+    "year": 2025,
+    "publisher": "Lumien",
+    "isbn": "979-1281256309",
+    "storeUrl": "https://www.amazon.it/Ira-Dei-Lepico-fantasy-ambientato/dp/B0F6QHBG2L",
+    "coverUrl": "https://m.media-amazon.com/images/I/81MB372oQYL._SL1500_.jpg",
+    "description": "Anno domini 774. L’equilibrio del mondo conosciuto si regge sulle città della Rete dei Santi Protettori. Finché ogni ingranaggio di questo ordine sarà guidato da cieca fede e rettitudine, il Disegno Divino rimarrà intatto e la volontà di Dio sarà rispettata. Eppure, a Ticinum — capitale del regno longobardo e custode dei cancelli infernali — il peccato sta assumendo nuovi volti. La nebbia che muta gli empi in mostri si è intensificata e la serpe della fame di potere sussurra alle orecchie dei Santi Patroni. Adelca, Prima Custode dell’Ordine della Concordia, è solo una tra le centinaia di donne che ogni giorno indossano il colore del sangue e si servono delle parole più potenti delle sacre scritture per stanare e condannare i mostri del peccato. Ma qualcosa inizia a cambiare quando il Ticino, fiume della città, smette di traghettare le anime all’inferno. La nebbia si fa perenne, Papa Adriano chiede prove di fede e l'ombra dei Franchi inizia a premere contro il ruolo di Ticinum nell'ordine di Dio. Il futuro assume i contorni dell’Apocalisse da un lato e della fine del regno longobardo dall'altro. Chi ha fermato il traghettamento delle anime all’inferno? E perché? Tra Santi corrotti e la croce del proprio martirio sulle spalle, Adelca è costretta a utilizzare il Verbo di Dio per scoprire chi sta minando la sicurezza della città e del mondo. Ma nella corruzione della nebbia e dell'anima, il suo compito è ben più arduo. Dovrà decidere cosa bruciare con il fuoco dell’ira divina che la consuma da quando è rinchiusa nella gabbia dell’Ordine: ogni cosa che incontra, in una vendetta destinata a ridurre tutto in cenere, o soltanto chi ha osato sostituirsi a Dio nel decidere il destino dell’umanità.",
+    "isDebut": false,
+    "status": "approved",
+    "labels": [],
+    "featured": false,
+    "id": "b1755029691075"
   }
 ]
