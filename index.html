@@ -383,48 +383,7 @@
     state.settings.adminsUrl = $('#adminsUrl').value.trim() || DEFAULT_ADMINS_URL;
     state.settings.catalogUrl = $('#catalogUrl').value.trim() || DEFAULT_CATALOG_URL;
     saveSettings();
-    
-  const btnClearLocal = document.getElementById('btnClearLocal');
-  if(btnClearLocal){ btnClearLocal.addEventListener('click', ()=>{
-    try{
-      // Keep remote URLs, wipe local cache of books and session
-      const keep = localStorage.getItem('fi_settings_site_v38');
-      localStorage.clear();
-      if(keep) localStorage.setItem('fi_settings_site_v38', keep);
-      sessionStorage.clear();
-      alert('Cache locale svuotata. Ricarica la pagina.');
-    }catch(e){ alert('Errore svuota cache: '+e); }
-  }); }
-  const btnForceReload = document.getElementById('btnForceReload');
-  if(btnForceReload){ btnForceReload.addEventListener('click', async ()=>{
-    try{
-      const url = (state && state.settings && state.settings.catalogUrl) ? state.settings.catalogUrl : (location.origin + '/data/catalogo.json');
-      const res = await fetch(url, {cache:'no-store'});
-      if(!res.ok){ throw new Error('HTTP '+res.status); }
-      const data = await res.json();
-      if(Array.isArray(data)){
-        state.books = data.map(function(r){ return {
-          id: r.id || ('b'+Date.now()+Math.random().toString(36).slice(2)),
-          title: r.title||'',
-          author: r.author||'',
-          year: parseInt(r.year||'0',10),
-          publisher: r.publisher||'',
-          isbn: r.isbn||'',
-          storeUrl: r.storeUrl||'',
-          coverUrl: r.coverUrl||'',
-          description: r.description||'',
-          isDebut: (typeof r.isDebut==='boolean'? r.isDebut : null),
-          labels: Array.isArray(r.labels)? r.labels.slice(0,12) : [],
-          status: r.status||'approved',
-          featured: !!r.featured
-        }; });
-        if(typeof saveBooks==='function'){ saveBooks(); }
-        if(typeof renderCatalogo==='function') renderCatalogo();
-        alert('Catalogo ricaricato dal remoto e salvato in locale.');
-      } else alert('catalogo.json non è un array.');
-    }catch(e){ alert('Errore ricarica: '+(e && e.message? e.message : e)); }
-  }); }
-alert('URL salvati. Ricarica la pagina per ricaricare le sorgenti remote.');
+    alert('URL salvati. Ricarica la pagina per ricaricare le sorgenti remote.');
   });
   $('#btnLogout').addEventListener('click', ()=>{
     clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.');
@@ -559,54 +518,102 @@ alert('URL salvati. Ricarica la pagina per ricaricare le sorgenti remote.');
     return t;
   }
 
-  
-function bookCard(b, opts){
-  const el = document.createElement('div'); el.className='card';
-  if(b.featured){ const bd=document.createElement('div'); bd.className='badge'; bd.textContent='Consigliato'; el.appendChild(bd); }
-  const img = document.createElement('img'); img.className='cover'; img.alt='Copertina'; img.src = b.coverUrl || placeholderCover();
-  const meta = document.createElement('div'); meta.className='meta';
-
-  const h3 = document.createElement('h3'); h3.textContent = b.title || '(Senza titolo)';
-  const by = document.createElement('div'); by.className='by'; by.textContent = [b.author, b.publisher, b.year].filter(Boolean).join(' • ');
-  const desc = document.createElement('div'); desc.className='small muted'; desc.textContent = b.description ? truncate(b.description, 200) : '';
-
-  const tags = document.createElement('div'); tags.className='tags';
-  const st = document.createElement('span'); st.className='tag ' + (b.status==='approved'?'ok':'pending'); st.textContent = (b.status==='approved')?'Approvato':'In revisione';
-  const db = document.createElement('span'); db.className='tag'; db.textContent = (b.isDebut===true)?'Esordio: sì' : (b.isDebut===false?'Esordio: no':'Esordio: ?');
-  tags.appendChild(st); tags.appendChild(db);
-  if (Array.isArray(b.labels) && b.labels.length){
-    b.labels.slice(0,6).forEach(l => { const t=document.createElement('span'); t.className='tag label'; t.textContent=l; tags.appendChild(t); });
+  function bookCard(b, opts){
+    const el = document.createElement('div');
+    el.className='card';
+    if(b.featured){ const bd=document.createElement('div'); bd.className='badge'; bd.textContent='Consigliato'; el.appendChild(bd); }
+    const img = document.createElement('img');
+    img.className='cover';
+    img.alt = 'Copertina';
+    img.src = b.coverUrl || placeholderCover();
+    const meta = document.createElement('div'); meta.className='meta';
+    const h3 = document.createElement('h3'); h3.textContent = b.title || '(Senza titolo)';
+    const by = document.createElement('div'); by.className='by';
+    by.textContent = [b.author, b.publisher, b.year].filter(Boolean).join(' • ');
+    const desc = document.createElement('div'); desc.className='small muted';
+    desc.textContent = b.description ? truncate(b.description, 200) : '';
+    const tags = document.createElement('div'); tags.className='tags';
+    const st = tagEl((b.status==='approved')?'Approvato':'In revisione', 'tag '+(b.status==='approved'?'ok':'pending'));
+    const db = tagEl((b.isDebut===true)?'Esordio: sì' : (b.isDebut===false?'Esordio: no':'Esordio: ?'));
+    tags.appendChild(st); tags.appendChild(db);
+    if(Array.isArray(b.labels)){ b.labels.slice(0,6).forEach(l => tags.appendChild(tagEl(l, 'tag label'))); }
+    const actions = document.createElement('div'); actions.className='actions';
+    if(b.storeUrl){ const a = document.createElement('a'); a.href=b.storeUrl; a.target='_blank'; a.rel='noopener'; a.textContent='Apri store'; a.className='btn'; actions.appendChild(a); }
+    if(opts.showModeration){
+      const approve = document.createElement('button'); approve.className='btn primary'; approve.textContent='Approva';
+      approve.addEventListener('click', ()=>{ b.status='approved'; saveBooks(); renderModeration(); });
+      const del = document.createElement('button'); del.className='btn danger'; del.textContent='Elimina';
+      del.addEventListener('click', ()=>{ if(confirm('Eliminare questo titolo?')){ state.books = state.books.filter(x => x.id!==b.id); saveBooks(); renderModeration(); }});
+      const toggleDeb = document.createElement('button'); toggleDeb.className='btn'; toggleDeb.textContent='Toggle esordio';
+      toggleDeb.addEventListener('click', ()=>{ b.isDebut = (b.isDebut===true)?false:(b.isDebut===false?null:true); 
+      const toggleFeat = document.createElement('button'); toggleFeat.className='btn'; toggleFeat.textContent = b.featured ? 'Rimuovi Consigliato' : 'Consiglia';
+      toggleFeat.addEventListener('click', ()=>{ b.featured = !b.featured; saveBooks(); renderModeration(); if(typeof renderCatalogo==='function') renderCatalogo(); });
+      actions.appendChild(toggleFeat);saveBooks(); renderModeration(); });
+      const labelIn = document.createElement('input'); labelIn.type='text'; labelIn.placeholder='Aggiungi etichetta (es. Vincitore Premio Odissea)';
+      labelIn.className='btn'; labelIn.style.minWidth='240px';
+      const addLabel = document.createElement('button'); addLabel.className='btn'; addLabel.textContent='Aggiungi etichetta';
+      addLabel.addEventListener('click', ()=>{
+        const t = (labelIn.value||'').trim();
+        if(!t) return;
+        if(!Array.isArray(b.labels)) b.labels = [];
+        if(b.labels.length>=12){ alert('Troppi tag.'); return; }
+        if(!b.labels.includes(t)){ b.labels.push(t); saveBooks(); renderModeration(); }
+        labelIn.value='';
+      });
+      actions.appendChild(approve); actions.appendChild(del); actions.appendChild(toggleDeb);
+      actions.appendChild(labelIn); actions.appendChild(addLabel);
+    }
+    meta.appendChild(h3); meta.appendChild(by); meta.appendChild(desc); meta.appendChild(tags); meta.appendChild(actions);
+    el.appendChild(img); el.appendChild(meta);
+    if(opts.showModeration && Array.isArray(b.labels) && b.labels.length){
+      const wrap = document.createElement('div'); wrap.className='tags';
+      b.labels.forEach((t,i)=>{
+        const chip = document.createElement('span'); chip.className='tag label'; chip.textContent=t+' ✕';
+        chip.style.cursor='pointer';
+        chip.addEventListener('click', ()=>{
+          b.labels = b.labels.filter(x=>x!==t);
+          saveBooks(); renderModeration();
+        });
+        wrap.appendChild(chip);
+      });
+      meta.appendChild(wrap);
+    }
+    return el;
   }
 
-  const actions = document.createElement('div'); actions.className='actions';
-  if(b.storeUrl){ const a = document.createElement('a'); a.href=b.storeUrl; a.target='_blank'; a.rel='noopener'; a.textContent='Apri store'; a.className='btn'; actions.appendChild(a); }
-
-  if(opts && opts.showModeration){
-    const approve = document.createElement('button'); approve.className='btn primary'; approve.textContent='Approva';
-    approve.addEventListener('click', ()=>{ b.status='approved'; saveBooks(); renderModeration(); });
-    const del = document.createElement('button'); del.className='btn danger'; del.textContent='Elimina';
-    del.addEventListener('click', ()=>{ if(confirm('Eliminare questo titolo?')){ state.books = state.books.filter(x => x.id!==b.id); saveBooks(); renderModeration(); }});
-    const toggleDeb = document.createElement('button'); toggleDeb.className='btn'; toggleDeb.textContent='Toggle esordio';
-    toggleDeb.addEventListener('click', ()=>{ b.isDebut = (b.isDebut===true)?false:(b.isDebut===false?null:true); saveBooks(); renderModeration(); });
-    const toggleFeat = document.createElement('button'); toggleFeat.className='btn'; toggleFeat.textContent = b.featured ? 'Rimuovi Consigliato' : 'Consiglia';
-    toggleFeat.addEventListener('click', ()=>{ b.featured = !b.featured; saveBooks(); renderModeration(); if(typeof renderCatalogo==='function') renderCatalogo(); });
-    const labelIn = document.createElement('input'); labelIn.type='text'; labelIn.placeholder='Aggiungi etichetta (es. Vincitore Premio Odissea)'; labelIn.className='btn'; labelIn.style.minWidth='240px';
-    const addLabel = document.createElement('button'); addLabel.className='btn'; addLabel.textContent='Aggiungi etichetta';
-    addLabel.addEventListener('click', ()=>{ const t=(labelIn.value||'').trim(); if(!t) return; if(!Array.isArray(b.labels)) b.labels=[]; if(b.labels.length>=12){ alert('Troppi tag.'); return; } if(!b.labels.includes(t)){ b.labels.push(t); saveBooks(); renderModeration(); } labelIn.value=''; });
-    actions.appendChild(approve); actions.appendChild(del); actions.appendChild(toggleDeb); actions.appendChild(toggleFeat); actions.appendChild(labelIn); actions.appendChild(addLabel);
+  function renderModeration(){
+    const grid = $('#gridModeration'); grid.innerHTML='';
+    const f = $('#moderationFilter').value;
+    let list = [...state.books];
+    if(f!=='all') list = list.filter(b => b.status===f);
+    list.sort((a,b)=>{
+      const ya = parseInt(a.year,10)||0;
+      const yb = parseInt(b.year,10)||0;
+      if(yb!==ya) return yb - ya;
+      const ta = (a.title||'').toLocaleLowerCase();
+      const tb = (b.title||'').toLocaleLowerCase();
+      return ta.localeCompare(tb,'it');
+    });
+    if(!list.length){ grid.innerHTML = '<div class="muted">Nulla da mostrare.</div>'; return; }
+    for(const b of list){
+      grid.appendChild(bookCard(b, {showModeration:true}));
+    }
   }
 
-  // Compose
-  meta.appendChild(h3); meta.appendChild(by); meta.appendChild(desc); meta.appendChild(tags); meta.appendChild(actions);
-  el.appendChild(img); el.appendChild(meta);
-  if(opts && opts.showModeration && Array.isArray(b.labels) && b.labels.length){
-    const wrap = document.createElement('div'); wrap.className='tags';
-    b.labels.forEach((t,i)=>{ const chip=document.createElement('span'); chip.className='tag label'; chip.textContent=t+' ✕'; chip.style.cursor='pointer'; chip.addEventListener('click', ()=>{ b.labels = b.labels.filter(x=>x!==t); saveBooks(); renderModeration(); }); wrap.appendChild(chip); });
-    meta.appendChild(wrap);
+  // HELPERS
+  function truncate(s, n){ return (s && s.length>n) ? (s.slice(0,n-1)+'…') : (s||''); }
+  function placeholderCover(){
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="240" height="360"><rect width="100%" height="100%" fill="#0a0c12"/><rect x="1" y="1" width="238" height="358" fill="none" stroke="#232635"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#5e657a">Copertina</text></svg>`);
   }
-  return el;
-}
-)();
+  function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); } }
+
+  // init
+  (function init(){
+    $$('.tab').forEach(s => s.style.display = 'none');
+    $('#catalogo').style.display='';
+    renderCatalogo();
+  })();
+})();
 </script>
 </body>
 </html>
