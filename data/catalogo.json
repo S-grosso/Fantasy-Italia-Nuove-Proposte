@@ -1,20 +1,5 @@
 [
   {
-    "id": "b1754843930060",
-    "title": "CARNIVALIA – Schiavi della Maschera",
-    "author": "Diego Zaki",
-    "year": 2025,
-    "publisher": "La Corte Editore",
-    "isbn": "9791281109285",
-    "storeUrl": "https://www.lacorteditore.it/product/carnivalia/",
-    "coverUrl": "https://www.lacorteditore.it/wp-content/uploads/2025/05/Cover-Carnivalia-per-sito.jpg",
-    "description": "Nella notte di un’eclissi di luna, la baleniera portoghese Lâmina salpa da un’isola africana, trasportando una intera tribù di schiavi. Tra di loro c’è Abayomi, un ragazzo che sognava la libertà dalle tradizioni e dai miti del suo popolo. Ma quel rapimento segna l’inizio di un incubo. Qualcosa si è risvegliato nel profondo della stiva: una maschera sacra e proibita, che custodisce il potere di rivelare la vera natura dietro ogni apparenza, di trasformare gli uomini in dèi o in mostri.\nMentre la nave muta attorno a lui in un teatro di ossessioni, possessioni e metamorfosi, Abayomi si rende conto che l’unica speranza di salvezza risiede in un’antica profezia alla quale non ha mai creduto. Insieme a Ismael – il novello mozzo della Lâmina – e Joao – il suo primo ufficiale – il giovane africano affronterà divinità vendicative, pirati senza scrupoli, spiriti ribelli e animali totemici, in una feroce epopea dove ogni scelta costa un sacrificio, ogni alleanza è fragile, e la linea che divide realtà e leggenda si fa sempre più sottile.",
-    "isDebut": true,
-    "labels": [],
-    "status": "approved",
-    "featured": false
-  },
-  {
     "id": "b1754853922089",
     "title": "Polvere al vento",
     "author": "Irene Grazzini",
@@ -28,7 +13,9 @@
     "labels": [
       "Vincitore Premio Italia"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/Polvere-al-vento-Irene-Grazzini-ebook/dp/B0CBWFBBPB"
   },
   {
     "id": "b1754853922090",
@@ -44,7 +31,9 @@
     "labels": [
       "Finalista Premio Italia"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/libro-Renzo-Engaged-Vol/dp/8820074621"
   },
   {
     "id": "b1754901866096",
@@ -60,7 +49,9 @@
     "labels": [
       "Finalista Premio Italia"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/Oltre-velo-Dario-Judicibus-ebook/dp/B0CK5JS72H"
   },
   {
     "id": "b1754901866097",
@@ -76,7 +67,9 @@
     "labels": [
       "Finalista Premio Italia"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.com/resa-Lorenzo-Vargas/dp/B0BV98H4KY"
   },
   {
     "id": "b1754901866098",
@@ -93,7 +86,8 @@
       "Finalista Premio Italia"
     ],
     "status": "approved",
-    "featured": false
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/Seidmadur-Lo-sciamano-Maddalena-Marcarini/dp/8885772455"
   },
   {
     "id": "b1754904564139",
@@ -110,7 +104,8 @@
       "Vincitore Premio Italia"
     ],
     "status": "approved",
-    "featured": false
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/cronache-Leg-Horn-Lukha-Kremo/dp/8894739880"
   },
   {
     "id": "b1754904564140",
@@ -126,7 +121,9 @@
     "labels": [
       "2° posto Premio Italia"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/Orfeo-Sogno-morte-Vol-1/dp/8809930517"
   },
   {
     "id": "b1754904564141",
@@ -142,7 +139,9 @@
     "labels": [
       "3° posto Premio Italia"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/maledizione-Arianna-Sara-Benatti/dp/8820077868"
   },
   {
     "id": "b1754904564142",
@@ -159,7 +158,8 @@
       "Finalista Premio Italia"
     ],
     "status": "approved",
-    "featured": false
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/Urbis-Citt%C3%A0-pietra-Flavia-Imperi/dp/B0CHLZ8122"
   },
   {
     "id": "b1754909589292",
@@ -175,7 +175,9 @@
     "labels": [
       "Vincitore Trofeo Cittadella"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/pittore-delle-fate-Simona-Cremonini/dp/8897730892"
   },
   {
     "id": "b1754909589293",
@@ -191,7 +193,9 @@
     "labels": [
       "2° posto Trofeo Cittadella"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/storie-Selot-Linizio-Perla-Giannotti/dp/8885503330"
   },
   {
     "id": "b1754909589294",
@@ -207,7 +211,9 @@
     "labels": [
       "3° posto Trofeo Cittadella"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/Saga-della-Fenice-Zenath-Aelish/dp/B0BNV5H82C"
   },
   {
     "id": "b1754909589295",
@@ -224,7 +230,8 @@
       "Vincitore Trofeo Cittadella"
     ],
     "status": "approved",
-    "featured": false
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/priore-oscuro-sordisco-Vol-15-ebook/dp/B0CN891555"
   },
   {
     "id": "b1754909589297",
@@ -240,7 +247,9 @@
     "labels": [
       "2° posto Trofeo Cittadella"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/Shadow-People-Therry-Romano/dp/B0D5V5WZZ9"
   },
   {
     "id": "b1754909589298",
@@ -257,7 +266,8 @@
       "3° posto Trofeo Cittadella"
     ],
     "status": "approved",
-    "featured": false
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.com/WITCH-HUNTERS-Eireann-Leah-Reid/dp/B0CR1QJ9NJ"
   },
   {
     "id": "b1754909589299",
@@ -273,7 +283,9 @@
     "labels": [
       "Premio Ernesto Vegetti"
     ],
-    "status": "approved"
+    "status": "approved",
+    "featured": false,
+    "storeAmazonUrl": "https://www.amazon.it/Larma-del-druido-Marco-Giaimo/dp/8898993676/ref=sr_1_1?__mk_it_IT=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=10SPUCOYKRTY9&dib=eyJ2IjoiMSJ9.5wjzvxvAs7XuJkVS4qI0IcXD9x1NRRFPqGOVlAE5RjtBAYJNEsCfMSi28_u_1SPB.y6wS4eNSqk_PYKF0EOfueXuoOQgAewEV15h7XjEk6Lg&dib_tag=se&keywords=l%27arma%2Bdel%2Bdruido&qid=1714642676&sprefix=l%27arma%2Bdel%2Bdruido%2Caps%2C113&sr=8-1"
   },
   {
     "title": "Gli eroi perduti. La saga completa",
@@ -288,7 +300,8 @@
     "status": "approved",
     "labels": [],
     "featured": false,
-    "id": "b1755029691071"
+    "id": "b1755029691071",
+    "storeAmazonUrl": "https://www.amazon.it/Gli-eroi-perduti-saga-completa/dp/B0CS4T6WLF"
   },
   {
     "title": "Dalla morte e dalla vendetta",
@@ -303,7 +316,8 @@
     "status": "approved",
     "labels": [],
     "featured": false,
-    "id": "b1755029691072"
+    "id": "b1755029691072",
+    "storeAmazonUrl": "https://www.amazon.it/Dalla-morte-dalla-vendetta-Cipriano/dp/B0DV5J3HW5"
   },
   {
     "title": "Megàlo - Olio e sangue",
@@ -318,7 +332,8 @@
     "status": "approved",
     "labels": [],
     "featured": false,
-    "id": "b1755029691073"
+    "id": "b1755029691073",
+    "storeAmazonUrl": "https://www.amazon.it/Meg%C3%A0lo-sangue-fantasy-storico-dieselpunk/dp/B0D3JKLG35"
   },
   {
     "title": "Namirya. L'enigma degli Elfi",
@@ -333,7 +348,8 @@
     "status": "approved",
     "labels": [],
     "featured": false,
-    "id": "b1755029691074"
+    "id": "b1755029691074",
+    "storeAmazonUrl": "https://www.amazon.it/Namirya-Lenigma-degli-Elfi-Riccardo/dp/B0F3B3NNNS"
   },
   {
     "title": "Ira Dei",
@@ -348,6 +364,23 @@
     "status": "approved",
     "labels": [],
     "featured": false,
-    "id": "b1755029691075"
+    "id": "b1755029691075",
+    "storeAmazonUrl": "https://www.amazon.it/Ira-Dei-Lepico-fantasy-ambientato/dp/B0F6QHBG2L"
+  },
+  {
+    "title": "CARNIVALIA – Schiavi della Maschera",
+    "author": "Diego Zaki",
+    "year": 2025,
+    "publisher": "La Corte Editore",
+    "isbn": "9791281109285",
+    "storeAmazonUrl": "",
+    "storePublisherUrl": "https://www.lacorteditore.it/product/carnivalia/",
+    "coverUrl": "https://www.lacorteditore.it/wp-content/uploads/2025/05/Cover-Carnivalia-per-sito.jpg",
+    "description": "Nella notte di un’eclissi di luna, la baleniera portoghese Lâmina salpa da un’isola africana, trasportando una intera tribù di schiavi. Tra di loro c’è Abayomi, un ragazzo che sognava la libertà dalle tradizioni e dai miti del suo popolo. Ma quel rapimento segna l’inizio di un incubo. Qualcosa si è risvegliato nel profondo della stiva: una maschera sacra e proibita, che custodisce il potere di rivelare la vera natura dietro ogni apparenza, di trasformare gli uomini in dèi o in mostri.\nMentre la nave muta attorno a lui in un teatro di ossessioni, possessioni e metamorfosi, Abayomi si rende conto che l’unica speranza di salvezza risiede in un’antica profezia alla quale non ha mai creduto. Insieme a Ismael – il novello mozzo della Lâmina – e Joao – il suo primo ufficiale – il giovane africano affronterà divinità vendicative, pirati senza scrupoli, spiriti ribelli e animali totemici, in una feroce epopea dove ogni scelta costa un sacrificio, ogni alleanza è fragile, e la linea che divide realtà e leggenda si fa sempre più sottile.",
+    "isDebut": true,
+    "status": "approved",
+    "labels": [],
+    "featured": false,
+    "id": "b1755079344591"
   }
 ]
