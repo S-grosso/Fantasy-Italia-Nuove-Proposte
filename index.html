@@ -54,6 +54,23 @@
   .divider{height:1px;background:var(--border);margin:12px 0}
   .banner{background:#142036;border:1px solid #223a66;color:#cfe;border-radius:12px;padding:8px 12px;margin:8px 0}
 .btn-amz{width:100px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:#131a22;box-shadow:0 1px 2px rgba(0,0,0,.35);border:1px solid #0c0e14;border-radius:10px}
+
+/* --- Notizie: clamp & editor (r2) --- */
+.news-card{position:relative;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.news-card h4{margin:0 0 4px;font-size:16px;line-height:1.2}
+.news-preview{color:var(--muted);font-size:13px;line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;white-space:normal;max-height:4.6em}
+.news-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.news-toolbar .mini{background:#151826;border:1px solid var(--border);color:var(--ink);padding:6px 9px;border-radius:8px;cursor:pointer;font-size:12px}
+.editable{background:#0f1119;color:var(--ink);border:1px solid var(--border);border-radius:10px;padding:10px;min-height:140px;line-height:1.5}
+.editable:focus{outline:2px solid #24365e}
+.news-body .bigger{font-size:1.15em}
+.news-body .smaller{font-size:0.9em}
+#newsOverlay{position:fixed;inset:0;background:rgba(10,12,18,.92);backdrop-filter:blur(6px);z-index:50;display:none}
+#newsOverlay .inner{max-width:900px;margin:5vh auto;background:#171923;border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#newsOverlay h3{margin:0 0 8px}
+#newsOverlay .news-body{color:var(--ink);font-size:15px;line-height:1.6}
+#btnBackToNews{background:#151826;border:1px solid var(--border);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}
+
 </style>
 </head>
 <body>
@@ -142,8 +159,25 @@
         <div class="field"><label>Titolo notizia</label><input id="news_title" type="text"></div>
       </div>
       <div class="field">
+        <label>Contenuto (formattato)</label>
+        <div class="news-toolbar">
+          <button type="button" class="mini" data-cmd="bold"><b>B</b></button>
+          <button type="button" class="mini" data-cmd="italic"><i>I</i></button>
+          <button type="button" class="mini" data-cmd="underline"><u>U</u></button>
+          <button type="button" class="mini" data-cmd="bigger">A+</button>
+          <button type="button" class="mini" data-cmd="smaller">A−</button>
+          <button type="button" class="mini" data-cmd="ul">• Lista</button>
+          <button type="button" class="mini" data-cmd="link">🔗 Link</button>
+          <button type="button" class="mini" data-cmd="clear">✖︎ Pulisci</button>
+        </div>
+        <div id="news_body_html" class="editable" contenteditable="true" spellcheck="true"></div>
+        <div class="hint">Usa i pulsanti per formattare. Il campo qui sotto è solo l’anteprima (prime 2–3 righe).</div>
+      </div>
+
+
+      <div class="field">
         <label>Testo (prime 2–3 righe costituiranno l’anteprima)</label>
-        <textarea id="news_body" style="height:140px"></textarea>
+        <textarea id="news_preview" style="height:140px"></textarea>
       </div>
       <div class="actions">
         <button class="btn primary" id="btnSaveNews">Pubblica notizia</button>
@@ -193,6 +227,15 @@
       <button class="btn danger" id="btnLogout">Esci dalla sessione admin</button>
     </div>
   </section>
+
+<div id="newsOverlay">
+  <div class="inner">
+    <button id="btnBackToNews">◀︎ Torna all’app</button>
+    <h3 id="newsFullTitle" style="margin-top:10px"></h3>
+    <div id="newsFullBody" class="news-body"></div>
+  </div>
+</div>
+
 </main>
 
 <footer>
@@ -204,6 +247,8 @@
   <div id="buildBadgeFoot" class="small muted" style="margin-top:10px"></div>
 
   <div id="buildBadge" class="small muted" style="margin-top:6px;text-align:center">v3.8.2-news-fix6 • 2025-08-13</div>
+
+  <div id="buildBadge" class="small muted" style="margin-top:6px;text-align:center">v3.8.3-news-r2 • 2025-08-13</div>
 </footer>
 
 <script>
@@ -641,6 +686,139 @@
     renderCatalogo();
   })();
 })();
+
+// === Notizie: clamp + mini-editor + overlay (r2) ===
+(function(){
+  const $ = (s,root=document)=>root.querySelector(s);
+  const $$ = (s,root=document)=>Array.from(root.querySelectorAll(s));
+
+  function sanitizeHtml(html){
+    try{
+      const allowed = new Set(['B','I','U','EM','STRONG','P','BR','UL','OL','LI','A','SPAN','H3','H4']);
+      const doc = new DOMParser().parseFromString('<div>'+html+'</div>','text/html');
+      const root = doc.body.firstChild;
+      function clean(node){
+        if(node.nodeType===Node.TEXT_NODE) return node.cloneNode();
+        if(node.nodeType!==Node.ELEMENT_NODE) return document.createTextNode('');
+        const tag = node.tagName;
+        if(!allowed.has(tag)){
+          const frag = doc.createDocumentFragment();
+          node.childNodes.forEach(ch=>frag.appendChild(clean(ch)));
+          return frag;
+        }
+        const el = doc.createElement(tag.toLowerCase());
+        if(tag==='A' && node.getAttribute('href')){
+          const href = node.getAttribute('href');
+          if(/^https?:/i.test(href)){ el.setAttribute('href',href); el.setAttribute('target','_blank'); el.setAttribute('rel','noopener'); }
+        }
+        if(tag==='SPAN'){
+          const cls = node.getAttribute('class')||'';
+          if(/\bbigger\b/.test(cls)) el.className='bigger';
+          if(/\bsmaller\b/.test(cls)) el.className = el.className ? (el.className+' smaller') : 'smaller';
+        }
+        node.childNodes.forEach(ch=>el.appendChild(clean(ch)));
+        return el;
+      }
+      const out = document.createElement('div');
+      root.childNodes.forEach(ch=>out.appendChild(clean(ch)));
+      return out.innerHTML;
+    }catch(e){ return html||''; }
+  }
+
+  function previewFrom(n){
+    if(n.preview && n.preview.trim()) return n.preview.trim();
+    const tmp = document.createElement('div'); tmp.innerHTML = n.bodyHtml || n.body || '';
+    const txt = tmp.textContent || tmp.innerText || '';
+    return txt.trim().slice(0, 300);
+  }
+
+  window.renderNews = function(){
+    const grid = $('#gridNews'); if(!grid) return;
+    const hasAdmin = (typeof sessionIsValid==='function' ? sessionIsValid() : false);
+    $('#newsAdminBar') && ($('#newsAdminBar').style.display = hasAdmin ? 'flex' : 'none');
+    $('#newsEditor') && ($('#newsEditor').style.display = hasAdmin ? '' : 'none');
+
+    const items = (window.state && Array.isArray(state.news)) ? state.news.slice() : [];
+    for(const n of items){
+      if(!n.bodyHtml && n.body){ n.bodyHtml = n.body.replace(/\n/g,'<br>'); }
+      if(!n.ts){ n.ts = Date.now(); }
+    }
+    items.sort((a,b)=> (b.ts||0)-(a.ts||0));
+    grid.innerHTML = '';
+    for(const n of items){
+      const card = document.createElement('div');
+      card.className='news-card';
+      const h = document.createElement('h4'); h.textContent = n.title || '(Senza titolo)';
+      const prev = document.createElement('div'); prev.className='news-preview'; prev.textContent = previewFrom(n);
+      card.appendChild(h); card.appendChild(prev);
+      card.addEventListener('click', ()=>{
+        const ov = $('#newsOverlay');
+        $('#newsFullTitle').textContent = n.title || '';
+        $('#newsFullBody').innerHTML = sanitizeHtml(n.bodyHtml || n.body || '');
+        ov.style.display='block';
+        document.body.style.overflow='hidden';
+      });
+      grid.appendChild(card);
+    }
+  };
+
+  const back = $('#btnBackToNews');
+  if(back){
+    back.addEventListener('click', ()=>{
+      $('#newsOverlay').style.display='none';
+      document.body.style.overflow='';
+      const notizieBtn = document.querySelector('button[data-tab="notizie"]');
+      if(notizieBtn){ notizieBtn.click(); }
+    });
+  }
+
+  // Mini editor
+  const ed = $('#news_body_html');
+  $$('.news-toolbar .mini').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const cmd = btn.getAttribute('data-cmd'); ed && ed.focus();
+      if(cmd==='bold') document.execCommand('bold', false, null);
+      else if(cmd==='italic') document.execCommand('italic', false, null);
+      else if(cmd==='underline') document.execCommand('underline', false, null);
+      else if(cmd==='ul') document.execCommand('insertUnorderedList', false, null);
+      else if(cmd==='link'){
+        const url = prompt('Inserisci URL (https://...)');
+        if(url && /^https?:/i.test(url)) document.execCommand('createLink', false, url);
+      }else if(cmd==='bigger' || cmd==='smaller'){
+        const sel = window.getSelection(); if(!sel || sel.rangeCount===0) return;
+        const range = sel.getRangeAt(0); const span = document.createElement('span');
+        span.className = (cmd==='bigger' ? 'bigger' : 'smaller'); range.surroundContents(span);
+      }else if(cmd==='clear'){ ed.innerHTML=''; }
+    });
+  });
+
+  // Save news: intercept and store HTML + preview, then re-render
+  (function hookSave(){
+    const btn = document.getElementById('btnSaveNews');
+    if(!btn) return;
+    btn.addEventListener('click', (ev)=>{
+      ev.preventDefault(); ev.stopPropagation();
+      if(!(typeof sessionIsValid==='function' && sessionIsValid())){ alert('Solo admin.'); return; }
+      const title = (document.getElementById('news_title')?.value||'').trim();
+      const preview = (document.getElementById('news_preview')?.value||'').trim();
+      const html = sanitizeHtml(document.getElementById('news_body_html')?.innerHTML||'');
+      if(!title){ alert('Titolo obbligatorio.'); return; }
+      if(!html && !preview){ alert('Inserisci un testo.'); return; }
+      const item = { id: 'n'+Date.now().toString(36), title, preview, bodyHtml: html, ts: Date.now() };
+      if(!Array.isArray(window.state.news)) window.state.news = [];
+      window.state.news.push(item);
+      localStorage.setItem('fi_news_site_v38', JSON.stringify(window.state.news));
+      document.getElementById('news_title').value='';
+      if(document.getElementById('news_preview')) document.getElementById('news_preview').value='';
+      if(document.getElementById('news_body_html')) document.getElementById('news_body_html').innerHTML='';
+      alert('Notizia pubblicata.');
+      window.renderNews && window.renderNews();
+    }, true);
+  })();
+
+  window.addEventListener('load', ()=>{ try{ window.renderNews && window.renderNews(); }catch(e){} });
+})();
+
 </script>
 </body>
 </html>
