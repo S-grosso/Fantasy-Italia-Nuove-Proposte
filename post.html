@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="it">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Notizie • Fantasy Italia</title>
+<style>
+body{margin:0;font-family:system-ui,Segoe UI,Roboto;background:#0f1013;color:#e7e9ee}
+main{max-width:900px;margin:0 auto;padding:28px}
+.panel{background:#171923;border:1px solid #232635;border-radius:14px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+h1{margin:0 0 12px 0;font-size:24px}
+p{color:#a9adbb;line-height:1.7;white-space:pre-wrap}
+a.btn{display:inline-block;margin-top:14px;background:#151826;border:1px solid #232635;color:#e7e9ee;padding:8px 12px;border-radius:10px;text-decoration:none}
+</style></head>
+<body><main>
+  <div class="panel">
+    <h1 id="t">Caricamento…</h1>
+    <p id="b"></p>
+    <a class="btn" href="index.html#notizie">← Torna all’app</a>
+  </div>
+</main>
+<script>
+(async function(){
+  function qs(n){ return new URLSearchParams(location.search).get(n); }
+  const id = qs('id');
+  async function fetchJson(url){ const r = await fetch(url, {cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+  let list = [];
+  try{
+    const base = location.origin + location.pathname.replace(/\/[^\/]*$/, '/') + 'data/news.json';
+    list = await fetchJson(base);
+  }catch(e){
+    try{ list = JSON.parse(localStorage.getItem('fi_news_site_v38')||'[]'); }catch(_){ list=[]; }
+  }
+  const n = (list||[]).find(x => x.id===id);
+  if(!n){ document.getElementById('t').textContent='Notizia non trovata'; return; }
+  document.getElementById('t').textContent = n.title || '(Senza titolo)';
+  document.getElementById('b').textContent = n.body || '';
+})();
+</script>
+</body></html>
