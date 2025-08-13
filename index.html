@@ -37,10 +37,8 @@
   .btn{background:#151826;border:1px solid var(--border);color:var(--ink);padding:6px 10px;border-radius:10px;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
   .btn.primary{outline:2px solid var(--accent)}
   .btn.danger{outline:1px solid #402;color:#ff9aa9}
-  .btn-amz{height:36px;width:115px;padding:0}
-  .btn-amz img{display:block;max-height:80%;max-width:90%;object-fit:contain}
-  .btn-store{height:36px;width:115px}
-  .news-excerpt{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;max-height:4.2em}
+  .btn-amz, .btn-store{width:105px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,.35)}
+  .btn-amz img{display:block;max-height:70%;max-width:90%;object-fit:contain}
   .row{display:flex;gap:10px;flex-wrap:wrap}
   .field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:180px}
   .field label{font-size:13px;color:var(--muted)}
@@ -61,7 +59,6 @@
 <header>
   <div class="wrap">
     <h1>Fantasy Italia — Nuove proposte</h1>
-    <span id="buildBadge" class="small muted">v3.8.2-news-fix5 • 2025-08-13</span>
     <span id="adminBadge" class="adminBadge" style="display:none"></span>
     <button id="adminToggle" class="adminToggle" title="Accedi/Esci come admin">Accedi admin</button>
   </div>
@@ -203,13 +200,14 @@
     <a href="legal.html">Note legali & privacy</a><span class="sep">•</span>
     <a href="mailto:simonegrosso.writer@gmail.com">Contatti</a>
   </div>
+  <div id="buildBadgeFoot" class="small muted" style="margin-top:10px"></div>
 </footer>
 
 <script>
 (function(){
   const $ = (sel, root=document) => root.querySelector(sel);
   const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
-  const BUILD = 'v3.8.2-news-fix5';
+  const BUILD = 'v3.8.2-news-fix3';
 
   // --- Keys & defaults (v38) ---
   const ADMIN_TIMEOUT_MS = 30 * 60 * 1000;
@@ -591,7 +589,7 @@
     const meta = document.createElement('div'); meta.className='meta';
     const h3 = document.createElement('h3'); h3.textContent = n.title || '(Senza titolo)';
     const excerpt = (n.body||'').split('\\n').slice(0,3).join(' ');
-    const desc = document.createElement('div'); desc.className='small muted news-excerpt'; desc.textContent = excerpt;
+    const desc = document.createElement('div'); desc.className='small muted'; desc.textContent = excerpt;
     const actions = document.createElement('div'); actions.className='actions';
     el.addEventListener('click', (ev)=>{ if(ev.target.closest('.actions')) return; window.location.href = 'post.html?id='+encodeURIComponent(n.id); });
     if(isAdmin){
