@@ -64,7 +64,7 @@
 <body>
 <header>
   <div class="wrap">
-    <h1>Fantasy Italia — Nuove proposte</h1>
+    <h1>Fantasy Italia — Nuove proposte</h1><span id="buildBadge" class="small muted" style="margin-left:8px">v3.8.2-news-fix2 • 2025-08-13</span>
     <span id="adminBadge" class="adminBadge" style="display:none"></span>
     <button id="adminToggle" class="adminToggle" title="Accedi/Esci come admin">Accedi admin</button>
   </div>
@@ -212,6 +212,7 @@
 
 <script>
 (function(){
+  const BUILD_VERSION = 'v3.8.2-news-fix2 • 2025-08-13';
   const $ = (sel, root=document) => root.querySelector(sel);
   const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
@@ -490,6 +491,7 @@ $('#btnLogout').addEventListener('click', ()=>{
       coverUrl: $('#f_cover').value.trim(),
       description: $('#f_desc').value.trim(),
       isDebut: (function(){
+  const BUILD_VERSION = 'v3.8.2-news-fix2 • 2025-08-13';
         const v = $('#f_debut').value;
         if(v==='yes') return true;
         if(v==='no') return false;
