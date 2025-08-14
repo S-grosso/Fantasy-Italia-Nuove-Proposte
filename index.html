@@ -15,8 +15,8 @@
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,Noto Sans;background:linear-gradient(180deg,#0f1013,#0d0e12 140vh);color:var(--ink)}
 
-  /* Header */
-  header{position:sticky;top:0;z-index:5;background:rgba(13,14,18,.6);backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
+  /* Header sempre sopra a tutto */
+  header{position:sticky;top:0;z-index:10000;background:rgba(13,14,18,.6);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);pointer-events:auto}
   .wrap{max-width:1100px;margin:0 auto;padding:12px 16px}
   .wrap-col{display:flex;flex-direction:column;gap:8px}
   .topbar{display:flex;align-items:center;gap:10px}
@@ -26,12 +26,12 @@
 
   .subnav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   nav{display:flex;gap:8px;flex-wrap:wrap}
-  nav button{background:#151826;color:var(--ink);border:1px solid var(--border);padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:600}
+  nav button{background:#151826;color:var(--ink);border:1px solid var(--border);padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:600;position:relative;z-index:10001}
   nav button.active{outline:2px solid var(--accent)}
 
   /* Layout */
   main{padding:20px 16px}
-  section{max-width:1100px;margin:0 auto;background:#171923;border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  section{max-width:1100px;margin:0 auto;background:#171923;border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);position:relative;z-index:1}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
   .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
   .card{position:relative;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:10px;display:flex;gap:10px;align-items:flex-start;min-height:140px}
@@ -78,11 +78,12 @@
   .news-card h3{margin:0 0 6px 0;font-size:18px}
   .line-clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
   .news-admin-actions{display:flex;gap:8px;margin-top:10px}
-  .news-article{max-width:900px;margin:0 auto;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:16px;position:relative}
-  .backAppTop{position:sticky;top:0;left:0}
+  .news-article{max-width:900px;margin:0 auto;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;z-index:1}
+  .backAppTop{position:sticky;top:8px;left:0;z-index:2;pointer-events:none}
+  .backAppTop .btn{pointer-events:auto}
   .backRow{margin-top:16px;display:flex;gap:10px}
   .news-meta{color:var(--muted);font-size:12px;margin-bottom:10px}
-  #newsEditor{position:relative;z-index:2;margin-bottom:14px}
+  #newsEditor{position:relative;margin-bottom:14px} /* tolto z-index hack */
 
   /* Footer */
   footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
@@ -280,8 +281,8 @@
 <script>
 (function(){
   'use strict';
-  const $  =(s)=>document.querySelector(s);
-  const $$ =(s)=>Array.from(document.querySelectorAll(s));
+  const $  = function(s){ return document.querySelector(s); };
+  const $$ = function(s){ return Array.from(document.querySelectorAll(s)); };
 
   /* Logo Amazon: URL RAW diretto */
   const AMAZON_IMG_RAW_URL = 'https://raw.githubusercontent.com/S-grosso/Fantasy-Italia-Nuove-Proposte/main/logo_store.png';
@@ -306,58 +307,89 @@
   if(!state.settings.newsUrl)    state.settings.newsUrl    = DEFAULT_NEWS_URL;
   save('fi_settings_site_v38', state.settings);
 
-  function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback)); }catch(e){ return fallback; } }
+  function load(key, fallback){
+    try{ var raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+    catch(e){ return fallback; }
+  }
   function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
-  async function fetchJson(url){ const res = await fetch(url, {cache:'no-store'}); if(!res.ok) throw new Error('HTTP '+res.status+' @ '+url); return res.json(); }
+  async function fetchJson(url){
+    const res = await fetch(url, {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status+' @ '+url);
+    return res.json();
+  }
 
-  /* Bootstrap JSON */
+  /* Bootstrap JSON helper */
   function candidates(kind){
-    const list = [];
-    const setUrl = state.settings[kind+'Url'];
+    var list = [];
+    var setUrl = state.settings[kind+'Url'];
     if(setUrl) list.push(setUrl);
-    const names = kind==='catalog' ? ['data/catalogo.json','catalogo.json']
-                : kind==='news'    ? ['data/news.json','news.json']
-                                   : ['data/admins.json','admins.json'];
-    names.forEach(n=>{ list.push(n.startsWith('/')? n : ('/'+n)); list.push(n); });
-    return [...new Set(list)];
+    var names = (kind==='catalog') ? ['data/catalogo.json','catalogo.json']
+             : (kind==='news')    ? ['data/news.json','news.json']
+                                  : ['data/admins.json','admins.json'];
+    names.forEach(function(n){ list.push(n.startsWith('/')? n : ('/'+n)); list.push(n); });
+    return Array.from(new Set(list));
   }
   async function tryFetchAny(kind){
     const list=candidates(kind);
-    for(const url of list){ try{ const j=await fetchJson(url); return {ok:true, url, data:j}; }catch(e){ console.warn('Fallito', kind, url, e); } }
+    for(const url of list){
+      try{ const j=await fetchJson(url); return {ok:true, url, data:j}; }
+      catch(e){ /* silenzio */ }
+    }
     return {ok:false};
   }
+
   async function bootstrapIfEmpty(){
-    const needs = (!state.books?.length) || (!state.news?.length);
+    var hasBooks = Array.isArray(state.books) && state.books.length>0;
+    var hasNews  = Array.isArray(state.news)  && state.news.length>0;
+    const needs = (!hasBooks) || (!hasNews);
     if(!needs) return;
     const bann = $('#banner');
     try{
       const [c,n] = await Promise.all([ tryFetchAny('catalog'), tryFetchAny('news') ]);
       if(c.ok){ state.books=c.data; save('fi_books_site_v38', state.books); }
-      if(n.ok){ state.news=n.data.map((x,i)=>({id:x.id||('n'+i), title:x.title, bodyHtml:x.bodyHtml||x.body||'', ts:x.ts||Date.now()})); save('fi_news_site_v38', state.news); }
+      if(n.ok){ state.news=n.data.map(function(x,i){ return {id:x.id||('n'+i), title:x.title, bodyHtml:x.bodyHtml||x.body||'', ts:x.ts||Date.now()}; }); save('fi_news_site_v38', state.news); }
       if(!c.ok || !n.ok){ bann.innerHTML='⚠️ Non riesco a caricare tutti i dati. Verifica gli URL in <b>Impostazioni</b> o che i file JSON esistano in <code>/data/</code>.'; bann.style.display='block'; }
       renderCatalogo(); renderNews();
     }catch(err){ console.error(err); bann.innerHTML='⚠️ Errore di caricamento dati. Apri <b>Impostazioni</b> e controlla gli URL.'; bann.style.display='block'; }
   }
 
   /* Admin sessione */
-  function sessionIsValid(){ const u=sessionStorage.getItem('fi_admin_user'); const t=+sessionStorage.getItem('fi_admin_time')||0; if(!u||Date.now()-t>4*60*60*1000) return false; return (state.remoteAdmins||[]).some(a=>a.u===u); }
+  function sessionIsValid(){
+    const u=sessionStorage.getItem('fi_admin_user');
+    const t=+sessionStorage.getItem('fi_admin_time')||0;
+    if(!u || (Date.now()-t > 4*60*60*1000)) return false;
+    if(Array.isArray(state.remoteAdmins)){
+      return state.remoteAdmins.some(function(a){ return a.u===u; });
+    }
+    return true;
+  }
   function touchSession(){ sessionStorage.setItem('fi_admin_time', String(Date.now())); }
   function clearSession(){ sessionStorage.removeItem('fi_admin_user'); sessionStorage.removeItem('fi_admin_time'); }
+
+  async function preloadAdmins(){
+    const r = await tryFetchAny('admins');
+    if(r.ok){
+      state.remoteAdmins = r.data;
+      if(!sessionIsValid()){
+        clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI();
+      }
+    }
+  }
 
   async function pbkdf2Hex(pass, saltHex, iters, length=32){
     const enc = new TextEncoder();
     const key = await crypto.subtle.importKey('raw', enc.encode(pass), {name:'PBKDF2'}, false, ['deriveBits']);
-    const salt = new Uint8Array((saltHex.match(/.{1,2}/g)||[]).map(b=>parseInt(b,16)));
+    const salt = new Uint8Array((saltHex.match(/.{1,2}/g)||[]).map(function(b){return parseInt(b,16);}));
     const bits = await crypto.subtle.deriveBits({name:'PBKDF2', hash:'SHA-256', salt, iterations:iters}, key, length*8);
-    return [...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,'0')).join('');
+    return Array.from(new Uint8Array(bits)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');
   }
   async function doLoginFlow(){
     const u=prompt('Inserisci username admin'); if(u===null||!u.trim()) return false;
     const pass=prompt('Inserisci password'); if(pass===null) return false;
     try{
-      const list = state.remoteAdmins || (await (async()=>{ const r=await tryFetchAny('admins'); if(!r.ok) throw new Error('admins.json non trovato'); return r.data; })());
+      const list = state.remoteAdmins || (await (async function(){ const r=await tryFetchAny('admins'); if(!r.ok) throw new Error('admins.json non trovato'); return r.data; })());
       state.remoteAdmins = list;
-      const rec = list.find(x=>x.u===u.trim());
+      const rec = list.find(function(x){ return x.u===u.trim(); });
       if(!rec){ alert('Utente non trovato.'); return false; }
       const h = await pbkdf2Hex(pass, rec.salt, rec.iter);
       if(h!==rec.hash){ alert('Password errata.'); return false; }
@@ -373,49 +405,78 @@
     }
   }
 
-  $('#adminToggle')?.addEventListener('click', async()=>{
-    if(sessionIsValid()){ clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.'); }
-    else await doLoginFlow();
-  });
+  var adminToggleEl = $('#adminToggle');
+  if(adminToggleEl){
+    adminToggleEl.addEventListener('click', async function(){
+      if(sessionIsValid()){ clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.'); }
+      else await doLoginFlow();
+    });
+  }
 
   /* Impostazioni */
-  $('#btnSaveUrls')?.addEventListener('click',()=>{ state.settings.adminsUrl=$('#adminsUrl').value.trim(); state.settings.catalogUrl=$('#catalogUrl').value.trim(); state.settings.newsUrl=$('#newsUrl').value.trim(); save('fi_settings_site_v38', state.settings); alert('URL salvati. Ricarica la pagina.'); });
-  $('#btnLogout')?.addEventListener('click',()=>{ clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.'); });
-  $('#btnClearLocal')?.addEventListener('click', ()=>{
-    localStorage.removeItem('fi_books_site_v38');
-    localStorage.removeItem('fi_news_site_v38');
-    state.books = [];
-    state.news  = [];
-    renderCatalogo();
-    renderNews();
-    alert('Cache locale svuotata. La pagina verrà ricaricata.');
-    location.reload();
-  });
-  $('#btnForceReload')?.addEventListener('click', async()=>{
-    try{
-      const c = await tryFetchAny('catalog');
-      const n = await tryFetchAny('news');
-      if(c.ok){ state.books=c.data; save('fi_books_site_v38', state.books); }
-      if(n.ok){ state.news=n.data.map((x,i)=>({id:x.id||('n'+i), title:x.title, bodyHtml:x.bodyHtml||x.body||'', ts:x.ts||Date.now()})); save('fi_news_site_v38', state.news); }
-      renderCatalogo(); renderNews();
-      alert('Dati ricaricati.');
-    }catch(e){ console.error(e); alert('Errore nel caricamento remoto.'); }
-  });
+  var saveUrlsEl = $('#btnSaveUrls');
+  if(saveUrlsEl){
+    saveUrlsEl.addEventListener('click', function(){
+      state.settings.adminsUrl=$('#adminsUrl').value.trim();
+      state.settings.catalogUrl=$('#catalogUrl').value.trim();
+      state.settings.newsUrl=$('#newsUrl').value.trim();
+      save('fi_settings_site_v38', state.settings);
+      alert('URL salvati. Ricarica la pagina.');
+    });
+  }
+  var logoutEl = $('#btnLogout');
+  if(logoutEl){
+    logoutEl.addEventListener('click', function(){
+      clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.');
+    });
+  }
+  var clearLocalEl = $('#btnClearLocal');
+  if(clearLocalEl){
+    clearLocalEl.addEventListener('click', function(){
+      localStorage.removeItem('fi_books_site_v38');
+      localStorage.removeItem('fi_news_site_v38');
+      state.books = [];
+      state.news  = [];
+      renderCatalogo();
+      renderNews();
+      alert('Cache locale svuotata. La pagina verrà ricaricata.');
+      location.reload();
+    });
+  }
+  var forceReloadEl = $('#btnForceReload');
+  if(forceReloadEl){
+    forceReloadEl.addEventListener('click', async function(){
+      try{
+        const c = await tryFetchAny('catalog');
+        const n = await tryFetchAny('news');
+        if(c.ok){ state.books=c.data; save('fi_books_site_v38', state.books); }
+        if(n.ok){ state.news=n.data.map(function(x,i){ return {id:x.id||('n'+i), title:x.title, bodyHtml:x.bodyHtml||x.body||'', ts:x.ts||Date.now()}; }); save('fi_news_site_v38', state.news); }
+        renderCatalogo(); renderNews();
+        alert('Dati ricaricati.');
+      }catch(e){ console.error(e); alert('Errore nel caricamento remoto.'); }
+    });
+  }
 
   /* UI Admin privata */
   function applyAdminUI(){
     const on=sessionIsValid();
-    $('#navAdmin').style.display = on ? 'flex' : 'none';
-    $('#adminBadge').style.display = on ? 'inline-block' : 'none';
-    $('#adminBadge').textContent = on ? ('Admin: ' + (state.meUser||'')) : '';
-    $('#adminToggle').textContent = on ? 'Esci admin' : 'Accedi admin';
-    $('#adminTools').style.display = on ? 'flex' : 'none';
-    $('#newsAdminBar').style.display = on ? 'flex' : 'none';
-    $('#newsEditor').style.display = on ? '' : 'none';
+    var navAdmin = $('#navAdmin'), adminBadge = $('#adminBadge'), adminToggle = $('#adminToggle'), adminTools = $('#adminTools'), newsAdminBar = $('#newsAdminBar'), newsEditor = $('#newsEditor');
+    if(navAdmin) navAdmin.style.display = on ? 'flex' : 'none';
+    if(adminBadge){ adminBadge.style.display = on ? 'inline-block' : 'none'; adminBadge.textContent = on ? ('Admin: ' + (sessionStorage.getItem('fi_admin_user')||'')) : ''; }
+    if(adminToggle) adminToggle.textContent = on ? 'Esci admin' : 'Accedi admin';
+    if(adminTools) adminTools.style.display = on ? 'flex' : 'none';
+    if(newsAdminBar) newsAdminBar.style.display = on ? 'flex' : 'none';
+    if(newsEditor) newsEditor.style.display = on ? '' : 'none';
   }
 
   /* Helpers form */
-  function clearForm(){ ['f_title','f_author','f_publisher','f_series','f_cover','f_desc','f_amz','f_store','f_isbn'].forEach(id=>{ const el=$('#'+id); if(el) el.value=''; }); $('#f_year').value=new Date().getFullYear(); $('#f_debut').value='unknown'; }
+  function clearForm(){
+    ['f_title','f_author','f_publisher','f_series','f_cover','f_desc','f_amz','f_store','f_isbn'].forEach(function(id){
+      var el=$('#'+id); if(el) el.value='';
+    });
+    var fy=$('#f_year'); if(fy) fy.value=new Date().getFullYear();
+    var fd=$('#f_debut'); if(fd) fd.value='unknown';
+  }
   function collectForm(){
     const title=($('#f_title').value||'').trim();
     const author=($('#f_author').value||'').trim();
@@ -428,14 +489,24 @@
     const storeAmazonUrl=$('#f_amz').value.trim();
     const storePublisherUrl=$('#f_store').value.trim();
     const isbn=$('#f_isbn').value.trim();
-    const isDebut = (function(v){ if(v==='yes') return true; if(v==='no') return false; return null; })($('#f_debut').value);
+    const sel=$('#f_debut').value; const isDebut = (sel==='yes')?true:(sel==='no')?false:null;
     return { id:'b'+Date.now().toString(36), title, author, publisher, year, series, isbn, coverUrl, description, storeAmazonUrl, storePublisherUrl, isDebut, labels:[], status:'pending', featured:false };
   }
-  $('#btnSaveNew')?.addEventListener('click',()=>{ const b=collectForm(); if(!b) return; b.status='pending'; if(!Array.isArray(state.books)) state.books=[]; state.books.push(b); save('fi_books_site_v38', state.books); renderCatalogo(); clearForm(); alert('Titolo salvato in Revisione.'); });
+  var btnSaveNewEl=$('#btnSaveNew');
+  if(btnSaveNewEl){
+    btnSaveNewEl.addEventListener('click', function(){
+      const b=collectForm(); if(!b) return;
+      b.status='pending'; if(!Array.isArray(state.books)) state.books=[];
+      state.books.push(b); save('fi_books_site_v38', state.books);
+      renderCatalogo(); clearForm(); alert('Titolo salvato in Revisione.');
+    });
+  }
 
   /* Catalogo */
-  function tagEl(text, cls='tag'){ const t=document.createElement('span'); t.className=cls; t.textContent=text; return t; }
-  function placeholderCover(){ return 'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="160" viewBox="0 0 120 160"><rect width="100%" height="100%" fill="#0b0e13"/><rect x="10" y="10" width="100" height="140" rx="8" ry="8" fill="#0f141d" stroke="#1d2230"/><text x="60" y="83" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="14" fill="#5e657a">Copertina</text></svg>`); }
+  function tagEl(text, cls){ if(!cls) cls='tag'; const t=document.createElement('span'); t.className=cls; t.textContent=text; return t; }
+  function placeholderCover(){
+    return 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="160" viewBox="0 0 120 160"><rect width="100%" height="100%" fill="#0b0e13"/><rect x="10" y="10" width="100" height="140" rx="8" ry="8" fill="#0f141d" stroke="#1d2230"/><text x="60" y="83" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="14" fill="#5e657a">Copertina</text></svg>');
+  }
   function bookCard(b){
     const el=document.createElement('div'); el.className='card';
     if(b.featured){ const bd=document.createElement('div'); bd.className='badge'; bd.textContent='Consigliato'; el.appendChild(bd); }
@@ -447,7 +518,7 @@
     const tags=document.createElement('div'); tags.className='tags';
     const debutText = (b.isDebut===true)?'Esordio: sì' : (b.isDebut===false?'Esordio: no':'Esordio: ?');
     tags.appendChild(tagEl(debutText));
-    if(Array.isArray(b.labels)) b.labels.slice(0,6).forEach(l=> tags.appendChild(tagEl(l,'tag label')));
+    if(Array.isArray(b.labels)) b.labels.slice(0,6).forEach(function(l){ tags.appendChild(tagEl(l,'tag label')); });
     const actions=document.createElement('div'); actions.className='actions';
 
     const amz=b.storeAmazonUrl||b.storeUrl||'';
@@ -470,23 +541,29 @@
   }
   function renderCatalogo(){
     const grid=$('#gridCatalogo'); grid.innerHTML='';
-    const q=$('#q').value.toLowerCase().trim(); const fy=$('#filterYear').value; let list=[...state.books];
-    if(fy!=='all'){ const y=parseInt(fy,10)||0; list=list.filter(b=>(+b.year||0)>=y); }
-    if(q){ list=list.filter(b=>[b.title,b.author,b.publisher,(b.labels||[]).join(' ')].filter(Boolean).join(' ').toLowerCase().includes(q)); }
-    /* Ordine: Consigliato -> Anno desc -> Titolo */
-    list.sort((a,b)=>{
+    const q=($('#q').value||'').toLowerCase().trim(); const fy=$('#filterYear').value; let list=Array.isArray(state.books)? state.books.slice():[];
+    if(fy!=='all'){ const y=parseInt(fy,10)||0; list=list.filter(function(b){ return (+b.year||0)>=y; }); }
+    if(q){ list=list.filter(function(b){ return [b.title,b.author,b.publisher,(b.labels||[]).join(' ')].filter(Boolean).join(' ').toLowerCase().includes(q); }); }
+    list.sort(function(a,b){
       const fa=(a.featured?1:0), fb=(b.featured?1:0); if(fa!==fb) return fb-fa;
       const ya=(+a.year||0), yb=(+b.year||0); if(ya!==yb) return yb-ya;
       const ta=(a.title||'').toLocaleLowerCase(), tb=(b.title||'').toLocaleLowerCase(); return ta.localeCompare(tb,'it');
     });
-    for(const b of list) grid.appendChild(bookCard(b));
+    list.forEach(function(b){ grid.appendChild(bookCard(b)); });
   }
-  $('#filterYear').addEventListener('change', renderCatalogo);
-  $('#q').addEventListener('input', (function(){let t; return ()=>{ clearTimeout(t); t=setTimeout(renderCatalogo,200); }})());
-  $('#btnExport')?.addEventListener('click',()=>{
-    const blob=new Blob([JSON.stringify(state.books,null,2)], {type:'application/json'});
-    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='catalogo.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  });
+  var fyEl=$('#filterYear');
+  if(fyEl){ fyEl.addEventListener('change', renderCatalogo); }
+  var qEl=$('#q');
+  if(qEl){
+    (function(){var t; qEl.addEventListener('input', function(){ clearTimeout(t); t=setTimeout(renderCatalogo,200); });})();
+  }
+  var btnExportEl=$('#btnExport');
+  if(btnExportEl){
+    btnExportEl.addEventListener('click', function(){
+      const blob=new Blob([JSON.stringify(state.books,null,2)], {type:'application/json'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='catalogo.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+  }
 
   /* Moderazione */
   function modCard(b){
@@ -502,30 +579,30 @@
     const by = document.createElement('div'); by.className='by'; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • ');
 
     const labelsWrap=document.createElement('div'); labelsWrap.className='tags';
-    function refreshLabels(){ labelsWrap.innerHTML=''; (b.labels||[]).forEach(l=> labelsWrap.appendChild(tagEl(l,'tag label'))); }
+    function refreshLabels(){ labelsWrap.innerHTML=''; (b.labels||[]).forEach(function(l){ labelsWrap.appendChild(tagEl(l,'tag label')); }); }
     refreshLabels();
 
     const addRow = document.createElement('div'); addRow.className='row';
     const addField = document.createElement('input'); addField.type='text'; addField.placeholder='Nuova etichetta'; addField.style.minWidth='200px';
     const addBtn = document.createElement('button'); addBtn.className='btn'; addBtn.textContent='Aggiungi';
-    addBtn.addEventListener('click', ()=>{ const val=(addField.value||'').trim(); if(!val) return; if(!Array.isArray(b.labels)) b.labels=[]; if(!b.labels.includes(val)) b.labels.push(val); addField.value=''; save('fi_books_site_v38', state.books); refreshLabels(); renderCatalogo(); });
+    addBtn.addEventListener('click', function(){ const val=(addField.value||'').trim(); if(!val) return; if(!Array.isArray(b.labels)) b.labels=[]; if(!b.labels.includes(val)) b.labels.push(val); addField.value=''; save('fi_books_site_v38', state.books); refreshLabels(); renderCatalogo(); });
 
     const featLbl = document.createElement('label'); featLbl.className='small muted';
     const featChk = document.createElement('input'); featChk.type='checkbox'; featChk.checked=!!b.featured; featChk.style.marginRight='6px';
-    featChk.addEventListener('change', ()=>{ b.featured=!!featChk.checked; badge.style.display=b.featured?'':'none'; save('fi_books_site_v38', state.books); renderCatalogo(); });
+    featChk.addEventListener('change', function(){ b.featured=!!featChk.checked; badge.style.display=b.featured?'':'none'; save('fi_books_site_v38', state.books); renderCatalogo(); });
     featLbl.appendChild(featChk); featLbl.appendChild(document.createTextNode(' Consigliato'));
 
     const debutSel=document.createElement('select');
-    ['Non specificato','Sì','No'].forEach((t,i)=>{ const o=document.createElement('option'); o.textContent=t; o.value=['unknown','yes','no'][i]; debutSel.appendChild(o); });
+    ['Non specificato','Sì','No'].forEach(function(t,i){ const o=document.createElement('option'); o.textContent=t; o.value=['unknown','yes','no'][i]; debutSel.appendChild(o); });
     debutSel.value = (b.isDebut===true?'yes':b.isDebut===false?'no':'unknown');
-    debutSel.addEventListener('change', ()=>{ const v=debutSel.value; b.isDebut = (v==='yes'?true:(v==='no'?false:null)); save('fi_books_site_v38', state.books); renderCatalogo(); });
+    debutSel.addEventListener('change', function(){ const v=debutSel.value; b.isDebut = (v==='yes'?true:(v==='no'?false:null)); save('fi_books_site_v38', state.books); renderCatalogo(); });
 
     const actions = document.createElement('div'); actions.className='actions';
     const approve = document.createElement('button'); approve.className='btn primary'; approve.textContent = (b.status==='approved') ? 'Revoca approvazione' : 'Approva';
-    approve.addEventListener('click', ()=>{ b.status = (b.status==='approved') ? 'pending' : 'approved'; approve.textContent = (b.status==='approved') ? 'Revoca approvazione' : 'Approva'; save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); });
+    approve.addEventListener('click', function(){ b.status = (b.status==='approved') ? 'pending' : 'approved'; approve.textContent = (b.status==='approved') ? 'Revoca approvazione' : 'Approva'; save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); });
 
     const saveBtn = document.createElement('button'); saveBtn.className='btn'; saveBtn.textContent='Salva';
-    saveBtn.addEventListener('click', ()=>{ save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); alert('Modifiche salvate.'); });
+    saveBtn.addEventListener('click', function(){ save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); alert('Modifiche salvate.'); });
 
     addRow.appendChild(addField); addRow.appendChild(addBtn);
 
@@ -544,13 +621,14 @@
     const grid = $('#gridModeration'); if(!grid) return;
     const f = $('#moderationFilter').value;
     let list = Array.isArray(state.books) ? state.books.slice() : [];
-    if(f==='pending')  list = list.filter(b => b.status!=='approved');
-    if(f==='approved') list = list.filter(b => b.status==='approved');
+    if(f==='pending')  list = list.filter(function(b){ return b.status!=='approved'; });
+    if(f==='approved') list = list.filter(function(b){ return b.status==='approved'; });
     grid.innerHTML='';
     if(!list.length){ grid.innerHTML='<div class="muted">Nessun titolo.</div>'; return; }
-    list.forEach(b => grid.appendChild(modCard(b)));
+    list.forEach(function(b){ grid.appendChild(modCard(b)); });
   }
-  $('#moderationFilter')?.addEventListener('change', renderModeration);
+  var modFilterEl=$('#moderationFilter');
+  if(modFilterEl){ modFilterEl.addEventListener('change', renderModeration); }
 
   /* Notizie */
   function sanitizeHtml(html){ return html.replace(/<script/gi,'&lt;script'); }
@@ -560,27 +638,26 @@
     $('#news_body_html').innerHTML = item.bodyHtml||'';
     state.editingNewsId = item.id;
     $('#btnSaveNews').textContent = 'Aggiorna notizia';
-    $('#btnCancelEdit').style.display = 'inline-flex';
+    var cancelEl=$('#btnCancelEdit'); if(cancelEl) cancelEl.style.display = 'inline-flex';
     showTab('notizie');
   }
 
   function deleteNews(id){
     if(!sessionIsValid()){ alert('Solo admin.'); return; }
     if(!confirm('Eliminare definitivamente questa notizia?')) return;
-    state.news = (state.news||[]).filter(n=>String(n.id)!==String(id));
+    state.news = (state.news||[]).filter(function(n){ return String(n.id)!==String(id); });
     save('fi_news_site_v38', state.news);
-    // se stavi visualizzando l'articolo eliminato, torna alla lista
-    if((location.hash||'').startsWith('#news/'+id)) location.hash='#notizie';
+    if((location.hash||'').indexOf('#news/'+id)===0) location.hash='#notizie';
     renderNews();
   }
 
   function renderNews(){
     const grid=$('#gridNews'); grid.innerHTML='';
-    const list=[...state.news].sort((a,b)=>(b.ts||0)-(a.ts||0));
-    list.forEach(n=>{
+    const list=(state.news||[]).slice().sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+    list.forEach(function(n){
       const card=document.createElement('div'); card.className='news-card'; card.tabIndex=0;
-      card.addEventListener('click', ()=>{ location.hash='#news/'+(n.id||''); });
-      card.addEventListener('keydown', (e)=>{ if(e.key==='Enter') card.click(); });
+      card.addEventListener('click', function(){ location.hash='#news/'+(n.id||''); });
+      card.addEventListener('keydown', function(e){ if(e.key==='Enter') card.click(); });
 
       const h3=document.createElement('h3'); h3.textContent=n.title||'(Senza titolo)';
       const body=document.createElement('div'); body.className='muted line-clamp';
@@ -593,8 +670,8 @@
         const adminBar=document.createElement('div'); adminBar.className='news-admin-actions';
         const editBtn=document.createElement('button'); editBtn.className='btn small'; editBtn.textContent='Modifica';
         const delBtn=document.createElement('button'); delBtn.className='btn small danger'; delBtn.textContent='Elimina';
-        editBtn.addEventListener('click', (ev)=>{ ev.stopPropagation(); startEditNews(n); });
-        delBtn.addEventListener('click', (ev)=>{ ev.stopPropagation(); deleteNews(n.id); });
+        editBtn.addEventListener('click', function(ev){ ev.stopPropagation(); startEditNews(n); });
+        delBtn.addEventListener('click', function(ev){ ev.stopPropagation(); deleteNews(n.id); });
         adminBar.appendChild(editBtn); adminBar.appendChild(delBtn);
         card.appendChild(adminBar);
       }
@@ -604,9 +681,8 @@
     state.newsReady=true;
   }
 
-  // mini editor
-  $$('#newsEditor [data-cmd]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
+  $$('#newsEditor [data-cmd]').forEach(function(btn){
+    btn.addEventListener('click', function(){
       const cmd=btn.getAttribute('data-cmd'); const ed=$('#news_body_html'); ed.focus();
       if(cmd==='bold') document.execCommand('bold', false, null);
       else if(cmd==='italic') document.execCommand('italic', false, null);
@@ -620,7 +696,7 @@
 
   (function hookSave(){
     const btn=$('#btnSaveNews'); if(!btn) return;
-    btn.addEventListener('click', (ev)=>{
+    btn.addEventListener('click', function(ev){
       ev.preventDefault(); ev.stopPropagation();
       if(!sessionIsValid()){ alert('Solo admin.'); return; }
       const title=($('#news_title').value||'').trim();
@@ -629,11 +705,11 @@
       if(!html){ alert('Inserisci un testo.'); return; }
 
       if(state.editingNewsId){
-        const idx=(state.news||[]).findIndex(n=>String(n.id)===String(state.editingNewsId));
+        const idx=(state.news||[]).findIndex(function(n){ return String(n.id)===String(state.editingNewsId); });
         if(idx>=0){ state.news[idx].title=title; state.news[idx].bodyHtml=html; state.news[idx].ts=Date.now(); }
         state.editingNewsId=null;
         $('#btnSaveNews').textContent='Pubblica notizia';
-        $('#btnCancelEdit').style.display='none';
+        var cancelEl=$('#btnCancelEdit'); if(cancelEl) cancelEl.style.display='none';
         alert('Notizia aggiornata.');
       }else{
         const item={ id:'n'+Date.now().toString(36), title, bodyHtml:html, ts:Date.now() };
@@ -647,63 +723,96 @@
     }, true);
   })();
 
-  $('#btnCancelEdit')?.addEventListener('click', ()=>{
-    state.editingNewsId=null;
-    $('#btnSaveNews').textContent='Pubblica notizia';
-    $('#btnCancelEdit').style.display='none';
-    $('#news_title').value=''; $('#news_body_html').innerHTML='';
-  });
+  var cancelEditEl=$('#btnCancelEdit');
+  if(cancelEditEl){
+    cancelEditEl.addEventListener('click', function(){
+      state.editingNewsId=null;
+      $('#btnSaveNews').textContent='Pubblica notizia';
+      cancelEditEl.style.display='none';
+      $('#news_title').value=''; $('#news_body_html').innerHTML='';
+    });
+  }
 
-  $('#btnExportNews')?.addEventListener('click', ()=>{ const blob=new Blob([JSON.stringify(state.news,null,2)], {type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='news.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
+  var exportNewsEl=$('#btnExportNews');
+  if(exportNewsEl){
+    exportNewsEl.addEventListener('click', function(){
+      const blob=new Blob([JSON.stringify(state.news,null,2)], {type:'application/json'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='news.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+  }
 
   /* Routing */
   function showTab(tab){
-    $$('.tab').forEach(s=>s.style.display='none');
+    $$('.tab').forEach(function(s){ s.style.display='none'; });
     const el=$('#'+tab); if(el) el.style.display='';
-    $$('#navPublic button, #navAdmin button').forEach(b=>{ b.classList.toggle('active', b.getAttribute('data-tab')===tab); });
+    $$('#navPublic button, #navAdmin button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-tab')===tab); });
   }
+
   function openNewsById(id){
-    const item = (state.news||[]).find(n=>String(n.id)===String(id));
-    if(!item){ alert('Articolo non trovato.'); showTab('notizie'); return; }
+    const item = (state.news||[]).find(function(n){ return String(n.id)===String(id); });
+    if(!item){ return false; }
     $('#articleTitle').textContent = item.title || '';
     $('#articleMeta').textContent = new Date(item.ts||Date.now()).toLocaleString('it-IT');
     $('#articleBody').innerHTML = item.bodyHtml || '';
     showTab('newsview');
+    return true;
   }
-  function backToNews(){ location.hash = '#notizie'; showTab('notizie'); }
-  $('#btnBackTop').addEventListener('click', backToNews);
-  $('#btnBackBottom').addEventListener('click', backToNews);
 
-  $$('#navPublic button, #navAdmin button').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const tab=btn.getAttribute('data-tab');
-      if(tab==='moderazione'||tab==='impostazioni'){ if(!sessionIsValid()){ alert('Area riservata: accedi come admin.'); return; } touchSession(); }
-      if(tab==='moderazione') renderModeration();
-      if(tab==='notizie') renderNews();
-      showTab(tab);
-      if(['catalogo','nuovo','notizie','moderazione','impostazioni'].includes(tab)) location.hash = '#'+tab;
-    });
-  });
+  async function ensureNewsLoaded(){
+    if((state.news||[]).length>0) return;
+    const n = await tryFetchAny('news');
+    if(n.ok){
+      state.news = n.data.map(function(x,i){ return {id:x.id||('n'+i), title:x.title, bodyHtml:x.bodyHtml||x.body||'', ts:x.ts||Date.now()}; });
+      save('fi_news_site_v38', state.news);
+      renderNews();
+    }
+  }
 
-  function handleRoute(){
+  async function handleRoute(){
     const hash=(location.hash||'').replace(/^#/, '');
-    if(hash.startsWith('news/')){ const id = hash.slice(5); openNewsById(id); return; }
+    if(hash.indexOf('news/')===0){
+      const id = hash.slice(5);
+      if(!openNewsById(id)){
+        await ensureNewsLoaded();
+        if(!openNewsById(id)){
+          alert('Articolo non trovato.');
+          showTab('notizie');
+        }
+      }
+      return;
+    }
     if(hash==='notizie'){ renderNews(); showTab('notizie'); }
     else if(hash==='nuovo'){ showTab('nuovo'); }
     else if(hash==='moderazione'){ renderModeration(); showTab('moderazione'); }
     else if(hash==='impostazioni'){ showTab('impostazioni'); }
     else { showTab('catalogo'); }
   }
-  window.addEventListener('hashchange', handleRoute);
+  window.addEventListener('hashchange', function(){ handleRoute(); });
+
+  /* Hook nav buttons (niente optional chaining) */
+  $$('#navPublic button, #navAdmin button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const tab=btn.getAttribute('data-tab');
+      if(tab==='moderazione' || tab==='impostazioni'){
+        if(!sessionIsValid()){ alert('Area riservata: accedi come admin.'); return; }
+        touchSession();
+      }
+      if(tab==='moderazione') renderModeration();
+      if(tab==='notizie') renderNews();
+      showTab(tab);
+      if(['catalogo','nuovo','notizie','moderazione','impostazioni'].indexOf(tab)>=0) location.hash = '#'+tab;
+    });
+  });
 
   /* Init */
-  (function init(){
-    showTab('catalogo');
+  (async function init(){
+    preloadAdmins();
+    if(sessionIsValid()){ touchSession(); state.isAdmin=true; state.meUser=sessionStorage.getItem('fi_admin_user'); }
     applyAdminUI();
     renderCatalogo();
     renderNews();
     bootstrapIfEmpty();
-    handleRoute();
+    await handleRoute();
   })();
 
 })();
