@@ -5,29 +5,37 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fantasy Italia — Nuove proposte</title>
 <meta name="theme-color" content="#7aa6ff">
-<meta name="description" content="Catalogo gratuito della narrativa fantasy italiana: esordi, sinossi, dati bibliografici e segnalazioni. Nessun cookie né affiliazioni.">
+<meta name="description" content="Catalogo gratuito della narrativa fantasy italiana: autori esordienti, collane, dati bibliografici e segnalazioni. Nessun cookie né affiliazioni.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="referrer" content="no-referrer">
 <meta property="og:title" content="Fantasy Italia — Nuove proposte">
-<meta property="og:description" content="Catalogo gratuito della narrativa fantasy italiana: esordi, sinossi, dati bibliografici e segnalazioni. Nessun cookie né affiliazioni.">
+<meta property="og:description" content="Catalogo gratuito della narrativa fantasy italiana: autori esordienti, collane, dati bibliografici e segnalazioni. Nessun cookie né affiliazioni.">
 <style>
   :root{ --bg:#0f1013; --panel:#171923; --ink:#e7e9ee; --muted:#a9adbb; --accent:#7aa6ff; --danger:#ff6b6b; --border:#232635; }
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,Noto Sans;background:linear-gradient(180deg,#0f1013,#0d0e12 140vh);color:var(--ink)}
-  header{position:sticky;top:0;z-index:5;background:rgba(13,14,18,.9);backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
-  .wrap{max-width:1100px;margin:0 auto;padding:16px;display:flex;align-items:center;gap:12px}
+
+  /* Header */
+  header{position:sticky;top:0;z-index:5;background:rgba(13,14,18,.6);backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
+  .wrap{max-width:1100px;margin:0 auto;padding:12px 16px}
+  .wrap-col{display:flex;flex-direction:column;gap:8px}
+  .topbar{display:flex;align-items:center;gap:10px}
   h1{font-size:20px;margin:0;letter-spacing:.2px;flex:1}
+  .adminBadge{font-size:12px;border:1px solid var(--border);padding:6px 9px;border-radius:999px;color:#cfe;opacity:.9}
+  .adminToggle{background:#132033;border:1px solid var(--border);color:#dfe;padding:8px 12px;border-radius:10px;cursor:pointer}
+
+  .subnav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   nav{display:flex;gap:8px;flex-wrap:wrap}
   nav button{background:#151826;color:var(--ink);border:1px solid var(--border);padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:600}
   nav button.active{outline:2px solid var(--accent)}
-  .adminBadge{font-size:12px;border:1px solid var(--border);padding:6px 9px;border-radius:999px;color:#cfe;opacity:.9}
-  .adminToggle{background:#132033;border:1px solid var(--border);color:#dfe;padding:8px 12px;border-radius:10px;cursor:pointer}
+
+  /* Layout */
   main{padding:20px 16px}
   section{max-width:1100px;margin:0 auto;background:#171923;border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
   .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
-  .card{position:relative;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:flex-start;min-height:140px}
-  .badge{position:absolute;top:8px;left:8px;background:#0f2;color:#072;font-weight:700;font-size:11px;padding:4px 6px;border-radius:6px;border:1px solid #063}
+  .card{position:relative;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:10px;display:flex;gap:10px;align-items:flex-start;min-height:140px}
+  .badge{position:absolute;top:8px;left:8px;background:#0f2;color:#061;font-size:11px;padding:4px 6px;border-radius:6px;border:1px solid #063}
   img.cover{display:block;border-radius:8px;border:1px solid var(--border);height:160px;width:auto;object-fit:cover;background:#080a0f}
   .meta{flex:1;min-width:0}
   .meta h3{margin:0 0 6px 0;font-size:16px;line-height:1.2}
@@ -35,72 +43,69 @@
   .meta .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
   .tag{font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
   .tag.label{color:#9fc8ff;border-color:#2854aa}
-  .actions{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:nowrap}
-  .btn{background:#151826;border:1px solid var(--border);color:#fff;padding:6px 10px;border-radius:10px;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+  .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+  .btn{background:#151826;border:1px solid var(--border);color:var(--ink);padding:8px 10px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
   .btn.primary{outline:2px solid var(--accent)}
   .btn.danger{outline:1px solid #402;color:#ff9aa9}
 
-  /* 35x100 px per entrambi i pulsanti store */
-  .btn-amz, .btn-store{width:100px;height:35px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;font-size:12px;font-weight:600;letter-spacing:.2px;border:1px solid #0c0e14;text-decoration:none}
+  /* Store buttons: 35x100, nero Amazon */
+  .btn-amz, .btn-store{
+    width:100px;height:35px;padding:0;
+    display:inline-flex;align-items:center;justify-content:center;
+    border-radius:10px;font-size:12px;font-weight:600;letter-spacing:.2px;
+    border:1px solid #0c0e14;text-decoration:none
+  }
   .btn-amz{background:#131a22}
-  /* Logo Amazon incorporato (usa quello che mi hai passato) */
   .btn-amz img{display:block;max-height:70%;max-width:90%;object-fit:contain;filter:none !important}
-  .btn-store{background:#151826;color:#fff;text-decoration:none}
+  .btn-store{background:#131a22;color:#fff;text-decoration:none}
 
   .row{display:flex;gap:10px;flex-wrap:wrap}
   .field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:180px}
   .field label{font-size:13px;color:var(--muted)}
-  input[type="text"], input[type="url"], input[type="number"], textarea, select{background:#0f1119;color:#fff;border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:14px;width:100%}
-  textarea{height:90px;resize:vertical}
+  input[type="text"], input[type="url"], input[type="number"], textarea, select{background:#0f1016;color:var(--ink);border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:14px;width:100%}
+  textarea{height:140px;resize:vertical}
   .hint{color:var(--muted);font-size:12px}
   .right{margin-left:auto}
   .muted{color:var(--muted)}
   .small{font-size:12px}
-  footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
-  footer a{color:#9fc8ff;text-decoration:none}
-  footer .sep{opacity:.4;margin:0 8px}
   .divider{height:1px;background:var(--border);margin:12px 0}
   .banner{background:#142036;border:1px solid #223a66;color:#cfe;border-radius:12px;padding:8px 12px;margin:8px 0}
 
-  /* Notizie */
-  .news-card{position:relative;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;cursor:pointer}
-  .news-card h4{margin:0 0 4px;font-size:16px;line-height:1.2}
-  .news-preview{color:var(--muted);font-size:13px;line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;white-space:normal;max-height:6.2em}
-  .news-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
-  .news-toolbar .mini{background:#151826;border:1px solid var(--border);color:#fff;padding:6px 9px;border-radius:8px;cursor:pointer;font-size:12px}
-  .editable{background:#0f1119;color:#fff;border:1px solid var(--border);border-radius:10px;padding:10px;min-height:140px;line-height:1.5}
-  .editable:focus{outline:2px solid #24365e}
-  .news-body .bigger{font-size:1.15em}
-  .news-body .smaller{font-size:0.9em}
+  /* News */
+  .news-card{display:block;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:12px;text-decoration:none;color:inherit}
+  .news-card h3{margin:0 0 6px 0;font-size:18px}
+  .line-clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .news-article{max-width:900px;margin:0 auto;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:16px;position:relative}
+  .backAppTop{position:sticky;top:0;left:0}
+  .backRow{margin-top:16px;display:flex;gap:10px}
+  .news-meta{color:var(--muted);font-size:12px;margin-bottom:10px}
 
-  /* Overlay notizie: scroll + due bottoni Torna all'app */
-  #newsOverlay{position:fixed;inset:0;background:rgba(10,12,18,.92);backdrop-filter:blur(6px);z-index:50;display:none;overflow:auto}
-  #newsOverlay .inner{max-width:900px;margin:5vh auto;background:#171923;border:1px solid var(--border);border-radius:14px;padding:0;box-shadow:0 10px 30px rgba(0,0,0,.35);display:flex;flex-direction:column;min-height:40vh}
-  .overlay-header{position:sticky;top:0;display:flex;justify-content:flex-start;gap:8px;background:rgba(23,25,35,.95);border-bottom:1px solid var(--border);padding:10px 12px;border-top-left-radius:14px;border-top-right-radius:14px}
-  .overlay-footer{position:sticky;bottom:0;display:flex;justify-content:flex-start;gap:8px;background:rgba(23,25,35,.95);border-top:1px solid var(--border);padding:10px 12px;border-bottom-left-radius:14px;border-bottom-right-radius:14px}
-  #newsOverlay .content{padding:16px}
-  #newsOverlay h3{margin:0 0 8px}
-  #newsOverlay .news-body{color:#fff;font-size:15px;line-height:1.6}
-  .btnBack{background:#151826;border:1px solid var(--border);color:#fff;padding:8px 12px;border-radius:10px;cursor:pointer}
+  /* Footer */
+  footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
+  footer a{color:#9fc8ff;text-decoration:none}
+  footer .sep{opacity:.4;margin:0 8px}
 </style>
 </head>
 <body>
+
 <header>
-  <div class="wrap">
-    <h1>Fantasy Italia — Nuove proposte</h1>
-    <span id="adminBadge" class="adminBadge" style="display:none"></span>
-    <button id="adminToggle" class="adminToggle" title="Accedi/Esci come admin">Accedi admin</button>
-  </div>
-  <div class="wrap" style="padding-top:0">
-    <nav id="navPublic">
-      <button data-tab="catalogo" class="active">Catalogo</button>
-      <button data-tab="nuovo">Nuovo titolo</button>
-      <button data-tab="notizie">Notizie</button>
-    </nav>
-    <nav id="navAdmin" style="display:none">
-      <button data-tab="moderazione">Moderazione</button>
-      <button data-tab="impostazioni">Impostazioni</button>
-    </nav>
+  <div class="wrap wrap-col">
+    <div class="topbar">
+      <h1>Fantasy Italia — Nuove proposte</h1>
+      <span id="adminBadge" class="adminBadge" style="display:none"></span>
+      <button id="adminToggle" class="adminToggle" title="Accedi/Esci dalla sessione amministratore">Accedi admin</button>
+    </div>
+    <div class="subnav">
+      <nav id="navPublic">
+        <button data-tab="catalogo" class="active">Catalogo</button>
+        <button data-tab="nuovo">Nuovo titolo</button>
+        <button data-tab="notizie">Notizie</button>
+      </nav>
+      <nav id="navAdmin" style="display:none">
+        <button data-tab="moderazione">Moderazione</button>
+        <button data-tab="impostazioni">Impostazioni</button>
+      </nav>
+    </div>
   </div>
 </header>
 
@@ -128,65 +133,105 @@
 
   <!-- Nuovo titolo -->
   <section id="nuovo" class="tab" style="display:none">
-    <div class="row">
-      <div class="field"><label>Titolo</label><input id="f_title" type="text"></div>
-      <div class="field"><label>Autore</label><input id="f_author" type="text"></div>
-      <div class="field"><label>Anno</label><input id="f_year" type="number" min="1900" max="2100" value="2025"></div>
+    <div class="toolbar">
+      <div class="small muted">I campi con (*) sono obbligatori.</div>
+      <span class="right small muted">Il titolo apparirà in <b>Catalogo</b> dopo l’approvazione di un admin.</span>
     </div>
+
+    <!-- riga 1: Titolo, Autore, Editore, Anno, Collana -->
     <div class="row">
-      <div class="field"><label>Editore</label><input id="f_publisher" type="text"></div>
-      <div class="field"><label>ISBN</label><input id="f_isbn" type="text" placeholder="es. 978."></div>
-      <div class="field"><label>Link store Amazon</label><input id="f_store_amz" type="url" placeholder="https://amazon."></div>
+      <div class="field">
+        <label>Titolo *</label>
+        <input id="f_title" type="text" placeholder="Titolo del libro">
+      </div>
+      <div class="field">
+        <label>Autore *</label>
+        <input id="f_author" type="text" placeholder="Nome Cognome">
+      </div>
+      <div class="field">
+        <label>Editore *</label>
+        <input id="f_publisher" type="text" placeholder="Casa editrice">
+      </div>
+      <div class="field" style="max-width:120px">
+        <label>Anno *</label>
+        <input id="f_year" type="number" min="1900" max="2100" value="2025">
+      </div>
+      <div class="field" style="max-width:160px">
+        <label>Collana</label>
+        <input id="f_series" type="text" placeholder="Collana">
+      </div>
     </div>
+
+    <!-- riga 2: ISBN, Amazon, Store Editore -->
     <div class="row">
-      <div class="field"><label>Link store Editore</label><input id="f_store_pub" type="url" placeholder="https://."></div>
-      <div class="field"><label>URL copertina</label><input id="f_cover" type="url" placeholder="https://."></div>
-      <div class="field"><label>Esordio (nel fantasy)</label>
+      <div class="field" style="max-width:220px">
+        <label>ISBN</label>
+        <input id="f_isbn" type="text" placeholder="978-...">
+      </div>
+      <div class="field">
+        <label>Store Amazon</label>
+        <input id="f_amz" type="url" placeholder="https://amazon.it/...">
+      </div>
+      <div class="field">
+        <label>Store editore</label>
+        <input id="f_store" type="url" placeholder="https://shop.editore.it/...">
+      </div>
+    </div>
+
+    <!-- riga 3: Copertina + Esordio -->
+    <div class="row">
+      <div class="field">
+        <label>URL copertina (JPG/PNG)</label>
+        <input id="f_cover" type="url" placeholder="https://.../cover.jpg">
+        <div class="hint">Se omesso, verrà mostrato un segnaposto.</div>
+      </div>
+      <div class="field" style="max-width:200px">
+        <label>Romanzo d'esordio?</label>
         <select id="f_debut">
-          <option value="unknown" selected>Da verificare</option>
+          <option value="unknown" selected>Non specificato</option>
           <option value="yes">Sì</option>
           <option value="no">No</option>
         </select>
       </div>
     </div>
-    <div class="field">
-      <label>Descrizione (sinossi)</label>
-      <textarea id="f_desc"></textarea>
+
+    <!-- riga 4: Sinossi -->
+    <div class="row">
+      <div class="field" style="flex:1">
+        <label>Sinossi</label>
+        <textarea id="f_desc" placeholder="Breve sinossi del libro (facoltativa)"></textarea>
+      </div>
     </div>
+
     <div class="actions">
-      <button class="btn primary" id="btnSaveNew">Salva (in revisione)</button>
-      <span class="hint">I contenuti inviati dagli utenti restano in “Revisione” finché non li approva un admin.</span>
+      <button class="btn primary" id="btnSaveNew">Salva in revisione</button>
+      <span class="hint">Il titolo apparirà in Catalogo dopo l’approvazione di un admin.</span>
     </div>
   </section>
 
-  <!-- Notizie -->
+  <!-- Notizie (lista) -->
   <section id="notizie" class="tab" style="display:none">
-    <div class="toolbar">
-      <div class="muted small">Aggiornamenti e segnalazioni dal catalogo.</div>
-      <span id="newsAdminBar" style="display:none; margin-left:auto; gap:8px">
-        <button class="btn" id="btnExportNews">Esporta news (JSON)</button>
-      </span>
+    <div id="newsAdminBar" class="toolbar" style="display:none">
+      <div class="field" style="flex:1">
+        <label>Titolo</label>
+        <input id="news_title" type="text" placeholder="Titolo della notizia">
+      </div>
+      <div class="right">
+        <button id="btnExportNews" class="btn">Esporta news</button>
+      </div>
     </div>
-
-    <div id="newsEditor" class="banner" style="display:none">
-      <div class="row">
-        <div class="field"><label>Titolo notizia</label><input id="news_title" type="text"></div>
+    <div id="newsEditor" style="display:none">
+      <div class="toolbar" style="margin-bottom:6px">
+        <button class="btn small" data-cmd="bold">Grassetto</button>
+        <button class="btn small" data-cmd="italic">Corsivo</button>
+        <button class="btn small" data-cmd="underline">Sottolineato</button>
+        <button class="btn small" data-cmd="ul">Elenco</button>
+        <button class="btn small" data-cmd="link">Link</button>
+        <button class="btn small" data-cmd="bigger">A+</button>
+        <button class="btn small" data-cmd="smaller">A−</button>
+        <button class="btn small" data-cmd="clear">Svuota</button>
       </div>
-      <div class="field">
-        <label>Contenuto (formattato)</label>
-        <div class="news-toolbar">
-          <button type="button" class="mini" data-cmd="bold"><b>B</b></button>
-          <button type="button" class="mini" data-cmd="italic"><i>I</i></button>
-          <button type="button" class="mini" data-cmd="underline"><u>U</u></button>
-          <button type="button" class="mini" data-cmd="bigger">A+</button>
-          <button type="button" class="mini" data-cmd="smaller">A−</button>
-          <button type="button" class="mini" data-cmd="ul">• Lista</button>
-          <button type="button" class="mini" data-cmd="link">🔗 Link</button>
-          <button type="button" class="mini" data-cmd="clear">✖︎ Pulisci</button>
-        </div>
-        <div id="news_body_html" class="editable" contenteditable="true" spellcheck="true"></div>
-        <div class="hint">L’anteprima della card è generata automaticamente dalle prime righe del testo.</div>
-      </div>
+      <div id="news_body_html" contenteditable="true" style="border:1px solid var(--border);border-radius:10px;padding:10px;min-height:160px"></div>
       <div class="actions">
         <button class="btn primary" id="btnSaveNews">Pubblica notizia</button>
         <span class="hint">Solo gli admin possono pubblicare/aggiornare le notizie.</span>
@@ -194,6 +239,21 @@
     </div>
 
     <div id="gridNews" class="grid"></div>
+  </section>
+
+  <!-- Notizia (articolo) -->
+  <section id="newsview" class="tab" style="display:none">
+    <div class="news-article">
+      <div class="backAppTop">
+        <button class="btn" id="btnBackTop">Torna all’app</button>
+      </div>
+      <h2 id="articleTitle" style="margin:6px 0 4px 0"></h2>
+      <div id="articleMeta" class="news-meta"></div>
+      <div id="articleBody"></div>
+      <div class="backRow">
+        <button class="btn" id="btnBackBottom">Torna all’app</button>
+      </div>
+    </div>
   </section>
 
   <!-- Moderazione -->
@@ -224,6 +284,10 @@
         <label>URL remoto catalogo.json</label>
         <input id="catalogUrl" type="url" placeholder="https://tuodominio/data/catalogo.json">
       </div>
+      <div class="field">
+        <label>URL remoto news.json</label>
+        <input id="newsUrl" type="url" placeholder="https://tuodominio/data/news.json">
+      </div>
       <button class="btn" id="btnSaveUrls">Salva URL</button>
     </div>
     <div class="divider"></div>
@@ -233,7 +297,7 @@
     </div>
     <div class="divider"></div>
     <h3>Amministratori</h3>
-    <div class="small muted">Login centralizzato con hash PBKDF2 da <a href="admin-tool.html" target="_blank" rel="noopener">admin-tool</a>.</div>
+    <div class="small muted">Login centralizzato con hash PBKDF2 saltato. Puoi generare credenziali con l’utility in <a href="admin-tool.html" target="_blank" rel="noopener">admin-tool</a>.</div>
     <div class="actions" style="margin-top:12px">
       <button class="btn danger" id="btnLogout">Esci dalla sessione admin</button>
     </div>
@@ -248,31 +312,21 @@
   </div>
 </footer>
 
-<!-- Overlay Notizie -->
-<div id="newsOverlay" style="display:none">
-  <div class="inner">
-    <div class="overlay-header"><button id="btnBackTop" class="btnBack" type="button">◀︎ Torna all’app</button></div>
-    <div class="content">
-      <h3 id="newsFullTitle"></h3>
-      <div id="newsFullBody" class="news-body"></div>
-    </div>
-    <div class="overlay-footer"><button id="btnBackBottom" class="btnBack" type="button">◀︎ Torna all’app</button></div>
-  </div>
-</div>
-
 <script>
 (function(){
-  const $  = (sel, root=document) => root.querySelector(sel);
-  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+  'use strict';
+  const $=(s)=>document.querySelector(s);
+  const $$=(s)=>Array.from(document.querySelectorAll(s));
 
   const state = {
+    settings: load('fi_settings_site_v38', {
+      adminsUrl: '', catalogUrl: '', newsUrl: ''
+    }),
+    remoteAdmins: null,
     books: load('fi_books_site_v38', []),
-    nextId: Date.now(),
-    settings: load('fi_settings_site_v38', {}),
+    news:  load('fi_news_site_v38', []),
     isAdmin: false,
     meUser: null,
-    remoteAdmins: [],
-    news: load('fi_news_site_v38', []),
     newsReady: false
   };
 
@@ -285,12 +339,12 @@
   if(!state.settings.newsUrl)    state.settings.newsUrl    = DEFAULT_NEWS_URL;
   save('fi_settings_site_v38', state.settings);
 
-  function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }catch(e){ return fallback; } }
+  function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback)); }catch(e){ return fallback; } }
   function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
   async function fetchJson(url){ const res = await fetch(url, {cache:'no-store'}); if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); }
 
-  // Admin sessione
-  function sessionIsValid(){ const u=sessionStorage.getItem('fi_admin_user'); const t=parseInt(sessionStorage.getItem('fi_admin_time')||'0',10); if(!u||!t) return false; if(Date.now()-t>30*60*1000) return false; return (state.remoteAdmins||[]).some(a=>a.u===u); }
+  /* Admin sessione */
+  function sessionIsValid(){ const u=sessionStorage.getItem('fi_admin_user'); const t=+sessionStorage.getItem('fi_admin_time')||0; if(!u||Date.now()-t>4*60*60*1000) return false; return (state.remoteAdmins||[]).some(a=>a.u===u); }
   function touchSession(){ sessionStorage.setItem('fi_admin_time', String(Date.now())); }
   function clearSession(){ sessionStorage.removeItem('fi_admin_user'); sessionStorage.removeItem('fi_admin_time'); }
 
@@ -303,74 +357,80 @@
   }
   async function doLoginFlow(){
     const u=prompt('Inserisci username admin'); if(u===null||!u.trim()) return false;
-    const p=prompt('Inserisci password admin'); if(p===null) return false;
-    const rec=(state.remoteAdmins||[]).find(a=>a.u===u); if(!rec){ alert('Credenziali non valide.'); return false; }
-    const h=await pbkdf2Hex(p, rec.salt, rec.iter||120000, 32); if(h!==rec.hash){ alert('Credenziali non valide.'); return false; }
-    state.isAdmin=true; state.meUser=u; sessionStorage.setItem('fi_admin_user', u); touchSession(); applyAdminUI(); return true;
+    const pass=prompt('Inserisci password'); if(pass===null) return false;
+    try{
+      const list = state.remoteAdmins || await fetchJson(state.settings.adminsUrl);
+      state.remoteAdmins = list;
+      const rec = list.find(x=>x.u===u.trim());
+      if(!rec){ alert('Utente non trovato.'); return false; }
+      const h = await pbkdf2Hex(pass, rec.salt, rec.iter);
+      if(h!==rec.hash){ alert('Password errata.'); return false; }
+      sessionStorage.setItem('fi_admin_user', rec.u);
+      touchSession();
+      state.isAdmin=true; state.meUser=rec.u;
+      applyAdminUI();
+      alert('Accesso admin eseguito.');
+      return true;
+    }catch(e){
+      console.error(e); alert('Errore durante il login.');
+      return false;
+    }
   }
 
-  // Sync iniziale
-  (async function syncCatalog(){ try{ const data=await fetchJson(state.settings.catalogUrl); if(Array.isArray(data)){ for(const r of data){ if(!state.books.find(b=>((b.isbn||'')&&(r.isbn||'')&&(b.isbn===r.isbn)))) state.books.push(r); } save('fi_books_site_v38', state.books); } }catch(e){ console.warn('Catalog load failed', e); } renderCatalogo(); })();
-  (async function loadAdmins(){ try{ const data=await fetchJson(state.settings.adminsUrl); if(Array.isArray(data)) state.remoteAdmins=data; }catch(e){ console.warn('Admins load failed', e); } if(sessionIsValid()){ state.isAdmin=true; state.meUser=sessionStorage.getItem('fi_admin_user'); applyAdminUI(); touchSession(); } })();
-  (async function syncNews(){ try{ const data=await fetchJson(state.settings.newsUrl); if(Array.isArray(data) && data.length){ state.news=data.map((n,i)=>{ if(!n.id) n.id = 'n' + (n.ts || Date.now()) + '_' + i; return n; }); save('fi_news_site_v38', state.news); } }catch(e){ console.warn('News load failed', e); } state.newsReady=true; renderNews(); handleRoute(); })();
-
-  // UI admin
-  function applyAdminUI(){
-    const on=sessionIsValid();
-    $('#navAdmin').style.display=on?'':'';
-    $('#adminBadge').style.display=on?'':'';
-    $('#adminBadge').textContent=on?('Admin: '+(state.meUser||'')):'';
-    $('#adminToggle').textContent=on?'Esci admin':'Accedi admin';
-    $('#adminTools').style.display=on?'flex':'none';
-    $('#newsAdminBar').style.display=on?'flex':'none';
-    $('#newsEditor').style.display=on?'':'none';
-  }
-  $('#adminToggle').addEventListener('click', async()=>{ if(sessionIsValid()){ state.isAdmin=false; state.meUser=null; clearSession(); applyAdminUI(); } else { await doLoginFlow(); } });
-
-  // Tabs
-  function showTab(tab){
-    $$('.tab').forEach(s=>s.style.display='none');
-    const el=$('#'+tab); if(el) el.style.display='';
-    $$('#navPublic button, #navAdmin button').forEach(b=>{ b.classList.toggle('active', b.getAttribute('data-tab')===tab); });
-  }
-  $$('#navPublic button, #navAdmin button').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const tab=btn.getAttribute('data-tab');
-      if(tab==='moderazione'||tab==='impostazioni'){ if(!sessionIsValid()){ state.isAdmin=false; state.meUser=null; clearSession(); applyAdminUI(); alert('Area riservata: accedi come admin.'); return; } touchSession(); }
-      showTab(tab);
-      if(tab==='notizie') renderNews();
-      if(['catalogo','nuovo','notizie'].includes(tab)) location.hash = '#'+tab;
-    });
+  $('#adminToggle')?.addEventListener('click', async()=>{
+    if(sessionIsValid()){ clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.'); }
+    else await doLoginFlow();
   });
 
-  // Impostazioni
-  $('#btnSaveUrls')?.addEventListener('click',()=>{ state.settings.adminsUrl=$('#adminsUrl').value.trim()||DEFAULT_ADMINS_URL; state.settings.catalogUrl=$('#catalogUrl').value.trim()||DEFAULT_CATALOG_URL; save('fi_settings_site_v38', state.settings); alert('URL salvati. Ricarica la pagina.'); });
+  /* Impostazioni */
+  $('#btnSaveUrls')?.addEventListener('click',()=>{ state.settings.adminsUrl=$('#adminsUrl').value.trim(); state.settings.catalogUrl=$('#catalogUrl').value.trim(); state.settings.newsUrl=$('#newsUrl').value.trim(); save('fi_settings_site_v38', state.settings); alert('URL salvati. Ricarica la pagina.'); });
   $('#btnLogout')?.addEventListener('click',()=>{ clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.'); });
-  $('#btnClearLocal')?.addEventListener('click',()=>{ localStorage.removeItem('fi_books_site_v38'); localStorage.removeItem('fi_news_site_v38'); alert('Cache locale svuotata. Ricarica la pagina.'); });
-  $('#btnForceReload')?.addEventListener('click', async()=>{ try{ const [b,n]=await Promise.all([fetchJson(state.settings.catalogUrl), fetchJson(state.settings.newsUrl)]); if(Array.isArray(b)){ state.books=b; save('fi_books_site_v38', b); } if(Array.isArray(n)){ state.news=n.map((x,i)=>({id:x.id||('n'+(x.ts||Date.now())+'_'+i), title:x.title, bodyHtml:x.bodyHtml, ts:x.ts||Date.now()})); save('fi_news_site_v38', state.news); } renderCatalogo(); renderNews(); alert('Ricaricati dal remoto.'); }catch(e){ alert('Errore ricarica: '+e.message); } });
+  $('#btnClearLocal')?.addEventListener('click', ()=>{
+    localStorage.removeItem('fi_books_site_v38');
+    localStorage.removeItem('fi_news_site_v38');
+    state.books = [];
+    state.news  = [];
+    renderCatalogo();
+    renderNews();
+    alert('Cache locale svuotata. La pagina verrà ricaricata.');
+    location.reload();
+  });
+  $('#btnForceReload')?.addEventListener('click', async()=>{ try{ const [b,n]=await Promise.all([fetchJson(state.settings.catalogUrl), fetchJson(state.settings.newsUrl)]); if(Array.isArray(b)){ state.books=b; save('fi_books_site_v38', b); } if(Array.isArray(n)){ state.news=n.map((x,i)=>({id:x.id||('n'+i), title:x.title, bodyHtml:x.bodyHtml||x.body||'', ts:x.ts||Date.now()})); save('fi_news_site_v38', state.news); } renderCatalogo(); renderNews(); alert('Dati ricaricati dal remoto.'); }catch(e){ console.error(e); alert('Errore nel caricamento remoto.'); } });
 
-  // Nuovo titolo
-  function collectForm(){
-    return {
-      title: $('#f_title').value.trim(),
-      author: $('#f_author').value.trim(),
-      year: parseInt($('#f_year').value||'0',10),
-      publisher: $('#f_publisher').value.trim(),
-      isbn: $('#f_isbn').value.trim(),
-      storeAmazonUrl: $('#f_store_amz').value.trim(),
-      storePublisherUrl: $('#f_store_pub').value.trim(),
-      coverUrl: $('#f_cover').value.trim(),
-      description: $('#f_desc').value.trim(),
-      isDebut: (function(){ const v=$('#f_debut').value; if(v==='yes') return true; if(v==='no') return false; return null; })(),
-      status:'pending', labels:[], featured:false
-    };
+  /* UI Admin privata */
+  function applyAdminUI(){
+    const on=sessionIsValid();
+    $('#navAdmin').style.display = on ? 'flex' : 'none';
+    $('#adminBadge').style.display = on ? 'inline-block' : 'none';
+    $('#adminBadge').textContent = on ? ('Admin: ' + (state.meUser||'')) : '';
+    $('#adminToggle').textContent = on ? 'Esci admin' : 'Accedi admin';
+    $('#adminTools').style.display = on ? 'flex' : 'none';
+    $('#newsAdminBar').style.display = on ? 'flex' : 'none';
+    $('#newsEditor').style.display = on ? '' : 'none';
   }
-  function clearForm(){ ['f_title','f_author','f_publisher','f_isbn','f_store_amz','f_store_pub','f_cover','f_desc'].forEach(id=> $('#'+id).value=''); $('#f_year').value=new Date().getFullYear(); $('#f_debut').value='unknown'; }
-  $('#btnSaveNew')?.addEventListener('click',()=>{ const b=collectForm(); if(!b.title||!b.author){ alert('Titolo e Autore sono obbligatori.'); return; } b.id='b'+(state.nextId++); state.books.push(b); save('fi_books_site_v38', state.books); renderCatalogo(); clearForm(); alert('Titolo salvato in Revisione.'); });
 
-  // Catalogo
+  /* Helpers form */
+  function clearForm(){ ['f_title','f_author','f_publisher','f_series','f_cover','f_desc','f_amz','f_store','f_isbn'].forEach(id=>{ const el=$('#'+id); if(el) el.value=''; }); $('#f_year').value=new Date().getFullYear(); $('#f_debut').value='unknown'; }
+  function collectForm(){
+    const title=($('#f_title').value||'').trim();
+    const author=($('#f_author').value||'').trim();
+    const publisher=($('#f_publisher').value||'').trim();
+    const year=parseInt($('#f_year').value,10);
+    if(!title||!author||!publisher||!year){ alert('Compila titolo, autore, editore e anno.'); return null; }
+    const series=$('#f_series').value.trim();
+    const coverUrl=$('#f_cover').value.trim();
+    const description=$('#f_desc').value.trim();
+    const storeAmazonUrl=$('#f_amz').value.trim();
+    const storePublisherUrl=$('#f_store').value.trim();
+    const isbn=$('#f_isbn').value.trim();
+    const isDebut = (function(v){ if(v==='yes') return true; if(v==='no') return false; return null; })($('#f_debut').value);
+    return { id:'b'+Date.now().toString(36), title, author, publisher, year, series, isbn, coverUrl, description, storeAmazonUrl, storePublisherUrl, isDebut, labels:[], status:'pending', featured:false };
+  }
+  $('#btnSaveNew')?.addEventListener('click',()=>{ const b=collectForm(); if(!b) return; b.status='pending'; if(!Array.isArray(state.books)) state.books=[]; state.books.push(b); save('fi_books_site_v38', state.books); renderCatalogo(); clearForm(); alert('Titolo salvato in Revisione.'); });
+
+  /* Catalogo */
   function tagEl(text, cls='tag'){ const t=document.createElement('span'); t.className=cls; t.textContent=text; return t; }
-  function placeholderCover(){ return 'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="240" height="360"><rect width="100%" height="100%" fill="#0a0c12"/><rect x="1" y="1" width="238" height="358" fill="none" stroke="#232635"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#5e657a">Copertina</text></svg>`); }
+  function placeholderCover(){ return 'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="160" viewBox="0 0 120 160"><rect width="100%" height="100%" fill="#0b0e13"/><rect x="10" y="10" width="100" height="140" rx="8" ry="8" fill="#0f141d" stroke="#1d2230"/><text x="60" y="83" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="14" fill="#5e657a">Copertina</text></svg>`); }
   function bookCard(b){
     const el=document.createElement('div'); el.className='card';
     if(b.featured){ const bd=document.createElement('div'); bd.className='badge'; bd.textContent='Consigliato'; el.appendChild(bd); }
@@ -378,17 +438,22 @@
     const meta=document.createElement('div'); meta.className='meta';
     const h3=document.createElement('h3'); h3.textContent=b.title||'(Senza titolo)';
     const by=document.createElement('div'); by.className='by'; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • ');
-    const desc=document.createElement('div'); desc.className='small muted'; desc.textContent=b.description ? (b.description.length>200? b.description.slice(0,199)+'…' : b.description) : '';
+    const desc=document.createElement('div'); desc.className='small muted'; desc.textContent=(b.description||'').length>200? (b.description.slice(0,199)+'…') : (b.description||'');
     const tags=document.createElement('div'); tags.className='tags';
-    const db=tagEl((b.isDebut===true)?'Esordio: sì' : (b.isDebut===false?'Esordio: no':'Esordio: ?')); tags.appendChild(db);
+    const debutText = (b.isDebut===true)?'Esordio: sì' : (b.isDebut===false?'Esordio: no':'Esordio: ?');
+    tags.appendChild(tagEl(debutText));
     if(Array.isArray(b.labels)) b.labels.slice(0,6).forEach(l=> tags.appendChild(tagEl(l,'tag label')));
     const actions=document.createElement('div'); actions.className='actions';
     const amz=b.storeAmazonUrl||b.storeUrl||'';
-    if(amz){ const btn=document.createElement('a'); btn.href=amz; btn.target='_blank'; btn.rel='noopener'; btn.className='btn-amz'; btn.title='Amazon'; btn.setAttribute('aria-label','Apri su Amazon'); const imgA=document.createElement('img'); imgA.alt='Amazon';
-      /* Sostituisci la stringa seguente col tuo percorso/immagine se preferisci non usare data URI */
-      imgA.src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width=\\"200\\" height=\\"80\\"><rect width=\\"100%\\" height=\\"100%\\" fill=\\"#131a22\\"/><text x=\\"50%\\" y=\\"55%\\" fill=\\"#fff\\" font-family=\\"Arial\\" font-size=\\"20\\" text-anchor=\\"middle\\">Amazon</text></svg>';
-      btn.appendChild(imgA); actions.appendChild(btn); }
-    if(b.storePublisherUrl){ const s=document.createElement('a'); s.href=b.storePublisherUrl; s.target='_blank'; s.rel='noopener'; s.className='btn btn-store'; s.textContent='Store editore'; actions.appendChild(s); }
+    if(amz){
+      const btn=document.createElement('a'); btn.href=amz; btn.target='_blank'; btn.rel='noopener'; btn.className='btn-amz'; btn.title='Amazon'; btn.setAttribute('aria-label','Apri su Amazon');
+      const imgA=document.createElement('img'); imgA.alt='Amazon';
+      imgA.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAhEAAAEoCAYAAADmA6PqAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAP+lSURBVHhe7F0HmFvF1dWut/ddadV7... (base64 accorciato per brevità) ...';
+      btn.appendChild(imgA); actions.appendChild(btn);
+    }
+    if(b.storePublisherUrl){
+      const s=document.createElement('a'); s.href=b.storePublisherUrl; s.target='_blank'; s.rel='noopener'; s.className='btn btn-store'; s.textContent='Store editore'; actions.appendChild(s);
+    }
     meta.appendChild(h3); meta.appendChild(by); meta.appendChild(desc); meta.appendChild(tags); meta.appendChild(actions);
     el.appendChild(img); el.appendChild(meta);
     return el;
@@ -396,103 +461,153 @@
   function renderCatalogo(){
     const grid=$('#gridCatalogo'); grid.innerHTML='';
     const q=$('#q').value.toLowerCase().trim(); const fy=$('#filterYear').value; let list=[...state.books];
-    if(fy!=='all'){ const y=parseInt(fy,10); list=list.filter(b=> (parseInt(b.year,10)||0)>=y ); }
-    if(q){ list=list.filter(b=> (b.title||'').toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q) || (b.publisher||'').toLowerCase().includes(q)); }
-    if(!list.length){ grid.innerHTML='<div class="muted">Nessun risultato. Il catalogo viene caricato dal server all’avvio.</div>'; return; }
-    list.sort((a,b)=>{ if(!!b.featured!==!!a.featured) return (b.featured?1:0)-(a.featured?1:0); const ya=parseInt(a.year,10)||0; const yb=parseInt(b.year,10)||0; if(yb!==ya) return yb-ya; const ta=(a.title||'').toLocaleLowerCase(); const tb=(b.title||'').toLocaleLowerCase(); return ta.localeCompare(tb,'it'); });
+    if(fy!=='all'){ const y=parseInt(fy,10)||0; list=list.filter(b=>(+b.year||0)>=y); }
+    if(q){ list=list.filter(b=>[b.title,b.author,b.publisher,(b.labels||[]).join(' ')].filter(Boolean).join(' ').toLowerCase().includes(q)); }
+    /* Ordine: Consigliato -> Anno desc -> Titolo */
+    list.sort((a,b)=>{
+      const fa=(a.featured?1:0), fb=(b.featured?1:0); if(fa!==fb) return fb-fa;
+      const ya=(+a.year||0), yb=(+b.year||0); if(ya!==yb) return yb-ya;
+      const ta=(a.title||'').toLocaleLowerCase(), tb=(b.title||'').toLocaleLowerCase(); return ta.localeCompare(tb,'it');
+    });
     for(const b of list) grid.appendChild(bookCard(b));
   }
   $('#filterYear').addEventListener('change', renderCatalogo);
   $('#q').addEventListener('input', (function(){let t; return ()=>{ clearTimeout(t); t=setTimeout(renderCatalogo,200); }})());
-  $('#btnExport')?.addEventListener('click',()=>{ const blob=new Blob([JSON.stringify(state.books,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='fantasy-italia-nuove-proposte.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
+  $('#btnExport')?.addEventListener('click',()=>{
+    const blob=new Blob([JSON.stringify(state.books,null,2)], {type:'application/json'});
+    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='catalogo.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
 
-  // Notizie
-  function sanitizeHtml(html){
-    try{
-      const allowed=new Set(['B','I','U','EM','STRONG','P','BR','UL','OL','LI','A','SPAN','H3','H4']);
-      const doc=new DOMParser().parseFromString('<div>'+html+'</div>','text/html'); const root=doc.body.firstChild;
-      function clean(node){
-        if(node.nodeType===Node.TEXT_NODE) return node.cloneNode();
-        if(node.nodeType!==Node.ELEMENT_NODE) return document.createTextNode('');
-        const tag=node.tagName;
-        if(!allowed.has(tag)){
-          const frag=doc.createDocumentFragment();
-          node.childNodes.forEach(ch=>frag.appendChild(clean(ch)));
-          return frag;
-        }
-        const el=doc.createElement(tag.toLowerCase());
-        if(tag==='A' && node.getAttribute('href')){
-          const href=node.getAttribute('href');
-          if(/^https?:/i.test(href)){ el.setAttribute('href',href); el.setAttribute('target','_blank'); el.setAttribute('rel','noopener'); }
-        }
-        if(tag==='SPAN'){
-          const cls=node.getAttribute('class')||'';
-          if(/\bbigger\b/.test(cls)) el.className='bigger';
-          if(/\bsmaller\b/.test(cls)) el.className = el.className ? (el.className+' smaller') : 'smaller';
-        }
-        node.childNodes.forEach(ch=>el.appendChild(clean(ch)));
-        return el;
-      }
-      const out=document.createElement('div');
-      root.childNodes.forEach(ch=>out.appendChild(clean(ch)));
-      return out.innerHTML;
-    }catch(e){ return html||''; }
-  }
-  function previewFrom(n){ const tmp=document.createElement('div'); tmp.innerHTML=n.bodyHtml||''; const txt=(tmp.textContent||tmp.innerText||'').trim(); return txt.slice(0,400); }
+  /* Moderazione */
+  function modCard(b){
+    const el = document.createElement('div'); el.className='card'; el.dataset.id = b.id||'';
+    const img = document.createElement('img'); img.className='cover'; img.alt='Copertina'; img.src=b.coverUrl||placeholderCover();
 
-  const overlay = $('#newsOverlay');
-  function closeOverlay(){ overlay.style.display='none'; document.body.style.overflow=''; }
-  function openNewsById(id){
-    const n=(state.news||[]).find(x=>x.id===id); if(!n) return;
-    overlay.style.display='block'; document.body.style.overflow='hidden';
-    $('#newsFullTitle').textContent = n.title || '';
-    $('#newsFullBody').innerHTML = sanitizeHtml(n.bodyHtml || '');
-  }
-  function goBackToNews(){ showTab('notizie'); location.hash = '#notizie'; closeOverlay(); }
+    /* Badge Consigliato anche in Moderazione */
+    const badge = document.createElement('div'); badge.className='badge'; badge.textContent='Consigliato';
+    if(!b.featured) badge.style.display='none';
+    el.appendChild(badge);
 
-  // Bottoni "Torna all’app" (alto e basso) + ESC
-  $('#btnBackTop').addEventListener('click', goBackToNews);
-  $('#btnBackBottom').addEventListener('click', goBackToNews);
-  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && overlay.style.display!=='none') goBackToNews(); });
+    const meta = document.createElement('div'); meta.className='meta';
+    const h3 = document.createElement('h3'); h3.textContent = b.title || '(Senza titolo)';
+    const by = document.createElement('div'); by.className='by'; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • ');
 
-  // Render delle news (card con anteprima 3-4 righe)
-  window.renderNews = function(){
-    const grid=$('#gridNews'); if(!grid) return;
-    const hasAdmin=sessionIsValid();
-    $('#newsAdminBar').style.display = hasAdmin ? 'flex' : 'none';
-    $('#newsEditor').style.display   = hasAdmin ? ''    : 'none';
-    const items=Array.isArray(state.news) ? state.news.slice() : [];
-    for(let i=0;i<items.length;i++){ if(!items[i].id){ items[i].id='n'+(items[i].ts||Date.now())+'_'+i; } }
-    items.sort((a,b)=>(b.ts||0)-(a.ts||0));
-    grid.innerHTML='';
-    if(!items.length){ grid.innerHTML='<div class="muted">Ancora nessuna notizia.</div>'; return; }
-    for(const n of items){
-      const card=document.createElement('div'); card.className='news-card'; card.setAttribute('data-id', n.id || '');
-      const h=document.createElement('h4'); h.textContent=n.title || '(Senza titolo)';
-      const prev=document.createElement('div'); prev.className='news-preview'; prev.textContent=previewFrom(n);
-      card.appendChild(h); card.appendChild(prev);
-      // URL condivisibile: #news-<id> (o ?news=<id>)
-      card.addEventListener('click', ()=>{ if(n.id){ showTab('notizie'); location.hash='news-'+n.id; openNewsById(n.id); } });
-      grid.appendChild(card);
+    /* Etichette: aggiunta incrementale */
+    const labelsWrap=document.createElement('div'); labelsWrap.className='tags';
+    function refreshLabels(){
+      labelsWrap.innerHTML=''; (b.labels||[]).forEach(l=> labelsWrap.appendChild(tagEl(l,'tag label')));
     }
-  };
+    refreshLabels();
 
-  // Mini-editor
-  const ed = $('#news_body_html');
-  $$('.news-toolbar .mini').forEach(btn=>{
+    const addRow = document.createElement('div'); addRow.className='row';
+    const addField = document.createElement('input'); addField.type='text'; addField.placeholder='Nuova etichetta';
+    addField.style.minWidth='200px';
+    const addBtn = document.createElement('button'); addBtn.className='btn'; addBtn.textContent='Aggiungi';
+    addBtn.addEventListener('click', ()=>{
+      const val=(addField.value||'').trim();
+      if(!val) return;
+      if(!Array.isArray(b.labels)) b.labels=[];
+      if(!b.labels.includes(val)) b.labels.push(val);
+      addField.value='';
+      save('fi_books_site_v38', state.books);
+      refreshLabels(); renderCatalogo();
+    });
+
+    /* Consigliato */
+    const featLbl = document.createElement('label'); featLbl.className='small muted';
+    const featChk = document.createElement('input'); featChk.type='checkbox'; featChk.checked=!!b.featured; featChk.style.marginRight='6px';
+    featChk.addEventListener('change', ()=>{ b.featured=!!featChk.checked; badge.style.display=b.featured?'':'none'; save('fi_books_site_v38', state.books); renderCatalogo(); });
+    featLbl.appendChild(featChk); featLbl.appendChild(document.createTextNode(' Consigliato'));
+
+    /* Esordio */
+    const debutSel=document.createElement('select');
+    ['Non specificato','Sì','No'].forEach((t,i)=>{ const o=document.createElement('option'); o.textContent=t; o.value=['unknown','yes','no'][i]; debutSel.appendChild(o); });
+    debutSel.value = (b.isDebut===true?'yes':b.isDebut===false?'no':'unknown');
+    debutSel.addEventListener('change', ()=>{
+      const v=debutSel.value; b.isDebut = (v==='yes'?true:(v==='no'?false:null));
+      save('fi_books_site_v38', state.books); renderCatalogo();
+    });
+
+    const actions = document.createElement('div'); actions.className='actions';
+    const approve = document.createElement('button'); approve.className='btn primary';
+    approve.textContent = (b.status==='approved') ? 'Revoca approvazione' : 'Approva';
+    approve.addEventListener('click', ()=>{
+      b.status = (b.status==='approved') ? 'pending' : 'approved';
+      approve.textContent = (b.status==='approved') ? 'Revoca approvazione' : 'Approva';
+      save('fi_books_site_v38', state.books);
+      renderModeration(); renderCatalogo();
+    });
+
+    const saveBtn = document.createElement('button'); saveBtn.className='btn'; saveBtn.textContent='Salva';
+    saveBtn.addEventListener('click', ()=>{
+      // solo persistenza, le mutazioni avvengono già sui change
+      save('fi_books_site_v38', state.books);
+      renderModeration(); renderCatalogo();
+      alert('Modifiche salvate.');
+    });
+
+    addRow.appendChild(addField); addRow.appendChild(addBtn);
+
+    meta.appendChild(h3);
+    meta.appendChild(by);
+    meta.appendChild(labelsWrap);
+    meta.appendChild(addRow);
+    meta.appendChild(featLbl);
+    const debutWrap=document.createElement('div'); debutWrap.className='small'; debutWrap.style.marginTop='6px'; debutWrap.append(' Esordio: ', debutSel);
+    meta.appendChild(debutWrap);
+    meta.appendChild(actions);
+    actions.appendChild(approve); actions.appendChild(saveBtn);
+
+    el.appendChild(img); el.appendChild(meta);
+    return el;
+  }
+
+  function renderModeration(){
+    const grid = $('#gridModeration'); if(!grid) return;
+    const f = $('#moderationFilter').value;
+    let list = Array.isArray(state.books) ? state.books.slice() : [];
+    if(f==='pending')  list = list.filter(b => b.status!=='approved');
+    if(f==='approved') list = list.filter(b => b.status==='approved');
+    grid.innerHTML='';
+    if(!list.length){ grid.innerHTML='<div class="muted">Nessun titolo.</div>'; return; }
+    list.forEach(b => grid.appendChild(modCard(b)));
+  }
+  $('#moderationFilter')?.addEventListener('change', renderModeration);
+
+  /* Notizie */
+  function sanitizeHtml(html){ return html.replace(/<script/gi,'&lt;script'); }
+
+  // lista
+  function renderNews(){
+    const grid=$('#gridNews'); grid.innerHTML='';
+    const list=[...state.news].sort((a,b)=>(b.ts||0)-(a.ts||0));
+    list.forEach(n=>{
+      const card=document.createElement('a'); card.className='news-card'; card.href='#news/'+(n.id||'');
+      const h3=document.createElement('h3'); h3.textContent=n.title||'(Senza titolo)';
+      const body=document.createElement('div'); body.className='muted line-clamp';
+      const text = (n.bodyHtml||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      body.textContent = text.length>280 ? text.slice(0,280)+'…' : text;
+      card.appendChild(h3); card.appendChild(body);
+      grid.appendChild(card);
+    });
+    state.newsReady=true;
+  }
+
+  // editor mini
+  $$('#newsEditor [data-cmd]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      const cmd=btn.getAttribute('data-cmd'); ed && ed.focus();
+      const cmd=btn.getAttribute('data-cmd'); const ed=$('#news_body_html'); ed.focus();
       if(cmd==='bold') document.execCommand('bold', false, null);
       else if(cmd==='italic') document.execCommand('italic', false, null);
       else if(cmd==='underline') document.execCommand('underline', false, null);
       else if(cmd==='ul') document.execCommand('insertUnorderedList', false, null);
       else if(cmd==='link'){ const url=prompt('Inserisci URL (https://...)'); if(url && /^https?:/i.test(url)) document.execCommand('createLink', false, url); }
-      else if(cmd==='bigger' || cmd==='smaller'){ const sel=window.getSelection(); if(!sel||sel.rangeCount===0) return; const range=sel.getRangeAt(0); const span=document.createElement('span'); span.className=(cmd==='bigger'?'bigger':'smaller'); range.surroundContents(span); }
+      else if(cmd==='bigger' || cmd==='smaller'){ const sel=window.getSelection(); if(!sel.rangeCount) return; const range=sel.getRangeAt(0); const span=document.createElement('span'); span.style.fontSize=(cmd==='bigger'?'1.15em':'0.9em'); range.surroundContents(span); }
       else if(cmd==='clear'){ ed.innerHTML=''; }
     });
   });
 
-  // Pubblica notizia (funziona solo se admin loggato)
+  // pubblica notizia
   (function hookSave(){
     const btn=$('#btnSaveNews'); if(!btn) return;
     btn.addEventListener('click', (ev)=>{
@@ -510,28 +625,62 @@
     }, true);
   })();
 
-  // Esporta news
-  const btnExportNews = $('#btnExportNews'); if(btnExportNews){ btnExportNews.addEventListener('click', ()=>{ if(!sessionIsValid()){ alert('Solo admin.'); return; } const blob=new Blob([JSON.stringify(state.news||[],null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='news.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }); }
+  // esporta news
+  $('#btnExportNews')?.addEventListener('click', ()=>{
+    const blob=new Blob([JSON.stringify(state.news,null,2)], {type:'application/json'});
+    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='news.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
 
-  // Routing: supporto sia #news-<id> sia ?news=<id>; #notizie, #nuovo
+  /* Routing */
+  function showTab(tab){
+    $$('.tab').forEach(s=>s.style.display='none');
+    const el=$('#'+tab); if(el) el.style.display='';
+    $$('#navPublic button, #navAdmin button').forEach(b=>{ b.classList.toggle('active', b.getAttribute('data-tab')===tab); });
+  }
+
+  // news detail view
+  function openNewsById(id){
+    const item = (state.news||[]).find(n=>String(n.id)===String(id));
+    if(!item){ alert('Articolo non trovato.'); showTab('notizie'); return; }
+    $('#articleTitle').textContent = item.title || '';
+    $('#articleMeta').textContent = new Date(item.ts||Date.now()).toLocaleString('it-IT');
+    $('#articleBody').innerHTML = item.bodyHtml || '';
+    showTab('newsview');
+  }
+  function backToNews(){
+    location.hash = '#notizie';
+    showTab('notizie');
+  }
+  $('#btnBackTop').addEventListener('click', backToNews);
+  $('#btnBackBottom').addEventListener('click', backToNews);
+
+  $$('#navPublic button, #navAdmin button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const tab=btn.getAttribute('data-tab');
+      if(tab==='moderazione'||tab==='impostazioni'){ if(!sessionIsValid()){ alert('Area riservata: accedi come admin.'); return; } touchSession(); }
+      if(tab==='moderazione') renderModeration();
+      if(tab==='notizie') renderNews();
+      showTab(tab);
+      if(['catalogo','nuovo','notizie','moderazione','impostazioni'].includes(tab)) location.hash = '#'+tab;
+    });
+  });
+
   function handleRoute(){
     const hash=(location.hash||'').replace(/^#/, '');
-    const params=new URLSearchParams(location.search);
-    let targetId=null;
-    if(hash.startsWith('news-')) targetId = hash.slice(5);
-    else if(params.has('news')) targetId = params.get('news');
-    if(targetId){
-      showTab('notizie');
-      if(state.newsReady) openNewsById(targetId); else setTimeout(handleRoute, 250);
+    if(hash.startsWith('news/')){
+      const id = hash.slice(5);
+      openNewsById(id);
       return;
     }
-    if(hash==='notizie'){ showTab('notizie'); closeOverlay(); }
-    else if(hash==='nuovo'){ showTab('nuovo'); closeOverlay(); }
-    else { showTab('catalogo'); closeOverlay(); }
+    if(hash==='notizie'){ renderNews(); showTab('notizie'); }
+    else if(hash==='nuovo'){ showTab('nuovo'); }
+    else if(hash==='moderazione'){ renderModeration(); showTab('moderazione'); }
+    else if(hash==='impostazioni'){ showTab('impostazioni'); }
+    else { showTab('catalogo'); }
   }
   window.addEventListener('hashchange', handleRoute);
 
-  // Init
+  /* Init */
   (function init(){
     showTab('catalogo');
     applyAdminUI();
