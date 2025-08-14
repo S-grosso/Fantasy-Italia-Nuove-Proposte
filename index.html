@@ -318,9 +318,9 @@
   const $=(s)=>document.querySelector(s);
   const $$=(s)=>Array.from(document.querySelectorAll(s));
 
-  /* Logo Amazon inline (ridimensionato/ottimizzato) */
+  /* INCOLLA QUI IL TUO DATA-URI PNG DEL LOGO AMAZON */
   const AMAZON_LOGO_DATA_URI =
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANwAAAB7CAMAAAAonR7lAAAB/lBMVEUWHC...TRUNCATED_IN_THIS_SNIPPET...'; /* L'intero data URI è incluso nel file completo qui sotto */
+    'data:image/png;base64,PASTE_YOUR_AMAZON_LOGO_BASE64_HERE';
 
   const state = {
     settings: load('fi_settings_site_v38', {
@@ -490,7 +490,7 @@
     if(amz){
       const btn=document.createElement('a'); btn.href=amz; btn.target='_blank'; btn.rel='noopener'; btn.className='btn-amz'; btn.title='Amazon'; btn.setAttribute('aria-label','Apri su Amazon');
       const imgA=document.createElement('img'); imgA.alt='Amazon';
-      imgA.src = AMAZON_LOGO_DATA_URI; /* logo inline */
+      imgA.src = AMAZON_LOGO_DATA_URI; /* qui il logo */
       btn.appendChild(imgA); actions.appendChild(btn);
     }
     if(b.storePublisherUrl){
