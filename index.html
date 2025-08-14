@@ -83,7 +83,7 @@
   .backAppTop .btn{pointer-events:auto}
   .backRow{margin-top:16px;display:flex;gap:10px}
   .news-meta{color:var(--muted);font-size:12px;margin-bottom:10px}
-  #newsEditor{position:relative;margin-bottom:14px} /* tolto z-index hack */
+  #newsEditor{position:relative;margin-bottom:14px}
 
   /* Footer */
   footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
@@ -284,7 +284,7 @@
   const $  = function(s){ return document.querySelector(s); };
   const $$ = function(s){ return Array.from(document.querySelectorAll(s)); };
 
-  /* Logo Amazon: URL RAW diretto */
+  /* Logo Amazon: URL RAW diretto (rimane invariato) */
   const AMAZON_IMG_RAW_URL = 'https://raw.githubusercontent.com/S-grosso/Fantasy-Italia-Nuove-Proposte/main/logo_store.png';
 
   const state = {
@@ -741,7 +741,8 @@
     });
   }
 
-  /* Routing */
+  /* ------- Routing & Deep Link ------- */
+
   function showTab(tab){
     $$('.tab').forEach(function(s){ s.style.display='none'; });
     const el=$('#'+tab); if(el) el.style.display='';
@@ -755,7 +756,36 @@
     $('#articleMeta').textContent = new Date(item.ts||Date.now()).toLocaleString('it-IT');
     $('#articleBody').innerHTML = item.bodyHtml || '';
     showTab('newsview');
+
+    /* Aggiorna URL con fallback compatibile ai social: ?n=<id>#news/<id> */
+    var safeId = encodeURIComponent(String(id));
+    var newUrl = location.pathname + '?n='+ safeId + '#news/' + safeId;
+    if(location.search !== ('?n='+safeId) || location.hash !== ('#news/'+safeId)){
+      history.replaceState(null, '', newUrl);
+    }
     return true;
+  }
+
+  /* Pulsanti Torna all’app */
+  function backToNews(e){
+    if(e && e.preventDefault) e.preventDefault();
+    history.pushState(null, '', location.pathname + '#notizie');
+    showTab('notizie');
+  }
+  var backTop = $('#btnBackTop');
+  if(backTop) backTop.addEventListener('click', backToNews);
+  var backBottom = $('#btnBackBottom');
+  if(backBottom) backBottom.addEventListener('click', backToNews);
+
+  /* Se un social toglie il #, uso la query (?n= / ?news=) per ripristinare il deep link */
+  function applyDeepLinkFromQuery(){
+    if(location.hash && location.hash.length>1) return; // già con hash
+    var p = new URLSearchParams(location.search);
+    var id = p.get('n') || p.get('news');
+    if(id){
+      var safeId = encodeURIComponent(String(id));
+      history.replaceState(null, '', location.pathname + '?n='+safeId + '#news/' + safeId);
+    }
   }
 
   async function ensureNewsLoaded(){
@@ -771,7 +801,7 @@
   async function handleRoute(){
     const hash=(location.hash||'').replace(/^#/, '');
     if(hash.indexOf('news/')===0){
-      const id = hash.slice(5);
+      const id = decodeURIComponent(hash.slice(5));
       if(!openNewsById(id)){
         await ensureNewsLoaded();
         if(!openNewsById(id)){
@@ -789,7 +819,7 @@
   }
   window.addEventListener('hashchange', function(){ handleRoute(); });
 
-  /* Hook nav buttons (niente optional chaining) */
+  /* Hook nav buttons */
   $$('#navPublic button, #navAdmin button').forEach(function(btn){
     btn.addEventListener('click', function(){
       const tab=btn.getAttribute('data-tab');
@@ -812,6 +842,9 @@
     renderCatalogo();
     renderNews();
     bootstrapIfEmpty();
+
+    /* Prima di gestire la route, applico il fallback da query (?n=/ ?news=) */
+    applyDeepLinkFromQuery();
     await handleRoute();
   })();
 
