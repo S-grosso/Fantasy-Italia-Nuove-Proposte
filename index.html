@@ -47,6 +47,7 @@
   .btn{background:#151826;border:1px solid var(--border);color:var(--ink);padding:8px 10px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
   .btn.primary{outline:2px solid var(--accent)}
   .btn.danger{outline:1px solid #402;color:#ff9aa9}
+  .btn.small{font-size:12px;padding:6px 8px}
 
   /* Store buttons: 35x100, nero Amazon */
   .btn-amz, .btn-store{
@@ -73,13 +74,15 @@
   .banner{background:#142036;border:1px solid #223a66;color:#cfe;border-radius:12px;padding:8px 12px;margin:8px 0;display:none}
 
   /* News */
-  .news-card{display:block;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:12px;text-decoration:none;color:inherit}
+  .news-card{display:block;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:12px;text-decoration:none;color:inherit;cursor:pointer}
   .news-card h3{margin:0 0 6px 0;font-size:18px}
   .line-clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .news-admin-actions{display:flex;gap:8px;margin-top:10px}
   .news-article{max-width:900px;margin:0 auto;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:16px;position:relative}
   .backAppTop{position:sticky;top:0;left:0}
   .backRow{margin-top:16px;display:flex;gap:10px}
   .news-meta{color:var(--muted);font-size:12px;margin-bottom:10px}
+  #newsEditor{position:relative;z-index:2;margin-bottom:14px}
 
   /* Footer */
   footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
@@ -208,6 +211,7 @@
       <div id="news_body_html" contenteditable="true" style="border:1px solid var(--border);border-radius:10px;padding:10px;min-height:160px"></div>
       <div class="actions">
         <button class="btn primary" id="btnSaveNews">Pubblica notizia</button>
+        <button class="btn" id="btnCancelEdit" style="display:none">Annulla modifica</button>
         <span class="hint">Solo gli admin possono pubblicare/aggiornare le notizie.</span>
       </div>
     </div>
@@ -276,19 +280,11 @@
 <script>
 (function(){
   'use strict';
-  const $=(s)=>document.querySelector(s);
-  const $$=(s)=>Array.from(document.querySelectorAll(s));
+  const $  =(s)=>document.querySelector(s);
+  const $$ =(s)=>Array.from(document.querySelectorAll(s));
 
-  /* URL del logo fornito (formato GitHub "blob"). Lo convertiamo al RAW funzionante. */
-  const AMAZON_IMG_URL = 'https://github.com/S-grosso/Fantasy-Italia-Nuove-Proposte/blob/main/logo_store.png';
-  function githubBlobToRaw(u){
-    try{
-      if(!u) return '';
-      // trasforma: https://github.com/ORG/REPO/blob/branch/path -> https://raw.githubusercontent.com/ORG/REPO/branch/path
-      return u.replace('https://github.com/','https://raw.githubusercontent.com/').replace('/blob/','/');
-    }catch(e){ return u; }
-  }
-  const AMAZON_IMG_RAW_URL = githubBlobToRaw(AMAZON_IMG_URL);
+  /* Logo Amazon: URL RAW diretto */
+  const AMAZON_IMG_RAW_URL = 'https://raw.githubusercontent.com/S-grosso/Fantasy-Italia-Nuove-Proposte/main/logo_store.png';
 
   const state = {
     settings: load('fi_settings_site_v38', { adminsUrl:'', catalogUrl:'', newsUrl:'' }),
@@ -297,7 +293,8 @@
     news:  load('fi_news_site_v38', []),
     isAdmin: false,
     meUser: null,
-    newsReady: false
+    newsReady: false,
+    editingNewsId: null
   };
 
   const DEFAULT_BASE = location.origin + location.pathname.replace(/\/[^\/]*$/, '/');
@@ -313,7 +310,7 @@
   function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
   async function fetchJson(url){ const res = await fetch(url, {cache:'no-store'}); if(!res.ok) throw new Error('HTTP '+res.status+' @ '+url); return res.json(); }
 
-  /* Bootstrap robusto */
+  /* Bootstrap JSON */
   function candidates(kind){
     const list = [];
     const setUrl = state.settings[kind+'Url'];
@@ -457,7 +454,7 @@
     if(amz){
       const btn=document.createElement('a'); btn.href=amz; btn.target='_blank'; btn.rel='noopener'; btn.className='btn-amz'; btn.title='Amazon'; btn.setAttribute('aria-label','Apri su Amazon');
       const imgA=document.createElement('img'); imgA.alt='Amazon'; imgA.loading='lazy';
-      imgA.src = AMAZON_IMG_RAW_URL || AMAZON_IMG_URL + '?raw=1';
+      imgA.src = AMAZON_IMG_RAW_URL;
       btn.appendChild(imgA);
       actions.appendChild(btn);
     }
@@ -557,22 +554,57 @@
 
   /* Notizie */
   function sanitizeHtml(html){ return html.replace(/<script/gi,'&lt;script'); }
+
+  function startEditNews(item){
+    $('#news_title').value = item.title||'';
+    $('#news_body_html').innerHTML = item.bodyHtml||'';
+    state.editingNewsId = item.id;
+    $('#btnSaveNews').textContent = 'Aggiorna notizia';
+    $('#btnCancelEdit').style.display = 'inline-flex';
+    showTab('notizie');
+  }
+
+  function deleteNews(id){
+    if(!sessionIsValid()){ alert('Solo admin.'); return; }
+    if(!confirm('Eliminare definitivamente questa notizia?')) return;
+    state.news = (state.news||[]).filter(n=>String(n.id)!==String(id));
+    save('fi_news_site_v38', state.news);
+    // se stavi visualizzando l'articolo eliminato, torna alla lista
+    if((location.hash||'').startsWith('#news/'+id)) location.hash='#notizie';
+    renderNews();
+  }
+
   function renderNews(){
     const grid=$('#gridNews'); grid.innerHTML='';
     const list=[...state.news].sort((a,b)=>(b.ts||0)-(a.ts||0));
     list.forEach(n=>{
-      const card=document.createElement('a'); card.className='news-card'; card.href='#news/'+(n.id||'');
+      const card=document.createElement('div'); card.className='news-card'; card.tabIndex=0;
+      card.addEventListener('click', ()=>{ location.hash='#news/'+(n.id||''); });
+      card.addEventListener('keydown', (e)=>{ if(e.key==='Enter') card.click(); });
+
       const h3=document.createElement('h3'); h3.textContent=n.title||'(Senza titolo)';
       const body=document.createElement('div'); body.className='muted line-clamp';
       const text = (n.bodyHtml||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
       body.textContent = text.length>280 ? text.slice(0,280)+'…' : text;
+
       card.appendChild(h3); card.appendChild(body);
+
+      if(sessionIsValid()){
+        const adminBar=document.createElement('div'); adminBar.className='news-admin-actions';
+        const editBtn=document.createElement('button'); editBtn.className='btn small'; editBtn.textContent='Modifica';
+        const delBtn=document.createElement('button'); delBtn.className='btn small danger'; delBtn.textContent='Elimina';
+        editBtn.addEventListener('click', (ev)=>{ ev.stopPropagation(); startEditNews(n); });
+        delBtn.addEventListener('click', (ev)=>{ ev.stopPropagation(); deleteNews(n.id); });
+        adminBar.appendChild(editBtn); adminBar.appendChild(delBtn);
+        card.appendChild(adminBar);
+      }
+
       grid.appendChild(card);
     });
     state.newsReady=true;
   }
 
-  /* Editor mini */
+  // mini editor
   $$('#newsEditor [data-cmd]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const cmd=btn.getAttribute('data-cmd'); const ed=$('#news_body_html'); ed.focus();
@@ -595,13 +627,32 @@
       const html=sanitizeHtml($('#news_body_html').innerHTML||'');
       if(!title){ alert('Titolo obbligatorio.'); return; }
       if(!html){ alert('Inserisci un testo.'); return; }
-      const item={ id:'n'+Date.now().toString(36), title, bodyHtml:html, ts:Date.now() };
-      if(!Array.isArray(state.news)) state.news=[];
-      state.news.push(item); save('fi_news_site_v38', state.news);
+
+      if(state.editingNewsId){
+        const idx=(state.news||[]).findIndex(n=>String(n.id)===String(state.editingNewsId));
+        if(idx>=0){ state.news[idx].title=title; state.news[idx].bodyHtml=html; state.news[idx].ts=Date.now(); }
+        state.editingNewsId=null;
+        $('#btnSaveNews').textContent='Pubblica notizia';
+        $('#btnCancelEdit').style.display='none';
+        alert('Notizia aggiornata.');
+      }else{
+        const item={ id:'n'+Date.now().toString(36), title, bodyHtml:html, ts:Date.now() };
+        if(!Array.isArray(state.news)) state.news=[];
+        state.news.push(item);
+        alert('Notizia pubblicata.');
+      }
+      save('fi_news_site_v38', state.news);
       $('#news_title').value=''; $('#news_body_html').innerHTML='';
-      renderNews(); alert('Notizia pubblicata.');
+      renderNews();
     }, true);
   })();
+
+  $('#btnCancelEdit')?.addEventListener('click', ()=>{
+    state.editingNewsId=null;
+    $('#btnSaveNews').textContent='Pubblica notizia';
+    $('#btnCancelEdit').style.display='none';
+    $('#news_title').value=''; $('#news_body_html').innerHTML='';
+  });
 
   $('#btnExportNews')?.addEventListener('click', ()=>{ const blob=new Blob([JSON.stringify(state.news,null,2)], {type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='news.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
 
