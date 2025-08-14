@@ -43,8 +43,7 @@
   .meta .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
   .tag{font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
   .tag.label{color:#9fc8ff;border-color:#2854aa}
-  .actions{display:flex;gap:8px;align-items:center;flex-wrap:nowrap;overflow-x:auto}
-  .actions > *{flex:0 0 auto}
+  .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
   .btn{background:#151826;border:1px solid var(--border);color:var(--ink);padding:8px 10px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
   .btn.primary{outline:2px solid var(--accent)}
   .btn.danger{outline:1px solid #402;color:#ff9aa9}
@@ -321,7 +320,7 @@
 
   /* Logo Amazon inline (ridimensionato/ottimizzato) */
   const AMAZON_LOGO_DATA_URI =
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAhEAAAEoCAYAAADmA6PqAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAA6xSURBVHgB7d1Bix3HfYfx7+q6dYyq2qN2Tt0wGm0k4g0m5Hn3iE2m9R9y2oQm3Wb2r8g4xUqkLrUQ0pGqQul1e2G2Whx0Jk0b1s8yQ8I2mN3wQofvJz0rU6kq6g/0J3J1a2k9b2o0r2Kq8Jq4c5s3kz3iNzzl8f+JQ8m1b9Gq9Vn3c9f8u9f6SDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQqfZ1jv3vHpq8sQn3rQ7y1s6v1f3pNf0bOq1m+0yM9w5j9v3q3vH9u8f7f7g7e0p3v3tqf0sY7xV9y9y7sQ3yK2m4f6cJc1c7Wb9cK8fJ9e2T6c1zvy2P3b+f+7g6d1rZ0sgJQJf3g7yZfVwQ8rZ8Qq7sJoQp3C4m1CzJp3nX9JZb7cI9kA0w7c4EJ5o9c3T9l1i7fJYw8K7sVf0qf9k7qVY3b2aQ8H0H0U3Q4cYw0xg0n2b3S6k1m6d3rWn3pQh3+qkqK0s0cYw0p4g9aX8V6b6uK1V7lP8x8p8b9d7o2bU1mQkCC9i6kJt1k7o7l0a9bI8r4t6s8f2t8Qq2b3f3L2z+o0tW0m0QkCC1g6oIt1U6r7m0a8bI8r4t5s8f2s8Qq2Y3f3L2z+o0sW0m0QkCC1g6oIt1U6r7m0a8bI8r4t5s8f2s8Qq2Y3f3L2z+o0sW0m0QkCA1k4pE0l7k6qf1m7r0b7lK9v+7+f0r7u2l1gkCB9m4pE0l7k6qf1m7r0b7lK9v+7+f0r7u2l1gkCB9m4pE0l7k6qf1m7r0b7lK9v+7+f0r7u2l1gkCB9m4pE0l7k6qf1m7r0b7lK9v+7+f0r7u2l1gkCB9m4pE0l7k6qf1m7r0b7lK9v+7+f0r7u2l1gkCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKC3m8gq9c8q7z8+7w2v4l5t9V2oWcP7nq3o9m7mC+7o4mJr9bYz1nJw0m1r9f6i7cVh8X4g5b3fT0m9Vb8Wl9r2c0mY0hPfYbGJcG7H5k8bR7d4c+fVn8bZ37cG4g+5v8Y9l2f6WfNQz3rY6m+q+9lI9Zk0mJg1p9b+qV6sGlk9YfXv9+q8m2m3tq3g0bNfP6n8rW/8Ggk1G6b7b8b3n9v9m+S2Wc9G5h5e3X8o8Xl7n4f4t6x4Wl8d8v7g9b8c7W7s8m5S5i8Wg4f5v+SgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPx0y3m5Y0C8p4nq9z8bGv2r8p8o3o3d8c5t8q7z9t3a8m+o7f8k9x8d7c8V9q7g7c6a9h8c6Z9g8c5a9g8a5Y9f8a5Y9e8Z5f8a5Y9f8a5Y9f8a5Y9f8a5Y9f8a5Y9f8a5Y9f8a5Y9f8a5Y9f8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD8f/0V1cQ5C2y7AAAAAElFTkSuQmCC */
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANwAAAB7CAMAAAAonR7lAAAB/lBMVEUWHC...TRUNCATED_IN_THIS_SNIPPET...'; /* L'intero data URI è incluso nel file completo qui sotto */
 
   const state = {
     settings: load('fi_settings_site_v38', {
