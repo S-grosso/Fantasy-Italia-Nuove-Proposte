@@ -43,7 +43,7 @@
   .meta .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
   .tag{font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
   .tag.label{color:#9fc8ff;border-color:#2854aa}
-  .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+  .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:nowrap} /* forzato stessa riga */
   .btn{background:#151826;border:1px solid var(--border);color:var(--ink);padding:8px 10px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
   .btn.primary{outline:2px solid var(--accent)}
   .btn.danger{outline:1px solid #402;color:#ff9aa9}
@@ -53,10 +53,10 @@
     width:100px;height:35px;padding:0;
     display:inline-flex;align-items:center;justify-content:center;
     border-radius:10px;font-size:12px;font-weight:600;letter-spacing:.2px;
-    border:1px solid #0c0e14;text-decoration:none
+    border:1px solid #0c0e14;text-decoration:none;flex:0 0 100px; /* no wrap */
   }
   .btn-amz{background:#131a22}
-  .btn-amz img{display:block;max-height:70%;max-width:90%;object-fit:contain;filter:none !important}
+  .btn-amz img{display:block;height:70%;width:auto;object-fit:contain}
   .btn-store{background:#131a22;color:#fff;text-decoration:none}
 
   .row{display:flex;gap:10px;flex-wrap:wrap}
@@ -318,9 +318,8 @@
   const $=(s)=>document.querySelector(s);
   const $$=(s)=>Array.from(document.querySelectorAll(s));
 
-  /* INCOLLA QUI IL TUO DATA-URI PNG DEL LOGO AMAZON */
-  const AMAZON_LOGO_DATA_URI =
-    'data:image/png;base64,PASTE_YOUR_AMAZON_LOGO_BASE64_HERE';
+  /* Variante SENZA data-URI: logo Amazon via Simple Icons CDN (monocromatico) */
+  const AMAZON_SVG_URL = 'https://cdn.simpleicons.org/amazon/ffffff';
 
   const state = {
     settings: load('fi_settings_site_v38', {
@@ -489,8 +488,7 @@
     const amz=b.storeAmazonUrl||b.storeUrl||'';
     if(amz){
       const btn=document.createElement('a'); btn.href=amz; btn.target='_blank'; btn.rel='noopener'; btn.className='btn-amz'; btn.title='Amazon'; btn.setAttribute('aria-label','Apri su Amazon');
-      const imgA=document.createElement('img'); imgA.alt='Amazon';
-      imgA.src = AMAZON_LOGO_DATA_URI; /* qui il logo */
+      const imgA=document.createElement('img'); imgA.alt='Amazon'; imgA.src = AMAZON_SVG_URL;
       btn.appendChild(imgA); actions.appendChild(btn);
     }
     if(b.storePublisherUrl){
