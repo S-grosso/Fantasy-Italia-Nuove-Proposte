@@ -43,7 +43,7 @@
   .meta .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
   .tag{font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
   .tag.label{color:#9fc8ff;border-color:#2854aa}
-  .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:nowrap} /* forzato stessa riga */
+  .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:nowrap}
   .btn{background:#151826;border:1px solid var(--border);color:var(--ink);padding:8px 10px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
   .btn.primary{outline:2px solid var(--accent)}
   .btn.danger{outline:1px solid #402;color:#ff9aa9}
@@ -53,10 +53,11 @@
     width:100px;height:35px;padding:0;
     display:inline-flex;align-items:center;justify-content:center;
     border-radius:10px;font-size:12px;font-weight:600;letter-spacing:.2px;
-    border:1px solid #0c0e14;text-decoration:none;flex:0 0 100px; /* no wrap */
+    border:1px solid #0c0e14;text-decoration:none;flex:0 0 100px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .btn-amz{background:#131a22}
-  .btn-amz img{display:block;height:70%;width:auto;object-fit:contain}
+  .btn-amz img{display:block;max-height:70%;max-width:90%;object-fit:contain}
   .btn-store{background:#131a22;color:#fff;text-decoration:none}
 
   .row{display:flex;gap:10px;flex-wrap:wrap}
@@ -84,6 +85,8 @@
   footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
   footer a{color:#9fc8ff;text-decoration:none}
   footer .sep{opacity:.4;margin:0 8px}
+
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 </style>
 </head>
 <body>
@@ -138,47 +141,23 @@
       <span class="right small muted">Il titolo apparirà in <b>Catalogo</b> dopo l’approvazione di un admin.</span>
     </div>
 
-    <!-- riga 1: Titolo, Autore, Editore, Anno, Collana -->
+    <!-- riga 1 -->
     <div class="row">
-      <div class="field">
-        <label>Titolo *</label>
-        <input id="f_title" type="text" placeholder="Titolo del libro">
-      </div>
-      <div class="field">
-        <label>Autore *</label>
-        <input id="f_author" type="text" placeholder="Nome Cognome">
-      </div>
-      <div class="field">
-        <label>Editore *</label>
-        <input id="f_publisher" type="text" placeholder="Casa editrice">
-      </div>
-      <div class="field" style="max-width:120px">
-        <label>Anno *</label>
-        <input id="f_year" type="number" min="1900" max="2100" value="2025">
-      </div>
-      <div class="field" style="max-width:160px">
-        <label>Collana</label>
-        <input id="f_series" type="text" placeholder="Collana">
-      </div>
+      <div class="field"><label>Titolo *</label><input id="f_title" type="text" placeholder="Titolo del libro"></div>
+      <div class="field"><label>Autore *</label><input id="f_author" type="text" placeholder="Nome Cognome"></div>
+      <div class="field"><label>Editore *</label><input id="f_publisher" type="text" placeholder="Casa editrice"></div>
+      <div class="field" style="max-width:120px"><label>Anno *</label><input id="f_year" type="number" min="1900" max="2100" value="2025"></div>
+      <div class="field" style="max-width:160px"><label>Collana</label><input id="f_series" type="text" placeholder="Collana"></div>
     </div>
 
-    <!-- riga 2: ISBN, Amazon, Store Editore -->
+    <!-- riga 2 -->
     <div class="row">
-      <div class="field" style="max-width:220px">
-        <label>ISBN</label>
-        <input id="f_isbn" type="text" placeholder="978-...">
-      </div>
-      <div class="field">
-        <label>Store Amazon</label>
-        <input id="f_amz" type="url" placeholder="https://amazon.it/...">
-      </div>
-      <div class="field">
-        <label>Store editore</label>
-        <input id="f_store" type="url" placeholder="https://shop.editore.it/...">
-      </div>
+      <div class="field" style="max-width:220px"><label>ISBN</label><input id="f_isbn" type="text" placeholder="978-..."></div>
+      <div class="field"><label>Store Amazon</label><input id="f_amz" type="url" placeholder="https://amazon.it/..."></div>
+      <div class="field"><label>Store editore</label><input id="f_store" type="url" placeholder="https://shop.editore.it/..."></div>
     </div>
 
-    <!-- riga 3: Copertina + Esordio -->
+    <!-- riga 3 -->
     <div class="row">
       <div class="field">
         <label>URL copertina (JPG/PNG)</label>
@@ -195,7 +174,7 @@
       </div>
     </div>
 
-    <!-- riga 4: Sinossi -->
+    <!-- riga 4 -->
     <div class="row">
       <div class="field" style="flex:1">
         <label>Sinossi</label>
@@ -212,13 +191,8 @@
   <!-- Notizie (lista) -->
   <section id="notizie" class="tab" style="display:none">
     <div id="newsAdminBar" class="toolbar" style="display:none">
-      <div class="field" style="flex:1">
-        <label>Titolo</label>
-        <input id="news_title" type="text" placeholder="Titolo della notizia">
-      </div>
-      <div class="right">
-        <button id="btnExportNews" class="btn">Esporta news</button>
-      </div>
+      <div class="field" style="flex:1"><label>Titolo</label><input id="news_title" type="text" placeholder="Titolo della notizia"></div>
+      <div class="right"><button id="btnExportNews" class="btn">Esporta news</button></div>
     </div>
     <div id="newsEditor" style="display:none">
       <div class="toolbar" style="margin-bottom:6px">
@@ -244,15 +218,11 @@
   <!-- Notizia (articolo) -->
   <section id="newsview" class="tab" style="display:none">
     <div class="news-article">
-      <div class="backAppTop">
-        <button class="btn" id="btnBackTop">Torna all’app</button>
-      </div>
+      <div class="backAppTop"><button class="btn" id="btnBackTop">Torna all’app</button></div>
       <h2 id="articleTitle" style="margin:6px 0 4px 0"></h2>
       <div id="articleMeta" class="news-meta"></div>
       <div id="articleBody"></div>
-      <div class="backRow">
-        <button class="btn" id="btnBackBottom">Torna all’app</button>
-      </div>
+      <div class="backRow"><button class="btn" id="btnBackBottom">Torna all’app</button></div>
     </div>
   </section>
 
@@ -276,18 +246,9 @@
     <h3>Impostazioni sito</h3>
     <div class="small muted" style="margin-bottom:10px">Gli URL remoti consentono di centralizzare credenziali e catalogo.</div>
     <div class="row">
-      <div class="field">
-        <label>URL remoto admins.json</label>
-        <input id="adminsUrl" type="url" placeholder="https://tuodominio/data/admins.json">
-      </div>
-      <div class="field">
-        <label>URL remoto catalogo.json</label>
-        <input id="catalogUrl" type="url" placeholder="https://tuodominio/data/catalogo.json">
-      </div>
-      <div class="field">
-        <label>URL remoto news.json</label>
-        <input id="newsUrl" type="url" placeholder="https://tuodominio/data/news.json">
-      </div>
+      <div class="field"><label>URL remoto admins.json</label><input id="adminsUrl" type="url" placeholder="https://tuodominio/data/admins.json"></div>
+      <div class="field"><label>URL remoto catalogo.json</label><input id="catalogUrl" type="url" placeholder="https://tuodominio/data/catalogo.json"></div>
+      <div class="field"><label>URL remoto news.json</label><input id="newsUrl" type="url" placeholder="https://tuodominio/data/news.json"></div>
       <button class="btn" id="btnSaveUrls">Salva URL</button>
     </div>
     <div class="divider"></div>
@@ -318,13 +279,19 @@
   const $=(s)=>document.querySelector(s);
   const $$=(s)=>Array.from(document.querySelectorAll(s));
 
-  /* Variante SENZA data-URI: logo Amazon via Simple Icons CDN (monocromatico) */
-  const AMAZON_SVG_URL = 'https://cdn.simpleicons.org/amazon/ffffff';
+  /* URL del logo fornito (formato GitHub "blob"). Lo convertiamo al RAW funzionante. */
+  const AMAZON_IMG_URL = 'https://github.com/S-grosso/Fantasy-Italia-Nuove-Proposte/blob/main/logo_store.png';
+  function githubBlobToRaw(u){
+    try{
+      if(!u) return '';
+      // trasforma: https://github.com/ORG/REPO/blob/branch/path -> https://raw.githubusercontent.com/ORG/REPO/branch/path
+      return u.replace('https://github.com/','https://raw.githubusercontent.com/').replace('/blob/','/');
+    }catch(e){ return u; }
+  }
+  const AMAZON_IMG_RAW_URL = githubBlobToRaw(AMAZON_IMG_URL);
 
   const state = {
-    settings: load('fi_settings_site_v38', {
-      adminsUrl: '', catalogUrl: '', newsUrl: ''
-    }),
+    settings: load('fi_settings_site_v38', { adminsUrl:'', catalogUrl:'', newsUrl:'' }),
     remoteAdmins: null,
     books: load('fi_books_site_v38', []),
     news:  load('fi_news_site_v38', []),
@@ -346,7 +313,7 @@
   function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
   async function fetchJson(url){ const res = await fetch(url, {cache:'no-store'}); if(!res.ok) throw new Error('HTTP '+res.status+' @ '+url); return res.json(); }
 
-  /* Bootstrap robusto: prova più percorsi tipici se localStorage è vuoto */
+  /* Bootstrap robusto */
   function candidates(kind){
     const list = [];
     const setUrl = state.settings[kind+'Url'];
@@ -485,15 +452,21 @@
     tags.appendChild(tagEl(debutText));
     if(Array.isArray(b.labels)) b.labels.slice(0,6).forEach(l=> tags.appendChild(tagEl(l,'tag label')));
     const actions=document.createElement('div'); actions.className='actions';
+
     const amz=b.storeAmazonUrl||b.storeUrl||'';
     if(amz){
       const btn=document.createElement('a'); btn.href=amz; btn.target='_blank'; btn.rel='noopener'; btn.className='btn-amz'; btn.title='Amazon'; btn.setAttribute('aria-label','Apri su Amazon');
-      const imgA=document.createElement('img'); imgA.alt='Amazon'; imgA.src = AMAZON_SVG_URL;
-      btn.appendChild(imgA); actions.appendChild(btn);
+      const imgA=document.createElement('img'); imgA.alt='Amazon'; imgA.loading='lazy';
+      imgA.src = AMAZON_IMG_RAW_URL || AMAZON_IMG_URL + '?raw=1';
+      btn.appendChild(imgA);
+      actions.appendChild(btn);
     }
+
     if(b.storePublisherUrl){
-      const s=document.createElement('a'); s.href=b.storePublisherUrl; s.target='_blank'; s.rel='noopener'; s.className='btn btn-store'; s.textContent='Store editore'; actions.appendChild(s);
+      const s=document.createElement('a'); s.href=b.storePublisherUrl; s.target='_blank'; s.rel='noopener'; s.className='btn btn-store'; s.textContent='Store editore';
+      actions.appendChild(s);
     }
+
     meta.appendChild(h3); meta.appendChild(by); meta.appendChild(desc); meta.appendChild(tags); meta.appendChild(actions);
     el.appendChild(img); el.appendChild(meta);
     return el;
@@ -532,24 +505,13 @@
     const by = document.createElement('div'); by.className='by'; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • ');
 
     const labelsWrap=document.createElement('div'); labelsWrap.className='tags';
-    function refreshLabels(){
-      labelsWrap.innerHTML=''; (b.labels||[]).forEach(l=> labelsWrap.appendChild(tagEl(l,'tag label')));
-    }
+    function refreshLabels(){ labelsWrap.innerHTML=''; (b.labels||[]).forEach(l=> labelsWrap.appendChild(tagEl(l,'tag label'))); }
     refreshLabels();
 
     const addRow = document.createElement('div'); addRow.className='row';
-    const addField = document.createElement('input'); addField.type='text'; addField.placeholder='Nuova etichetta';
-    addField.style.minWidth='200px';
+    const addField = document.createElement('input'); addField.type='text'; addField.placeholder='Nuova etichetta'; addField.style.minWidth='200px';
     const addBtn = document.createElement('button'); addBtn.className='btn'; addBtn.textContent='Aggiungi';
-    addBtn.addEventListener('click', ()=>{
-      const val=(addField.value||'').trim();
-      if(!val) return;
-      if(!Array.isArray(b.labels)) b.labels=[];
-      if(!b.labels.includes(val)) b.labels.push(val);
-      addField.value='';
-      save('fi_books_site_v38', state.books);
-      refreshLabels(); renderCatalogo();
-    });
+    addBtn.addEventListener('click', ()=>{ const val=(addField.value||'').trim(); if(!val) return; if(!Array.isArray(b.labels)) b.labels=[]; if(!b.labels.includes(val)) b.labels.push(val); addField.value=''; save('fi_books_site_v38', state.books); refreshLabels(); renderCatalogo(); });
 
     const featLbl = document.createElement('label'); featLbl.className='small muted';
     const featChk = document.createElement('input'); featChk.type='checkbox'; featChk.checked=!!b.featured; featChk.style.marginRight='6px';
@@ -559,35 +521,23 @@
     const debutSel=document.createElement('select');
     ['Non specificato','Sì','No'].forEach((t,i)=>{ const o=document.createElement('option'); o.textContent=t; o.value=['unknown','yes','no'][i]; debutSel.appendChild(o); });
     debutSel.value = (b.isDebut===true?'yes':b.isDebut===false?'no':'unknown');
-    debutSel.addEventListener('change', ()=>{
-      const v=debutSel.value; b.isDebut = (v==='yes'?true:(v==='no'?false:null));
-      save('fi_books_site_v38', state.books); renderCatalogo();
-    });
+    debutSel.addEventListener('change', ()=>{ const v=debutSel.value; b.isDebut = (v==='yes'?true:(v==='no'?false:null)); save('fi_books_site_v38', state.books); renderCatalogo(); });
 
     const actions = document.createElement('div'); actions.className='actions';
-    const approve = document.createElement('button'); approve.className='btn primary';
-    approve.textContent = (b.status==='approved') ? 'Revoca approvazione' : 'Approva';
-    approve.addEventListener('click', ()=>{
-      b.status = (b.status==='approved') ? 'pending' : 'approved';
-      approve.textContent = (b.status==='approved') ? 'Revoca approvazione' : 'Approva';
-      save('fi_books_site_v38', state.books);
-      renderModeration(); renderCatalogo();
-    });
+    const approve = document.createElement('button'); approve.className='btn primary'; approve.textContent = (b.status==='approved') ? 'Revoca approvazione' : 'Approva';
+    approve.addEventListener('click', ()=>{ b.status = (b.status==='approved') ? 'pending' : 'approved'; approve.textContent = (b.status==='approved') ? 'Revoca approvazione' : 'Approva'; save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); });
 
     const saveBtn = document.createElement('button'); saveBtn.className='btn'; saveBtn.textContent='Salva';
     saveBtn.addEventListener('click', ()=>{ save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); alert('Modifiche salvate.'); });
 
     addRow.appendChild(addField); addRow.appendChild(addBtn);
 
-    meta.appendChild(h3);
-    meta.appendChild(by);
-    meta.appendChild(labelsWrap);
-    meta.appendChild(addRow);
+    meta.appendChild(h3); meta.appendChild(by);
+    meta.appendChild(labelsWrap); meta.appendChild(addRow);
     meta.appendChild(featLbl);
     const debutWrap=document.createElement('div'); debutWrap.className='small'; debutWrap.style.marginTop='6px'; debutWrap.append(' Esordio: ', debutSel);
     meta.appendChild(debutWrap);
-    meta.appendChild(actions);
-    actions.appendChild(approve); actions.appendChild(saveBtn);
+    meta.appendChild(actions); actions.appendChild(approve); actions.appendChild(saveBtn);
 
     el.appendChild(img); el.appendChild(meta);
     return el;
@@ -607,7 +557,6 @@
 
   /* Notizie */
   function sanitizeHtml(html){ return html.replace(/<script/gi,'&lt;script'); }
-
   function renderNews(){
     const grid=$('#gridNews'); grid.innerHTML='';
     const list=[...state.news].sort((a,b)=>(b.ts||0)-(a.ts||0));
@@ -623,7 +572,7 @@
     state.newsReady=true;
   }
 
-  // editor mini
+  /* Editor mini */
   $$('#newsEditor [data-cmd]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const cmd=btn.getAttribute('data-cmd'); const ed=$('#news_body_html'); ed.focus();
@@ -637,7 +586,8 @@
     });
   });
 
-  (function hookSave(){ const btn=$('#btnSaveNews'); if(!btn) return;
+  (function hookSave(){
+    const btn=$('#btnSaveNews'); if(!btn) return;
     btn.addEventListener('click', (ev)=>{
       ev.preventDefault(); ev.stopPropagation();
       if(!sessionIsValid()){ alert('Solo admin.'); return; }
@@ -661,7 +611,6 @@
     const el=$('#'+tab); if(el) el.style.display='';
     $$('#navPublic button, #navAdmin button').forEach(b=>{ b.classList.toggle('active', b.getAttribute('data-tab')===tab); });
   }
-
   function openNewsById(id){
     const item = (state.news||[]).find(n=>String(n.id)===String(id));
     if(!item){ alert('Articolo non trovato.'); showTab('notizie'); return; }
