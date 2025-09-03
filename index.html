@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Fantasy Italia — Nuove proposte</title>
 
-<!-- Indicizzazione (no tracciamento) -->
+<!-- Indicizzazione (senza tracciamento) -->
 <meta name="description" content="Catalogo gratuito della narrativa fantasy italiana: esordi, sinossi, dati bibliografici e segnalazioni. Nessun cookie né affiliazioni." />
 <meta name="robots" content="index, follow, max-image-preview:large" />
 <meta name="referrer" content="no-referrer" />
@@ -16,13 +16,11 @@
 <style>
   :root{
     --bg:#0f1013; --panel:#171923; --ink:#e7e9ee; --muted:#a9adbb;
-    --accent:#7aa6ff; --danger:#ff6b6b; --border:#232635;
-    --amz:#131a22; /* nero Amazon */
+    --accent:#7aa6ff; --danger:#ff6b6b; --border:#232635; --amz:#131a22;
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,Noto Sans;background:linear-gradient(180deg,#0f1013,#0d0e12 140vh);color:var(--ink)}
 
-  /* Header */
   header{position:sticky;top:0;z-index:10;background:rgba(13,14,18,.9);backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
   .wrap{max-width:1100px;margin:0 auto;padding:12px 16px}
   .rowbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -34,7 +32,6 @@
   nav button{background:#151826;color:var(--ink);border:1px solid var(--border);padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:600}
   nav button.active{outline:2px solid var(--accent)}
 
-  /* Layout */
   main{padding:20px 16px}
   section{max-width:1100px;margin:0 auto;background:#171923;border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
@@ -55,13 +52,10 @@
   .btn.danger{outline:1px solid #402;color:#ff9aa9}
   .btn.small{font-size:12px;padding:6px 8px}
 
-  /* Store buttons: 35x100, stesso sfondo */
+  /* Store 35x100, sfondo Amazon */
   .btn-amz, .btn-store{
-    width:100px; height:35px; padding:0;
-    display:inline-flex; align-items:center; justify-content:center;
-    border-radius:10px; border:1px solid #0c0e14;
-    background:var(--amz); color:#fff; text-decoration:none;
-    flex:0 0 100px;
+    width:100px;height:35px;padding:0;display:inline-flex;align-items:center;justify-content:center;
+    border-radius:10px;border:1px solid #0c0e14;background:var(--amz);color:#fff;text-decoration:none;flex:0 0 100px;
   }
   .btn-amz img{display:block;max-height:70%;max-width:90%;object-fit:contain}
 
@@ -71,22 +65,15 @@
   input[type="text"], input[type="url"], input[type="number"], textarea, select{background:#0f1119;color:#fff;border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:14px;width:100%}
   textarea{height:120px;resize:vertical}
   .hint{color:var(--muted);font-size:12px}
-  .right{margin-left:auto}
-  .muted{color:var(--muted)}
-  .small{font-size:12px}
   .banner{display:none;background:#142036;border:1px solid #223a66;color:#cfe;border-radius:12px;padding:8px 12px;margin:8px 0}
 
-  /* News */
+  /* Notizie */
   .news-card{display:block;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:12px;text-decoration:none;color:inherit;cursor:pointer}
   .news-card h3{margin:0 0 6px 0;font-size:18px}
   .line-clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-  .news-admin-actions{display:flex;gap:8px;margin-top:10px}
-
-  /* Pagina notizia */
   .news-article{max-width:900px;margin:0 auto;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:16px}
   .backRow{margin-top:16px;display:flex;gap:10px}
 
-  /* Footer */
   footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
   footer a{color:#9fc8ff;text-decoration:none}
   footer .sep{opacity:.4;margin:0 8px}
@@ -119,7 +106,6 @@
   <!-- Catalogo -->
   <section id="catalogo" class="tab">
     <div id="banner" class="banner"></div>
-
     <div class="toolbar">
       <div class="field" style="max-width:200px">
         <label>Anno ≥</label>
@@ -135,16 +121,14 @@
         <button class="btn right" id="btnExport">Esporta JSON</button>
       </span>
     </div>
-
     <div id="gridCatalogo" class="grid"></div>
   </section>
 
   <!-- Nuovo titolo -->
   <section id="nuovo" class="tab" style="display:none">
     <div class="toolbar">
-      <div class="small muted">I campi con (*) sono obbligatori. I titoli restano <b>in revisione</b> finché non vengono approvati da un admin.</div>
+      <div class="hint">I titoli restano <b>in revisione</b> finché non vengono approvati da un admin.</div>
     </div>
-
     <div class="row">
       <div class="field"><label>Titolo *</label><input id="f_title" type="text" /></div>
       <div class="field"><label>Autore *</label><input id="f_author" type="text" /></div>
@@ -159,22 +143,18 @@
         </select>
       </div>
     </div>
-
     <div class="row">
       <div class="field"><label>ISBN</label><input id="f_isbn" type="text" placeholder="978-..." /></div>
       <div class="field"><label>URL copertina</label><input id="f_cover" type="url" placeholder="https://..." /></div>
     </div>
-
     <div class="row">
       <div class="field"><label>Store Amazon</label><input id="f_amz" type="url" placeholder="https://amazon..." /></div>
       <div class="field"><label>Store editore</label><input id="f_store" type="url" placeholder="https://..." /></div>
     </div>
-
     <div class="field">
       <label>Sinossi</label>
       <textarea id="f_desc"></textarea>
     </div>
-
     <div class="actions">
       <button class="btn primary" id="btnSaveNew">Salva in revisione</button>
     </div>
@@ -188,7 +168,6 @@
         <button class="btn" id="btnExportNews">Esporta news (JSON)</button>
       </span>
     </div>
-
     <div id="newsEditor" class="banner" style="display:none">
       <div class="row">
         <div class="field"><label>Titolo notizia</label><input id="news_title" type="text" /></div>
@@ -212,7 +191,6 @@
         <button class="btn primary" id="btnSaveNews">Pubblica notizia</button>
       </div>
     </div>
-
     <div id="gridNews" class="grid"></div>
   </section>
 
@@ -222,7 +200,7 @@
       <button class="btn" id="btnBackTop">◀︎ Torna all’app</button>
       <h2 id="articleTitle" style="margin:10px 0 4px 0"></h2>
       <div id="articleMeta" class="muted small" style="margin-bottom:10px"></div>
-      <div id="articleBody" class="news-body"></div>
+      <div id="articleBody"></div>
       <div class="backRow"><button class="btn" id="btnBackBottom">◀︎ Torna all’app</button></div>
     </div>
   </section>
@@ -245,22 +223,15 @@
   <!-- Impostazioni -->
   <section id="impostazioni" class="tab" style="display:none">
     <h3>Impostazioni sito</h3>
-    <div class="small muted" style="margin-bottom:10px">Gli URL remoti consentono di centralizzare credenziali e dati.</div>
     <div class="row">
       <div class="field"><label>URL remoto admins.json</label><input id="adminsUrl" type="url" placeholder="/data/admins.json" /></div>
       <div class="field"><label>URL remoto catalogo.json</label><input id="catalogUrl" type="url" placeholder="/data/catalogo.json" /></div>
       <div class="field"><label>URL remoto news.json</label><input id="newsUrl" type="url" placeholder="/data/news.json" /></div>
       <button class="btn" id="btnSaveUrls">Salva URL</button>
     </div>
-    <div class="divider"></div>
-    <div class="row" style="gap:8px">
+    <div class="toolbar" style="margin-top:10px">
       <button class="btn" id="btnClearLocal">Svuota cache locale</button>
       <button class="btn" id="btnForceReload">Ricarica dal remoto (sovrascrivi)</button>
-    </div>
-    <div class="divider"></div>
-    <h3>Amministratori</h3>
-    <div class="small muted">Login PBKDF2 (salt/iter) da <a href="admin-tool.html" target="_blank" rel="noopener">admin-tool</a>.</div>
-    <div class="actions" style="margin-top:12px">
       <button class="btn danger" id="btnLogout">Esci dalla sessione admin</button>
     </div>
   </section>
@@ -275,13 +246,16 @@
 </footer>
 
 <script>
-(function(){
+document.addEventListener('DOMContentLoaded', function(){
   'use strict';
-  const $  = (s, r=document)=>r.querySelector(s);
-  const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
 
-  /* === Config & stato === */
-  const APP_VERSION = 'v3.9.1-cachefix2';
+  /* Helpers sicuri */
+  const $  = (sel, root=document)=>root.querySelector(sel);
+  const $$ = (sel, root=document)=>Array.from(root.querySelectorAll(sel));
+  const on = (el, ev, fn)=>{ if(el) el.addEventListener(ev, fn); };
+
+  const APP_VERSION = 'v3.9.2-stable';
+
   const state = {
     settings: load('fi_settings_site_v38', {adminsUrl:'', catalogUrl:'', newsUrl:''}),
     remoteAdmins: [],
@@ -306,26 +280,22 @@
   function load(k, fb){ try{ return JSON.parse(localStorage.getItem(k) || JSON.stringify(fb)); }catch(e){ return fb; } }
   function save(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
 
-  /* Cache-busting helper */
   function withBust(url){
-    try{
-      const u=new URL(url, location.href);
-      if(!u.searchParams.get('v')) u.searchParams.set('v', Date.now().toString());
-      return u.toString();
-    }catch(_){
-      return url + (url.includes('?') ? '&' : '?') + 'v=' + Date.now();
-    }
+    try{ const u=new URL(url, location.href); if(!u.searchParams.get('v')) u.searchParams.set('v', Date.now().toString()); return u.toString(); }
+    catch(_){ return url + (url.includes('?')?'&':'?') + 'v=' + Date.now(); }
   }
-  async function fetchJson(url){ const res=await fetch(withBust(url), {cache:'no-store'}); if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); }
+  async function fetchJson(url){
+    const res = await fetch(withBust(url), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    return res.json();
+  }
 
   /* Admin sessione */
   function sessionIsValid(){
     const u=sessionStorage.getItem('fi_admin_user');
     const t=+sessionStorage.getItem('fi_admin_time')||0;
-    if(!u||Date.now()-t>4*60*60*1000) return false;
-    if(Array.isArray(state.remoteAdmins) && state.remoteAdmins.length){
-      return state.remoteAdmins.some(a=>a.u===u);
-    }
+    if(!u || (Date.now()-t > 4*60*60*1000)) return false;
+    if(Array.isArray(state.remoteAdmins) && state.remoteAdmins.length){ return state.remoteAdmins.some(a=>a.u===u); }
     return true;
   }
   function touchSession(){ sessionStorage.setItem('fi_admin_time', String(Date.now())); }
@@ -352,10 +322,10 @@
       applyAdminUI();
       alert('Accesso admin eseguito.');
       return true;
-    }catch(e){ alert('Errore durante il login.'); return false; }
+    }catch(e){ console.error(e); alert('Errore durante il login.'); return false; }
   }
 
-  /* Normalizzazione libri: status di default approved (per i vecchi JSON) */
+  /* Normalizzazione libri */
   function normalizeBook(x){
     const b={...x};
     if(b.status==null||b.status==='') b.status='approved';
@@ -364,7 +334,7 @@
     return b;
   }
 
-  /* Bootstrap dal remoto se locale vuoto */
+  /* Bootstrap remoto solo se locale è vuoto */
   async function bootstrapIfEmpty(){
     if((state.books||[]).length && (state.news||[]).length) return;
     try{
@@ -372,42 +342,46 @@
       if(c.status==='fulfilled' && Array.isArray(c.value)){ state.books=c.value.map(normalizeBook); save('fi_books_site_v38', state.books); }
       if(n.status==='fulfilled' && Array.isArray(n.value)){ state.news=(n.value||[]).map((x,i)=>({id:x.id||('n'+i), title:x.title, bodyHtml:x.bodyHtml||x.body||'', ts:x.ts||Date.now()})); save('fi_news_site_v38', state.news); }
       renderCatalogo(); renderNews();
-    }catch(_){ /* banner già visibile se fallisce tutto */ }
+    }catch(err){
+      const bann = $('#banner'); if(bann){ bann.textContent='⚠️ Errore di caricamento dati. Controlla gli URL in Impostazioni.'; bann.style.display='block'; }
+    }
   }
 
-  /* === UI admin === */
+  /* UI admin */
   function applyAdminUI(){
-    const on=sessionIsValid();
-    $('#navAdmin').style.display = on ? 'flex' : 'none';
-    $('#adminTools').style.display = on ? 'flex' : 'none';
-    $('#adminBadge').style.display = on ? 'inline-block' : 'none';
-    $('#adminBadge').textContent  = on ? ('Admin: '+(sessionStorage.getItem('fi_admin_user')||'')) : '';
-    $('#adminToggle').textContent = on ? 'Esci admin' : 'Accedi admin';
-    $('#newsAdminBar').style.display = on ? 'flex' : 'none';
-    $('#newsEditor').style.display   = on ? '' : 'none';
+    const onAdmin = sessionIsValid();
+    const navAdmin = $('#navAdmin'), adminTools=$('#adminTools'), badge=$('#adminBadge'), btn=$('#adminToggle');
+    if(navAdmin) navAdmin.style.display = onAdmin ? 'flex' : 'none';
+    if(adminTools) adminTools.style.display = onAdmin ? 'flex' : 'none';
+    if(badge){ badge.style.display = onAdmin ? 'inline-block' : 'none'; badge.textContent = onAdmin ? ('Admin: '+(sessionStorage.getItem('fi_admin_user')||'')) : ''; }
+    if(btn) btn.textContent = onAdmin ? 'Esci admin' : 'Accedi admin';
+    const newsAdminBar = $('#newsAdminBar'), newsEditor = $('#newsEditor');
+    if(newsAdminBar) newsAdminBar.style.display = onAdmin ? 'flex' : 'none';
+    if(newsEditor) newsEditor.style.display   = onAdmin ? '' : 'none';
   }
-  $('#adminToggle').addEventListener('click', async()=>{
+
+  on($('#adminToggle'), 'click', async()=>{
     if(sessionIsValid()){ clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.'); }
     else await doLoginFlow();
   });
-  $('#btnLogout').addEventListener('click', ()=>{ clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.'); });
+  on($('#btnLogout'), 'click', ()=>{ clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.'); });
 
-  /* === Impostazioni === */
-  $('#btnSaveUrls').addEventListener('click', ()=>{
-    state.settings.adminsUrl=$('#adminsUrl').value.trim()||DEFAULTS.adminsUrl;
-    state.settings.catalogUrl=$('#catalogUrl').value.trim()||DEFAULTS.catalogUrl;
-    state.settings.newsUrl=$('#newsUrl').value.trim()||DEFAULTS.newsUrl;
+  /* Impostazioni */
+  on($('#btnSaveUrls'),'click', ()=>{
+    state.settings.adminsUrl=$('#adminsUrl')?.value.trim()||DEFAULTS.adminsUrl;
+    state.settings.catalogUrl=$('#catalogUrl')?.value.trim()||DEFAULTS.catalogUrl;
+    state.settings.newsUrl=$('#newsUrl')?.value.trim()||DEFAULTS.newsUrl;
     save('fi_settings_site_v38', state.settings);
     alert('URL salvati. Ricarica la pagina.');
   });
-  $('#btnClearLocal').addEventListener('click', ()=>{
+  on($('#btnClearLocal'),'click', ()=>{
     localStorage.removeItem('fi_books_site_v38');
     localStorage.removeItem('fi_news_site_v38');
     state.books=[]; state.news=[];
     renderCatalogo(); renderNews();
     location.reload();
   });
-  $('#btnForceReload').addEventListener('click', async()=>{
+  on($('#btnForceReload'),'click', async()=>{
     try{
       const [c,n] = await Promise.all([ fetchJson(state.settings.catalogUrl), fetchJson(state.settings.newsUrl) ]);
       if(Array.isArray(c)){ state.books=c.map(normalizeBook); save('fi_books_site_v38', state.books); }
@@ -417,39 +391,38 @@
     }catch(e){ alert('Errore ricarica dal remoto.'); }
   });
 
-  /* === Nuovo titolo === */
+  /* Nuovo titolo */
   function collectForm(){
-    const title=($('#f_title').value||'').trim();
-    const author=($('#f_author').value||'').trim();
-    const publisher=($('#f_publisher').value||'').trim();
-    const year=parseInt($('#f_year').value,10);
+    const title=($('#f_title')?.value||'').trim();
+    const author=($('#f_author')?.value||'').trim();
+    const publisher=($('#f_publisher')?.value||'').trim();
+    const year=parseInt($('#f_year')?.value||'0',10);
     if(!title||!author||!publisher||!year){ alert('Compila titolo, autore, editore e anno.'); return null; }
-    const b={
-      id: 'b'+Date.now().toString(36),
+    return {
+      id:'b'+Date.now().toString(36),
       title, author, publisher, year,
-      isbn: ($('#f_isbn').value||'').trim(),
-      coverUrl: ($('#f_cover').value||'').trim(),
-      description: ($('#f_desc').value||'').trim(),
-      storeAmazonUrl: ($('#f_amz').value||'').trim(),
-      storePublisherUrl: ($('#f_store').value||'').trim(),
-      isDebut: (function(){ const v=$('#f_debut').value; if(v==='yes') return true; if(v==='no') return false; return null; })(),
+      isbn: ($('#f_isbn')?.value||'').trim(),
+      coverUrl: ($('#f_cover')?.value||'').trim(),
+      description: ($('#f_desc')?.value||'').trim(),
+      storeAmazonUrl: ($('#f_amz')?.value||'').trim(),
+      storePublisherUrl: ($('#f_store')?.value||'').trim(),
+      isDebut:(function(){ const v=$('#f_debut')?.value; if(v==='yes') return true; if(v==='no') return false; return null; })(),
       labels:[], featured:false, status:'pending'
     };
-    return b;
   }
-  function clearForm(){ ['f_title','f_author','f_publisher','f_isbn','f_cover','f_desc','f_amz','f_store'].forEach(id=>{$('#'+id).value='';}); $('#f_year').value=new Date().getFullYear(); $('#f_debut').value='unknown'; }
-  $('#btnSaveNew').addEventListener('click', ()=>{
+  function clearForm(){ ['f_title','f_author','f_publisher','f_isbn','f_cover','f_desc','f_amz','f_store'].forEach(id=>{ const el=$('#'+id); if(el) el.value=''; }); const y=$('#f_year'); if(y) y.value=new Date().getFullYear(); const d=$('#f_debut'); if(d) d.value='unknown'; }
+  on($('#btnSaveNew'),'click', ()=>{
     const b=collectForm(); if(!b) return;
     if(!Array.isArray(state.books)) state.books=[];
     state.books.push(b);
     save('fi_books_site_v38', state.books);
     clearForm();
-    renderModeration(); // visibile qui
-    renderCatalogo();   // NON visibile (pending)
+    renderModeration();
+    renderCatalogo(); // i pending non compaiono
     alert('Titolo salvato in revisione.');
   });
 
-  /* === Catalogo === */
+  /* Catalogo */
   function placeholderCover(){
     return 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="160" viewBox="0 0 120 160"><rect width="100%" height="100%" fill="#0b0e13"/><rect x="10" y="10" width="100" height="140" rx="8" ry="8" fill="#0f141d" stroke="#1d2230"/><text x="60" y="83" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="14" fill="#5e657a">Copertina</text></svg>');
   }
@@ -470,8 +443,7 @@
     if(b.storeAmazonUrl){
       const a=document.createElement('a'); a.href=b.storeAmazonUrl; a.target='_blank'; a.rel='noopener'; a.className='btn-amz'; a.title='Amazon'; a.setAttribute('aria-label','Apri su Amazon');
       const logo=document.createElement('img'); logo.src='Logo Amazon.png'; logo.alt='Amazon';
-      a.appendChild(logo);
-      actions.appendChild(a);
+      a.appendChild(logo); actions.appendChild(a);
     }
     if(b.storePublisherUrl){
       const s=document.createElement('a'); s.href=b.storePublisherUrl; s.target='_blank'; s.rel='noopener'; s.className='btn btn-store'; s.textContent='Store editore';
@@ -483,27 +455,26 @@
     return el;
   }
   function renderCatalogo(){
-    const grid=$('#gridCatalogo'); grid.innerHTML='';
+    const grid=$('#gridCatalogo'); if(!grid) return;
+    grid.innerHTML='';
     let list = Array.isArray(state.books) ? state.books.slice() : [];
-    /* MOSTRA SOLO APPROVATI */
-    list = list.filter(b=> (b.status||'approved')==='approved');
-
-    const q=($('#q').value||'').toLowerCase().trim();
-    const fy=$('#filterYear').value;
+    list = list.filter(b=> (b.status||'approved')==='approved'); // solo approvati
+    const q=($('#q')?.value||'').toLowerCase().trim();
+    const fy=$('#filterYear')?.value||'all';
     if(fy!=='all'){ const y=parseInt(fy,10)||0; list=list.filter(b=>(+b.year||0)>=y); }
     if(q){ list=list.filter(b=>[b.title,b.author,b.publisher,(b.labels||[]).join(' ')].filter(Boolean).join(' ').toLowerCase().includes(q)); }
     list.sort((a,b)=>{ if(!!b.featured!==!!a.featured) return (b.featured?1:0)-(a.featured?1:0); const ya=(+a.year||0), yb=(+b.year||0); if(ya!==yb) return yb-ya; return (a.title||'').localeCompare(b.title||'','it'); });
     if(!list.length){ grid.innerHTML='<div class="muted">Nessun risultato.</div>'; return; }
     list.forEach(b=>grid.appendChild(bookCard(b)));
   }
-  $('#filterYear').addEventListener('change', renderCatalogo);
-  (function(){let t; $('#q').addEventListener('input',()=>{ clearTimeout(t); t=setTimeout(renderCatalogo,200); });})();
-  $('#btnExport').addEventListener('click', ()=>{
+  on($('#filterYear'),'change', renderCatalogo);
+  (function(){ let t; on($('#q'),'input',()=>{ clearTimeout(t); t=setTimeout(renderCatalogo,200); }); })();
+  on($('#btnExport'),'click', ()=>{
     const blob=new Blob([JSON.stringify(state.books,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='catalogo.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   });
 
-  /* === Moderazione === */
+  /* Moderazione */
   function modCard(b){
     const el=document.createElement('div'); el.className='card';
     const img=document.createElement('img'); img.className='cover'; img.alt='Copertina'; img.src=b.coverUrl||placeholderCover();
@@ -518,22 +489,23 @@
     const row=document.createElement('div'); row.className='row';
     const inLab=document.createElement('input'); inLab.type='text'; inLab.placeholder='Nuova etichetta'; inLab.style.minWidth='160px';
     const addBtn=document.createElement('button'); addBtn.className='btn small'; addBtn.textContent='Aggiungi';
-    addBtn.addEventListener('click',()=>{ const v=(inLab.value||'').trim(); if(!v) return; if(!Array.isArray(b.labels)) b.labels=[]; if(!b.labels.includes(v)) b.labels.push(v); inLab.value=''; save('fi_books_site_v38', state.books); refreshLabels(); renderCatalogo(); });
+    on(addBtn,'click',()=>{ const v=(inLab.value||'').trim(); if(!v) return; if(!Array.isArray(b.labels)) b.labels=[]; if(!b.labels.includes(v)) b.labels.push(v); inLab.value=''; save('fi_books_site_v38', state.books); refreshLabels(); renderCatalogo(); });
 
     const featWrap=document.createElement('label'); featWrap.className='small muted'; featWrap.style.display='inline-flex'; featWrap.style.alignItems='center'; featWrap.style.gap='6px';
     const featChk=document.createElement('input'); featChk.type='checkbox'; featChk.checked=!!b.featured;
-    featChk.addEventListener('change', ()=>{ b.featured=!!featChk.checked; save('fi_books_site_v38', state.books); renderCatalogo(); });
+    on(featChk,'change',()=>{ b.featured=!!featChk.checked; save('fi_books_site_v38', state.books); renderCatalogo(); });
     featWrap.appendChild(featChk); featWrap.append('Consigliato');
 
     const debutSel=document.createElement('select');
     [['unknown','Non specificato'],['yes','Sì'],['no','No']].forEach(([v,t])=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; debutSel.appendChild(o); });
     debutSel.value = (b.isDebut===true?'yes':b.isDebut===false?'no':'unknown');
-    debutSel.addEventListener('change', ()=>{ const v=debutSel.value; b.isDebut=(v==='yes')?true:(v==='no')?false:null; save('fi_books_site_v38', state.books); renderCatalogo(); });
+    on(debutSel,'change',()=>{ const v=debutSel.value; b.isDebut=(v==='yes')?true:(v==='no')?false:null; save('fi_books_site_v38', state.books); renderCatalogo(); });
 
     const actions=document.createElement('div'); actions.className='actions';
     const approve=document.createElement('button'); approve.className='btn primary'; approve.textContent=(b.status==='approved')?'Revoca approvazione':'Approva';
-    approve.addEventListener('click',()=>{ b.status=(b.status==='approved')?'pending':'approved'; approve.textContent=(b.status==='approved')?'Revoca approvazione':'Approva'; save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); });
-    const saveB=document.createElement('button'); saveB.className='btn'; saveB.textContent='Salva'; saveB.addEventListener('click',()=>{ save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); alert('Modifiche salvate.'); });
+    on(approve,'click',()=>{ b.status=(b.status==='approved')?'pending':'approved'; approve.textContent=(b.status==='approved')?'Revoca approvazione':'Approva'; save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); });
+    const saveB=document.createElement('button'); saveB.className='btn'; saveB.textContent='Salva';
+    on(saveB,'click',()=>{ save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); alert('Modifiche salvate.'); });
 
     row.appendChild(inLab); row.appendChild(addBtn);
     meta.appendChild(h3); meta.appendChild(by);
@@ -547,26 +519,27 @@
     return el;
   }
   function renderModeration(){
-    const grid=$('#gridModeration'); grid.innerHTML='';
+    const grid=$('#gridModeration'); if(!grid) return;
+    grid.innerHTML='';
     if(!sessionIsValid()){ grid.innerHTML='<div class="muted">Area riservata. Accedi come admin.</div>'; return; }
     let list = Array.isArray(state.books)? state.books.slice():[];
-    const f=$('#moderationFilter').value;
+    const f=$('#moderationFilter')?.value||'pending';
     if(f==='pending')  list=list.filter(b=>(b.status||'pending')!=='approved');
     if(f==='approved') list=list.filter(b=>(b.status||'approved')==='approved');
     if(!list.length){ grid.innerHTML='<div class="muted">Niente da mostrare.</div>'; return; }
     list.forEach(b=>grid.appendChild(modCard(b)));
   }
-  $('#moderationFilter').addEventListener('change', renderModeration);
+  on($('#moderationFilter'),'change', renderModeration);
 
-  /* === Notizie === */
+  /* Notizie */
   function sanitizeHtml(html){ return (html||'').replace(/<script/gi,'&lt;script'); }
   function renderNews(){
-    const grid=$('#gridNews'); grid.innerHTML='';
+    const grid=$('#gridNews'); if(!grid) return; grid.innerHTML='';
     const list=(state.news||[]).slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
     if(!list.length){ grid.innerHTML='<div class="muted">Ancora nessuna notizia.</div>'; return; }
     for(const n of list){
       const card=document.createElement('div'); card.className='news-card'; card.tabIndex=0;
-      card.addEventListener('click', ()=>{ location.hash='#news/'+(n.id||''); });
+      on(card,'click',()=>{ location.hash='#news/'+(n.id||''); });
       const h3=document.createElement('h3'); h3.textContent=n.title||'(Senza titolo)';
       const prev=document.createElement('div'); prev.className='muted line-clamp';
       const plain=(n.bodyHtml||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
@@ -579,20 +552,23 @@
   function openNewsById(id){
     const n=(state.news||[]).find(x=>String(x.id)===String(id));
     if(!n) return false;
-    $('#articleTitle').textContent = n.title || '';
-    $('#articleMeta').textContent  = new Date(n.ts||Date.now()).toLocaleString('it-IT');
-    $('#articleBody').innerHTML    = n.bodyHtml || '';
+    const t=$('#articleTitle'), m=$('#articleMeta'), b=$('#articleBody');
+    if(t) t.textContent = n.title || '';
+    if(m) m.textContent = new Date(n.ts||Date.now()).toLocaleString('it-IT');
+    if(b) b.innerHTML   = n.bodyHtml || '';
     showTab('newsview');
     const safe=encodeURIComponent(String(id));
     history.replaceState(null,'',location.pathname+'?n='+safe+'#news/'+safe);
     return true;
   }
   function backToNews(e){ e?.preventDefault(); history.pushState(null,'',location.pathname+'#notizie'); showTab('notizie'); }
+  on($('#btnBackTop'),'click', backToNews);
+  on($('#btnBackBottom'),'click', backToNews);
 
   // mini-editor
   $$('#newsEditor [data-cmd]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const ed=$('#news_body_html'); ed && ed.focus();
+    on(btn,'click', ()=>{
+      const ed=$('#news_body_html'); if(!ed) return; ed.focus();
       const cmd=btn.getAttribute('data-cmd');
       if(cmd==='bold') document.execCommand('bold', false, null);
       else if(cmd==='italic') document.execCommand('italic', false, null);
@@ -603,32 +579,30 @@
       else if(cmd==='clear'){ ed.innerHTML=''; }
     });
   });
-  $('#btnSaveNews').addEventListener('click', (ev)=>{
+  on($('#btnSaveNews'),'click', (ev)=>{
     ev.preventDefault(); ev.stopPropagation();
     if(!sessionIsValid()){ alert('Solo admin.'); return; }
-    const title=($('#news_title').value||'').trim();
-    const html=sanitizeHtml($('#news_body_html').innerHTML||'');
+    const title=($('#news_title')?.value||'').trim();
+    const html=sanitizeHtml($('#news_body_html')?.innerHTML||'');
     if(!title){ alert('Titolo obbligatorio.'); return; }
     if(!html){ alert('Inserisci un testo.'); return; }
     const item={ id:'n'+Date.now().toString(36), title, bodyHtml:html, ts:Date.now() };
     if(!Array.isArray(state.news)) state.news=[];
     state.news.push(item);
     save('fi_news_site_v38', state.news);
-    $('#news_title').value=''; $('#news_body_html').innerHTML='';
+    const nt=$('#news_title'), nb=$('#news_body_html'); if(nt) nt.value=''; if(nb) nb.innerHTML='';
     renderNews(); alert('Notizia pubblicata.');
   });
-  $('#btnExportNews').addEventListener('click', ()=>{
+  on($('#btnExportNews'),'click', ()=>{
     if(!sessionIsValid()){ alert('Solo admin.'); return; }
     const blob=new Blob([JSON.stringify(state.news||[],null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='news.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   });
-  $('#btnBackTop').addEventListener('click', backToNews);
-  $('#btnBackBottom').addEventListener('click', backToNews);
 
-  /* === Navigazione / Router === */
+  /* Router */
   function showTab(tab){
     $$('.tab').forEach(s=>s.style.display='none');
-    $('#'+tab).style.display='';
+    const target = $('#'+tab); if(target) target.style.display='';
     $$('#navPublic button, #navAdmin button').forEach(b=>b.classList.toggle('active', b.getAttribute('data-tab')===tab));
   }
   function handleRoute(){
@@ -640,9 +614,9 @@
     if(hash==='impostazioni'){ if(sessionIsValid()){ showTab('impostazioni'); } else { alert('Area riservata: accedi come admin.'); showTab('catalogo'); } return; }
     showTab('catalogo');
   }
-  window.addEventListener('hashchange', handleRoute);
+  on(window,'hashchange', handleRoute);
   $$('#navPublic button, #navAdmin button').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
+    on(btn,'click', ()=>{
       const tab=btn.getAttribute('data-tab');
       if(tab==='moderazione'||tab==='impostazioni'){ if(!sessionIsValid()){ alert('Area riservata: accedi come admin.'); return; } touchSession(); }
       if(tab==='moderazione') renderModeration();
@@ -651,18 +625,16 @@
     });
   });
 
-  /* === Init === */
+  /* Init sicuro */
   (async function init(){
-    // Pre-carica admins (se presenti)
     try{ state.remoteAdmins = await fetchJson(state.settings.adminsUrl); }catch(_){}
     if(sessionIsValid()){ state.isAdmin=true; state.meUser=sessionStorage.getItem('fi_admin_user'); touchSession(); }
     applyAdminUI();
-
     renderCatalogo();
     renderNews();
-    bootstrapIfEmpty();
+    await bootstrapIfEmpty();
 
-    // Fallback deep-link da query (?n= / ?news=)
+    // Deep-link da query (?n=/ ?news=)
     if(!location.hash){
       const p=new URLSearchParams(location.search);
       const id=p.get('n')||p.get('news');
@@ -671,7 +643,7 @@
     handleRoute();
   })();
 
-})();
+});
 </script>
 </body>
 </html>
