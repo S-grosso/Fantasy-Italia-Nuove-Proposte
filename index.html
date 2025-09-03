@@ -4,71 +4,105 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fantasy Italia — Nuove proposte</title>
-
-<!-- SEO minima, nessun tracciamento -->
-<meta name="description" content="Catalogo gratuito della narrativa fantasy italiana: esordi, sinossi, dati bibliografici e segnalazioni. Nessun cookie né affiliazioni.">
+<meta name="theme-color" content="#7aa6ff">
+<meta name="description" content="Catalogo gratuito della narrativa fantasy italiana: autori esordienti, collane, dati bibliografici e segnalazioni. Nessun cookie né affiliazioni.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="referrer" content="no-referrer">
-<meta name="theme-color" content="#7aa6ff">
 <meta property="og:title" content="Fantasy Italia — Nuove proposte">
-<meta property="og:description" content="Catalogo gratuito della narrativa fantasy italiana: esordi, sinossi, dati bibliografici e segnalazioni.">
-
+<meta property="og:description" content="Catalogo gratuito della narrativa fantasy italiana: autori esordienti, collane, dati bibliografici e segnalazioni. Nessun cookie né affiliazioni.">
 <style>
-  :root{ --bg:#0f1013; --panel:#171923; --ink:#e7e9ee; --muted:#a9adbb; --accent:#7aa6ff; --border:#232635; }
+  :root{ --bg:#0f1013; --panel:#171923; --ink:#e7e9ee; --muted:#a9adbb; --accent:#7aa6ff; --danger:#ff6b6b; --border:#232635; }
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,Noto Sans;background:linear-gradient(180deg,#0f1013,#0d0e12 140vh);color:var(--ink)}
-  header{position:sticky;top:0;z-index:10;background:rgba(13,14,18,.9);backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
-  .wrap{max-width:1100px;margin:0 auto;padding:12px 16px}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  h1{margin:0;font-size:20px;letter-spacing:.2px;flex:1}
-  nav{display:flex;gap:8px;flex-wrap:wrap}
-  nav button{background:#151826;color:var(--ink);border:1px solid var(--border);padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:600}
-  nav button.active{outline:2px solid var(--accent)}
-  .adminToggle{background:#132033;border:1px solid var(--border);color:#dfe;padding:8px 12px;border-radius:10px;cursor:pointer}
-  .adminBadge{display:none;font-size:12px;border:1px solid var(--border);padding:6px 9px;border-radius:999px;color:#cfe}
 
+  /* Header sempre sopra a tutto */
+  header{position:sticky;top:0;z-index:10000;background:rgba(13,14,18,.6);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);pointer-events:auto}
+  .wrap{max-width:1100px;margin:0 auto;padding:12px 16px}
+  .wrap-col{display:flex;flex-direction:column;gap:8px}
+  .topbar{display:flex;align-items:center;gap:10px}
+  h1{font-size:20px;margin:0;letter-spacing:.2px;flex:1}
+  .adminBadge{font-size:12px;border:1px solid var(--border);padding:6px 9px;border-radius:999px;color:#cfe;opacity:.9}
+  .adminToggle{background:#132033;border:1px solid var(--border);color:#dfe;padding:8px 12px;border-radius:10px;cursor:pointer}
+
+  .subnav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  nav{display:flex;gap:8px;flex-wrap:wrap}
+  nav button{background:#151826;color:var(--ink);border:1px solid var(--border);padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:600;position:relative;z-index:10001}
+  nav button.active{outline:2px solid var(--accent)}
+
+  /* Layout */
   main{padding:20px 16px}
-  section{max-width:1100px;margin:0 auto;background:#171923;border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  section{max-width:1100px;margin:0 auto;background:#171923;border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);position:relative;z-index:1}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
   .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
   .card{position:relative;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:10px;display:flex;gap:10px;align-items:flex-start;min-height:140px}
+  .badge{position:absolute;top:8px;left:8px;background:#0f2;color:#061;font-size:11px;padding:4px 6px;border-radius:6px;border:1px solid #063}
   img.cover{display:block;border-radius:8px;border:1px solid var(--border);height:160px;width:auto;object-fit:cover;background:#080a0f}
   .meta{flex:1;min-width:0}
-  .meta h3{margin:0 0 6px;font-size:16px;line-height:1.2}
-  .by{color:var(--muted);font-size:13px;margin-bottom:6px}
-  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .meta h3{margin:0 0 6px 0;font-size:16px;line-height:1.2}
+  .meta .by{color:var(--muted);font-size:13px;margin-bottom:6px}
+  .meta .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
   .tag{font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
   .tag.label{color:#9fc8ff;border-color:#2854aa}
   .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:nowrap}
-  .btn{background:#151826;border:1px solid var(--border);color:#fff;padding:6px 10px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+  .btn{background:#151826;border:1px solid var(--border);color:var(--ink);padding:8px 10px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
   .btn.primary{outline:2px solid var(--accent)}
+  .btn.danger{outline:1px solid #402;color:#ff9aa9}
   .btn.small{font-size:12px;padding:6px 8px}
-  input[type="text"], input[type="url"], input[type="number"], textarea, select{background:#0f1119;color:#fff;border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:14px}
-  textarea{height:120px;resize:vertical}
+
+  /* Store buttons: 35x100, nero Amazon */
+  .btn-amz, .btn-store{
+    width:100px;height:35px;padding:0;
+    display:inline-flex;align-items:center;justify-content:center;
+    border-radius:10px;font-size:12px;font-weight:600;letter-spacing:.2px;
+    border:1px solid #0c0e14;text-decoration:none;flex:0 0 100px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .btn-amz{background:#131a22}
+  .btn-amz img{display:block;max-height:70%;max-width:90%;object-fit:contain}
+  .btn-store{background:#131a22;color:#fff;text-decoration:none}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:180px}
+  .field label{font-size:13px;color:var(--muted)}
+  input[type="text"], input[type="url"], input[type="number"], textarea, select{background:#0f1016;color:var(--ink);border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:14px;width:100%}
+  textarea{height:140px;resize:vertical}
   .hint{color:var(--muted);font-size:12px}
-  .banner{display:none;background:#351616;border:1px solid #6b2a2a;color:#ffbcbc;border-radius:12px;padding:8px 12px;margin:8px 0}
+  .right{margin-left:auto}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  .divider{height:1px;background:var(--border);margin:12px 0}
+  .banner{background:#142036;border:1px solid #223a66;color:#cfe;border-radius:12px;padding:8px 12px;margin:8px 0;display:none}
 
   /* News */
   .news-card{display:block;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:12px;text-decoration:none;color:inherit;cursor:pointer}
-  .news-card h3{margin:0 0 6px;font-size:18px}
+  .news-card h3{margin:0 0 6px 0;font-size:18px}
   .line-clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-  .news-article{max-width:900px;margin:0 auto;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:16px}
+  .news-admin-actions{display:flex;gap:8px;margin-top:10px}
+  .news-article{max-width:900px;margin:0 auto;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;z-index:1}
+  .backAppTop{position:sticky;top:8px;left:0;z-index:2;pointer-events:none}
+  .backAppTop .btn{pointer-events:auto}
   .backRow{margin-top:16px;display:flex;gap:10px}
+  .news-meta{color:var(--muted);font-size:12px;margin-bottom:10px}
+  #newsEditor{position:relative;margin-bottom:14px}
 
+  /* Footer */
   footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
   footer a{color:#9fc8ff;text-decoration:none}
   footer .sep{opacity:.4;margin:0 8px}
+
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 </style>
 </head>
 <body>
+
 <header>
-  <div class="wrap">
-    <div class="row">
+  <div class="wrap wrap-col">
+    <div class="topbar">
       <h1>Fantasy Italia — Nuove proposte</h1>
-      <span id="adminBadge" class="adminBadge"></span>
-      <button id="adminToggle" class="adminToggle">Accedi admin</button>
+      <span id="adminBadge" class="adminBadge" style="display:none"></span>
+      <button id="adminToggle" class="adminToggle" title="Accedi/Esci dalla sessione amministratore">Accedi admin</button>
     </div>
-    <div class="row" style="margin-top:8px">
+    <div class="subnav">
       <nav id="navPublic">
         <button data-tab="catalogo" class="active">Catalogo</button>
         <button data-tab="nuovo">Nuovo titolo</button>
@@ -107,15 +141,35 @@
   <!-- Nuovo titolo -->
   <section id="nuovo" class="tab" style="display:none">
     <div class="toolbar">
-      <div class="hint">I titoli restano <b>in revisione</b> finché non vengono approvati da un admin.</div>
+      <div class="small muted">I campi con (*) sono obbligatori.</div>
+      <span class="right small muted">Il titolo apparirà in <b>Catalogo</b> dopo l’approvazione di un admin.</span>
     </div>
+
+    <!-- riga 1 -->
     <div class="row">
-      <div class="field"><label>Titolo *</label><input id="f_title" type="text"></div>
-      <div class="field"><label>Autore *</label><input id="f_author" type="text"></div>
-      <div class="field"><label>Editore *</label><input id="f_publisher" type="text"></div>
+      <div class="field"><label>Titolo *</label><input id="f_title" type="text" placeholder="Titolo del libro"></div>
+      <div class="field"><label>Autore *</label><input id="f_author" type="text" placeholder="Nome Cognome"></div>
+      <div class="field"><label>Editore *</label><input id="f_publisher" type="text" placeholder="Casa editrice"></div>
       <div class="field" style="max-width:120px"><label>Anno *</label><input id="f_year" type="number" min="1900" max="2100" value="2025"></div>
+      <div class="field" style="max-width:160px"><label>Collana</label><input id="f_series" type="text" placeholder="Collana"></div>
+    </div>
+
+    <!-- riga 2 -->
+    <div class="row">
+      <div class="field" style="max-width:220px"><label>ISBN</label><input id="f_isbn" type="text" placeholder="978-..."></div>
+      <div class="field"><label>Store Amazon</label><input id="f_amz" type="url" placeholder="https://amazon.it/..."></div>
+      <div class="field"><label>Store editore</label><input id="f_store" type="url" placeholder="https://shop.editore.it/..."></div>
+    </div>
+
+    <!-- riga 3 -->
+    <div class="row">
+      <div class="field">
+        <label>URL copertina (JPG/PNG)</label>
+        <input id="f_cover" type="url" placeholder="https://.../cover.jpg">
+        <div class="hint">Se omesso, verrà mostrato un segnaposto.</div>
+      </div>
       <div class="field" style="max-width:200px">
-        <label>Esordio</label>
+        <label>Romanzo d'esordio?</label>
         <select id="f_debut">
           <option value="unknown" selected>Non specificato</option>
           <option value="yes">Sì</option>
@@ -123,20 +177,18 @@
         </select>
       </div>
     </div>
+
+    <!-- riga 4 -->
     <div class="row">
-      <div class="field"><label>ISBN</label><input id="f_isbn" type="text" placeholder="978-..."></div>
-      <div class="field"><label>URL copertina</label><input id="f_cover" type="url" placeholder="https://..."></div>
+      <div class="field" style="flex:1">
+        <label>Sinossi</label>
+        <textarea id="f_desc" placeholder="Breve sinossi del libro (facoltativa)"></textarea>
+      </div>
     </div>
-    <div class="row">
-      <div class="field"><label>Store Amazon</label><input id="f_amz" type="url" placeholder="https://amazon..."></div>
-      <div class="field"><label>Store editore</label><input id="f_store" type="url" placeholder="https://..."></div>
-    </div>
-    <div class="field">
-      <label>Sinossi</label>
-      <textarea id="f_desc"></textarea>
-    </div>
+
     <div class="actions">
       <button class="btn primary" id="btnSaveNew">Salva in revisione</button>
+      <span class="hint">Il titolo apparirà in Catalogo dopo l’approvazione di un admin.</span>
     </div>
   </section>
 
@@ -144,32 +196,38 @@
   <section id="notizie" class="tab" style="display:none">
     <div id="newsAdminBar" class="toolbar" style="display:none">
       <div class="field" style="flex:1"><label>Titolo</label><input id="news_title" type="text" placeholder="Titolo della notizia"></div>
+      <div class="right"><button id="btnExportNews" class="btn">Esporta news</button></div>
     </div>
     <div id="newsEditor" style="display:none">
-      <div class="toolbar" style="gap:6px;margin-bottom:6px">
-        <button class="btn small" data-cmd="bold"><b>B</b></button>
-        <button class="btn small" data-cmd="italic"><i>I</i></button>
-        <button class="btn small" data-cmd="underline"><u>U</u></button>
+      <div class="toolbar" style="margin-bottom:6px">
+        <button class="btn small" data-cmd="bold">Grassetto</button>
+        <button class="btn small" data-cmd="italic">Corsivo</button>
+        <button class="btn small" data-cmd="underline">Sottolineato</button>
+        <button class="btn small" data-cmd="ul">Elenco</button>
+        <button class="btn small" data-cmd="link">Link</button>
         <button class="btn small" data-cmd="bigger">A+</button>
         <button class="btn small" data-cmd="smaller">A−</button>
-        <button class="btn small" data-cmd="ul">• Lista</button>
-        <button class="btn small" data-cmd="link">🔗 Link</button>
-        <button class="btn small" data-cmd="clear">✖︎ Pulisci</button>
+        <button class="btn small" data-cmd="clear">Svuota</button>
       </div>
-      <div id="news_body_html" contenteditable="true" spellcheck="true" style="background:#0f1119;color:#fff;border:1px solid var(--border);border-radius:10px;padding:10px;min-height:140px;line-height:1.5"></div>
-      <div class="actions"><button class="btn primary" id="btnSaveNews">Pubblica notizia</button></div>
+      <div id="news_body_html" contenteditable="true" style="border:1px solid var(--border);border-radius:10px;padding:10px;min-height:160px"></div>
+      <div class="actions">
+        <button class="btn primary" id="btnSaveNews">Pubblica notizia</button>
+        <button class="btn" id="btnCancelEdit" style="display:none">Annulla modifica</button>
+        <span class="hint">Solo gli admin possono pubblicare/aggiornare le notizie.</span>
+      </div>
     </div>
+
     <div id="gridNews" class="grid"></div>
   </section>
 
   <!-- Notizia (articolo) -->
   <section id="newsview" class="tab" style="display:none">
     <div class="news-article">
-      <button class="btn" id="btnBackTop">◀︎ Torna all’app</button>
-      <h2 id="articleTitle" style="margin:10px 0 4px 0"></h2>
-      <div id="articleMeta" class="muted small" style="margin-bottom:10px"></div>
+      <div class="backAppTop"><button class="btn" id="btnBackTop">Torna all’app</button></div>
+      <h2 id="articleTitle" style="margin:6px 0 4px 0"></h2>
+      <div id="articleMeta" class="news-meta"></div>
       <div id="articleBody"></div>
-      <div class="backRow"><button class="btn" id="btnBackBottom">◀︎ Torna all’app</button></div>
+      <div class="backRow"><button class="btn" id="btnBackBottom">Torna all’app</button></div>
     </div>
   </section>
 
@@ -191,16 +249,23 @@
   <!-- Impostazioni -->
   <section id="impostazioni" class="tab" style="display:none">
     <h3>Impostazioni sito</h3>
+    <div class="small muted" style="margin-bottom:10px">Gli URL remoti consentono di centralizzare credenziali e catalogo.</div>
     <div class="row">
-      <div class="field"><label>URL remoto admins.json</label><input id="adminsUrl" type="url" placeholder="/data/admins.json"></div>
-      <div class="field"><label>URL remoto catalogo.json</label><input id="catalogUrl" type="url" placeholder="/data/catalogo.json"></div>
-      <div class="field"><label>URL remoto news.json</label><input id="newsUrl" type="url" placeholder="/data/news.json"></div>
+      <div class="field"><label>URL remoto admins.json</label><input id="adminsUrl" type="url" placeholder="https://tuodominio/data/admins.json"></div>
+      <div class="field"><label>URL remoto catalogo.json</label><input id="catalogUrl" type="url" placeholder="https://tuodominio/data/catalogo.json"></div>
+      <div class="field"><label>URL remoto news.json</label><input id="newsUrl" type="url" placeholder="https://tuodominio/data/news.json"></div>
       <button class="btn" id="btnSaveUrls">Salva URL</button>
     </div>
-    <div class="toolbar" style="margin-top:10px">
+    <div class="divider"></div>
+    <div class="row" style="gap:8px">
       <button class="btn" id="btnClearLocal">Svuota cache locale</button>
       <button class="btn" id="btnForceReload">Ricarica dal remoto (sovrascrivi)</button>
-      <button class="btn" id="btnLogout">Esci dalla sessione admin</button>
+    </div>
+    <div class="divider"></div>
+    <h3>Amministratori</h3>
+    <div class="small muted">Login centralizzato con hash PBKDF2 saltato. Puoi generare credenziali con l’utility in <a href="admin-tool.html" target="_blank" rel="noopener">admin-tool</a>.</div>
+    <div class="actions" style="margin-top:12px">
+      <button class="btn danger" id="btnLogout">Esci dalla sessione admin</button>
     </div>
   </section>
 </main>
@@ -214,95 +279,79 @@
 </footer>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+(function(){
   'use strict';
+  const $  = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
 
-  /* ===== Helpers ===== */
-  const $  = (sel, root=document)=>root.querySelector(sel);
-  const $$ = (sel, root=document)=>Array.from(root.querySelectorAll(sel));
-  const on = (el, ev, fn)=>{ if(el) el.addEventListener(ev, fn); };
+  /* Logo Amazon: locale con fallback RAW */
+  const AMAZON_IMG_RAW_URL = 'https://raw.githubusercontent.com/S-grosso/Fantasy-Italia-Nuove-Proposte/main/logo_store.png';
 
-  function load(k, fb){ try{ return JSON.parse(localStorage.getItem(k) || JSON.stringify(fb)); }catch(_){ return fb; } }
-  function save(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
+  /* === Stato & impostazioni === */
+  const state = {
+    settings: load('fi_settings_site_v38', { adminsUrl:'', catalogUrl:'', newsUrl:'' }),
+    remoteAdmins: null,
+    books: load('fi_books_site_v38', []),
+    news:  load('fi_news_site_v38', []),
+    isAdmin: false,
+    meUser: null,
+    newsReady: false,
+    editingNewsId: null
+  };
 
+  const DEFAULT_BASE = location.origin + location.pathname.replace(/\/[^\/]*$/, '/');
+  const DEFAULT_ADMINS_URL  = DEFAULT_BASE + 'data/admins.json';
+  const DEFAULT_CATALOG_URL = DEFAULT_BASE + 'data/catalogo.json';
+  const DEFAULT_NEWS_URL    = DEFAULT_BASE + 'data/news.json';
+  if(!state.settings.adminsUrl)  state.settings.adminsUrl  = DEFAULT_ADMINS_URL;
+  if(!state.settings.catalogUrl) state.settings.catalogUrl = DEFAULT_CATALOG_URL;
+  if(!state.settings.newsUrl)    state.settings.newsUrl    = DEFAULT_NEWS_URL;
+  save('fi_settings_site_v38', state.settings);
+
+  /* === Storage helpers === */
+  function load(key, fallback){
+    try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+    catch(e){ return fallback; }
+  }
+  function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+  /* === Cache-busting per evitare vecchie versioni servite da CDN === */
   function withBust(url){
     try{ const u=new URL(url, location.href); u.searchParams.set('v', Date.now().toString()); return u.toString(); }
     catch(_){ return url + (url.includes('?')?'&':'?') + 'v=' + Date.now(); }
   }
   async function fetchJson(url){
     const res = await fetch(withBust(url), {cache:'no-store'});
-    if(!res.ok) throw new Error('HTTP '+res.status);
+    if(!res.ok) throw new Error('HTTP '+res.status+' @ '+url);
     return res.json();
   }
 
-  /* ===== Stato & Settings ===== */
-  const state = {
-    settings: load('fi_settings_site_v38', {adminsUrl:'', catalogUrl:'', newsUrl:''}),
-    remoteAdmins: [],
-    books: load('fi_books_site_v38', []),
-    news:  load('fi_news_site_v38', []),
-    editingNewsId: null
-  };
-  const DEFAULT_BASE = location.origin + location.pathname.replace(/\/[^\/]*$/, '/');
-  const DEFAULTS = {
-    adminsUrl:  state.settings.adminsUrl  || (DEFAULT_BASE + 'data/admins.json'),
-    catalogUrl: state.settings.catalogUrl || (DEFAULT_BASE + 'data/catalogo.json'),
-    newsUrl:    state.settings.newsUrl    || (DEFAULT_BASE + 'data/news.json')
-  };
-  state.settings = DEFAULTS; save('fi_settings_site_v38', state.settings);
+  /* === Candidati URL e fetch robusto === */
+  function candidates(kind){
+    const list = [];
+    const setUrl = state.settings[kind+'Url'];
+    if(setUrl) list.push(setUrl);
+    const names = (kind==='catalog') ? ['data/catalogo.json','catalogo.json']
+               : (kind==='news')    ? ['data/news.json','news.json']
+                                    : ['data/admins.json','admins.json'];
+    names.forEach(n => { list.push(n.startsWith('/')? n : ('/'+n)); list.push(n); });
+    return Array.from(new Set(list));
+  }
+  async function tryFetchAny(kind){
+    const list=candidates(kind);
+    for(const raw of list){
+      try{
+        const j=await fetchJson(raw); // con cache-busting
+        return {ok:true, url:raw, data:j};
+      }catch(_){}
+    }
+    return {ok:false};
+  }
 
-  /* ===== Admin sessione ===== */
-  function sessionIsValid(){
-    const u=sessionStorage.getItem('fi_admin_user');
-    const t=+sessionStorage.getItem('fi_admin_time')||0;
-    if(!u || (Date.now()-t > 4*60*60*1000)) return false;
-    if(Array.isArray(state.remoteAdmins) && state.remoteAdmins.length){ return state.remoteAdmins.some(a=>a.u===u); }
-    return true;
-  }
-  function touchSession(){ sessionStorage.setItem('fi_admin_time', String(Date.now())); }
-  function clearSession(){ sessionStorage.removeItem('fi_admin_user'); sessionStorage.removeItem('fi_admin_time'); }
-  async function pbkdf2Hex(pass, saltHex, iters, length=32){
-    const enc=new TextEncoder();
-    const key=await crypto.subtle.importKey('raw', enc.encode(pass), {name:'PBKDF2'}, false, ['deriveBits']);
-    const salt=new Uint8Array((saltHex.match(/.{1,2}/g)||[]).map(b=>parseInt(b,16)));
-    const bits=await crypto.subtle.deriveBits({name:'PBKDF2', hash:'SHA-256', salt, iterations:iters}, key, length*8);
-    return [...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,'0')).join('');
-  }
-  async function doLoginFlow(){
-    const u=prompt('Inserisci username admin'); if(u===null||!u.trim()) return false;
-    const p=prompt('Inserisci password'); if(p===null) return false;
-    try{
-      if(!state.remoteAdmins.length){ state.remoteAdmins = await fetchJson(state.settings.adminsUrl); }
-      const rec = state.remoteAdmins.find(a=>a.u===u.trim());
-      if(!rec){ alert('Utente non trovato.'); return false; }
-      const h = await pbkdf2Hex(p, rec.salt, rec.iter||120000, 32);
-      if(h!==rec.hash){ alert('Password errata.'); return false; }
-      sessionStorage.setItem('fi_admin_user', rec.u); touchSession();
-      applyAdminUI();
-      alert('Accesso admin eseguito.');
-      return true;
-    }catch(e){ alert('Errore durante il login.'); return false; }
-  }
-  function applyAdminUI(){
-    const onAdmin = sessionIsValid();
-    $('#navAdmin').style.display = onAdmin ? 'flex' : 'none';
-    $('#adminBadge').style.display = onAdmin ? 'inline-block' : 'none';
-    $('#adminBadge').textContent = onAdmin ? ('Admin: '+(sessionStorage.getItem('fi_admin_user')||'')) : '';
-    $('#adminToggle').textContent = onAdmin ? 'Esci admin' : 'Accedi admin';
-    $('#adminTools').style.display = onAdmin ? 'flex' : 'none';
-    $('#newsAdminBar').style.display = onAdmin ? 'flex' : 'none';
-    $('#newsEditor').style.display   = onAdmin ? '' : 'none';
-  }
-  on($('#adminToggle'), 'click', async()=>{
-    if(sessionIsValid()){ clearSession(); applyAdminUI(); alert('Sei uscito dalla sessione admin.'); }
-    else await doLoginFlow();
-  });
-  on($('#btnLogout'),'click', ()=>{ clearSession(); applyAdminUI(); alert('Sei uscito dalla sessione admin.'); });
-
-  /* ===== Normalizzazioni ===== */
+  /* === Normalizzazione dati === */
   function normalizeBook(x){
     const b={...x};
-    if(b.status==null || b.status==='') b.status='approved'; // compatibilità vecchi JSON
+    if(b.status==null || b.status==='') b.status='approved'; // compat vecchi JSON
     if(!Array.isArray(b.labels)) b.labels = b.labels ? [].concat(b.labels) : [];
     b.featured=!!b.featured;
     return b;
@@ -311,272 +360,524 @@ document.addEventListener('DOMContentLoaded', () => {
     return (arr||[]).map((x,i)=>({ id:x.id||('n'+i), title:x.title, bodyHtml:x.bodyHtml||x.body||'', ts:x.ts||Date.now() }));
   }
 
-  /* ===== Bootstrap locale/remoto ===== */
+  /* === Bootstrap (solo se locale vuoto) === */
   async function bootstrapIfEmpty(){
-    if((state.books||[]).length && (state.news||[]).length) return;
+    const hasBooks = Array.isArray(state.books) && state.books.length>0;
+    const hasNews  = Array.isArray(state.news)  && state.news.length>0;
+    if(hasBooks && hasNews) return;
     const bann = $('#banner');
     try{
-      const [c,n] = await Promise.allSettled([ fetchJson(state.settings.catalogUrl), fetchJson(state.settings.newsUrl) ]);
-      if(c.status==='fulfilled' && Array.isArray(c.value)){ state.books=c.value.map(normalizeBook); save('fi_books_site_v38', state.books); }
-      if(n.status==='fulfilled' && Array.isArray(n.value)){ state.news=normalizeNews(n.value); save('fi_news_site_v38', state.news); }
-      if(c.status!=='fulfilled' || n.status!=='fulfilled'){ bann.textContent='⚠️ Non riesco a caricare tutti i dati remoti. Controlla gli URL in Impostazioni.'; bann.style.display='block'; }
+      const [c,n] = await Promise.all([ tryFetchAny('catalog'), tryFetchAny('news') ]);
+      if(c.ok){ state.books=(c.data||[]).map(normalizeBook); save('fi_books_site_v38', state.books); }
+      if(n.ok){ state.news=normalizeNews(n.data); save('fi_news_site_v38', state.news); }
+      if(!c.ok || !n.ok){ bann.innerHTML='⚠️ Non riesco a caricare tutti i dati. Verifica gli URL in <b>Impostazioni</b> o che i file JSON esistano in <code>/data/</code>.'; bann.style.display='block'; }
       renderCatalogo(); renderNews();
-    }catch(e){ bann.textContent='⚠️ Errore durante il caricamento dati.'; bann.style.display='block'; }
+    }catch(err){ console.error(err); bann.innerHTML='⚠️ Errore di caricamento dati. Apri <b>Impostazioni</b> e controlla gli URL.'; bann.style.display='block'; }
   }
+
+  /* === Re-validazione: se i remoti sono cambiati, aggiorna e ri-renderizza === */
   async function revalidateRemotes(){
     try{
-      const [c,n] = await Promise.allSettled([ fetchJson(state.settings.catalogUrl), fetchJson(state.settings.newsUrl) ]);
+      const [c,n] = await Promise.allSettled([ tryFetchAny('catalog'), tryFetchAny('news') ]);
       let changed=false;
-      if(c.status==='fulfilled' && Array.isArray(c.value)){
-        const nb=c.value.map(normalizeBook);
-        if(JSON.stringify(nb)!==JSON.stringify(state.books)){ state.books=nb; save('fi_books_site_v38', state.books); changed=true; }
+      if(c.status==='fulfilled' && c.value.ok){
+        const newBooks = (c.value.data||[]).map(normalizeBook);
+        if(JSON.stringify(newBooks)!==JSON.stringify(state.books)){
+          state.books = newBooks; save('fi_books_site_v38', state.books); changed=true;
+        }
       }
-      if(n.status==='fulfilled' && Array.isArray(n.value)){
-        const nn=normalizeNews(n.value);
-        if(JSON.stringify(nn)!==JSON.stringify(state.news)){ state.news=nn; save('fi_news_site_v38', state.news); changed=true; }
+      if(n.status==='fulfilled' && n.value.ok){
+        const newNews = normalizeNews(n.value.data||[]);
+        if(JSON.stringify(newNews)!==JSON.stringify(state.news)){
+          state.news = newNews; save('fi_news_site_v38', state.news); changed=true;
+        }
       }
       if(changed){ renderCatalogo(); renderNews(); }
     }catch(_){}
   }
 
-  /* ===== Impostazioni ===== */
-  on($('#btnSaveUrls'),'click', ()=>{
-    state.settings.adminsUrl=$('#adminsUrl').value.trim()||state.settings.adminsUrl;
-    state.settings.catalogUrl=$('#catalogUrl').value.trim()||state.settings.catalogUrl;
-    state.settings.newsUrl=$('#newsUrl').value.trim()||state.settings.newsUrl;
-    save('fi_settings_site_v38', state.settings);
-    alert('URL salvati. Ricarica la pagina.');
-  });
-  on($('#btnClearLocal'),'click', ()=>{
-    localStorage.removeItem('fi_books_site_v38');
-    localStorage.removeItem('fi_news_site_v38');
-    state.books=[]; state.news=[];
-    renderCatalogo(); renderNews();
-    location.reload();
-  });
-  on($('#btnForceReload'),'click', async()=>{
-    try{
-      const [c,n] = await Promise.all([ fetchJson(state.settings.catalogUrl), fetchJson(state.settings.newsUrl) ]);
-      if(Array.isArray(c)){ state.books=c.map(normalizeBook); save('fi_books_site_v38', state.books); }
-      if(Array.isArray(n)){ state.news=normalizeNews(n); save('fi_news_site_v38', state.news); }
-      renderCatalogo(); renderNews();
-      alert('Ricaricati dal remoto.');
-    }catch(e){ alert('Errore ricarica remoto.'); }
-  });
-
-  /* ===== Nuovo titolo ===== */
-  function collectForm(){
-    const title=($('#f_title')?.value||'').trim();
-    const author=($('#f_author')?.value||'').trim();
-    const publisher=($('#f_publisher')?.value||'').trim();
-    const year=parseInt($('#f_year')?.value||'0',10);
-    if(!title||!author||!publisher||!year){ alert('Compila titolo, autore, editore e anno.'); return null; }
-    return {
-      id:'b'+Date.now().toString(36),
-      title, author, publisher, year,
-      isbn: ($('#f_isbn')?.value||'').trim(),
-      coverUrl: ($('#f_cover')?.value||'').trim(),
-      description: ($('#f_desc')?.value||'').trim(),
-      storeAmazonUrl: ($('#f_amz')?.value||'').trim(),
-      storePublisherUrl: ($('#f_store')?.value||'').trim(),
-      isDebut:(()=>{ const v=$('#f_debut')?.value; if(v==='yes') return true; if(v==='no') return false; return null; })(),
-      labels:[], featured:false, status:'pending'
-    };
+  /* === Admin sessione === */
+  function sessionIsValid(){
+    const u=sessionStorage.getItem('fi_admin_user');
+    const t=+sessionStorage.getItem('fi_admin_time')||0;
+    if(!u || (Date.now()-t > 4*60*60*1000)) return false;
+    if(Array.isArray(state.remoteAdmins)){
+      return state.remoteAdmins.some(a=>a.u===u);
+    }
+    return true;
   }
-  function clearForm(){ ['f_title','f_author','f_publisher','f_isbn','f_cover','f_desc','f_amz','f_store'].forEach(id=>{ const el=$('#'+id); if(el) el.value=''; }); const y=$('#f_year'); if(y) y.value=new Date().getFullYear(); const d=$('#f_debut'); if(d) d.value='unknown'; }
-  on($('#btnSaveNew'),'click', ()=>{
-    const b=collectForm(); if(!b) return;
-    if(!Array.isArray(state.books)) state.books=[];
-    state.books.push(b);
-    save('fi_books_site_v38', state.books);
-    clearForm();
-    renderModeration(); renderCatalogo(); // i pending NON compaiono
-    alert('Titolo salvato in revisione.');
-  });
+  function touchSession(){ sessionStorage.setItem('fi_admin_time', String(Date.now())); }
+  function clearSession(){ sessionStorage.removeItem('fi_admin_user'); sessionStorage.removeItem('fi_admin_time'); }
 
-  /* ===== Catalogo ===== */
+  async function preloadAdmins(){
+    const r = await tryFetchAny('admins');
+    if(r.ok){
+      state.remoteAdmins = r.data;
+      if(!sessionIsValid()){
+        clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI();
+      }
+    }
+  }
+
+  async function pbkdf2Hex(pass, saltHex, iters, length=32){
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey('raw', enc.encode(pass), {name:'PBKDF2'}, false, ['deriveBits']);
+    const salt = new Uint8Array((saltHex.match(/.{1,2}/g)||[]).map(b=>parseInt(b,16)));
+    const bits = await crypto.subtle.deriveBits({name:'PBKDF2', hash:'SHA-256', salt, iterations:iters}, key, length*8);
+    return Array.from(new Uint8Array(bits)).map(x=>x.toString(16).padStart(2,'0')).join('');
+  }
+  async function doLoginFlow(){
+    const u=prompt('Inserisci username admin'); if(u===null||!u.trim()) return false;
+    const pass=prompt('Inserisci password'); if(pass===null) return false;
+    try{
+      const list = state.remoteAdmins || (await (async function(){ const r=await tryFetchAny('admins'); if(!r.ok) throw new Error('admins.json non trovato'); return r.data; })());
+      state.remoteAdmins = list;
+      const rec = list.find(x=>x.u===u.trim());
+      if(!rec){ alert('Utente non trovato.'); return false; }
+      const h = await pbkdf2Hex(pass, rec.salt, rec.iter);
+      if(h!==rec.hash){ alert('Password errata.'); return false; }
+      sessionStorage.setItem('fi_admin_user', rec.u);
+      touchSession();
+      state.isAdmin=true; state.meUser=rec.u;
+      applyAdminUI();
+      alert('Accesso admin eseguito.');
+      return true;
+    }catch(e){
+      console.error(e); alert('Errore durante il login.');
+      return false;
+    }
+  }
+
+  const adminToggleEl = $('#adminToggle');
+  if(adminToggleEl){
+    adminToggleEl.addEventListener('click', async ()=>{
+      if(sessionIsValid()){ clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.'); }
+      else await doLoginFlow();
+    });
+  }
+
+  /* === Impostazioni === */
+  const saveUrlsEl = $('#btnSaveUrls');
+  if(saveUrlsEl){
+    saveUrlsEl.addEventListener('click', ()=>{
+      state.settings.adminsUrl=$('#adminsUrl').value.trim()||state.settings.adminsUrl;
+      state.settings.catalogUrl=$('#catalogUrl').value.trim()||state.settings.catalogUrl;
+      state.settings.newsUrl=$('#newsUrl').value.trim()||state.settings.newsUrl;
+      save('fi_settings_site_v38', state.settings);
+      alert('URL salvati. Ricarica la pagina.');
+    });
+  }
+  const logoutEl = $('#btnLogout');
+  if(logoutEl){
+    logoutEl.addEventListener('click', ()=>{
+      clearSession(); state.isAdmin=false; state.meUser=null; applyAdminUI(); alert('Sei uscito dalla sessione admin.');
+    });
+  }
+  const clearLocalEl = $('#btnClearLocal');
+  if(clearLocalEl){
+    clearLocalEl.addEventListener('click', ()=>{
+      localStorage.removeItem('fi_books_site_v38');
+      localStorage.removeItem('fi_news_site_v38');
+      state.books = [];
+      state.news  = [];
+      renderCatalogo();
+      renderNews();
+      alert('Cache locale svuotata. La pagina verrà ricaricata.');
+      location.reload();
+    });
+  }
+  const forceReloadEl = $('#btnForceReload');
+  if(forceReloadEl){
+    forceReloadEl.addEventListener('click', async ()=>{
+      try{
+        const c = await tryFetchAny('catalog');
+        const n = await tryFetchAny('news');
+        if(c.ok){ state.books=(c.data||[]).map(normalizeBook); save('fi_books_site_v38', state.books); }
+        if(n.ok){ state.news=normalizeNews(n.data); save('fi_news_site_v38', state.news); }
+        renderCatalogo(); renderNews();
+        alert('Dati ricaricati.');
+      }catch(e){ console.error(e); alert('Errore nel caricamento remoto.'); }
+    });
+  }
+
+  /* === UI Admin privata === */
+  function applyAdminUI(){
+    const on=sessionIsValid();
+    const navAdmin = $('#navAdmin'), adminBadge = $('#adminBadge'), adminToggle = $('#adminToggle'), adminTools = $('#adminTools'), newsAdminBar = $('#newsAdminBar'), newsEditor = $('#newsEditor');
+    if(navAdmin) navAdmin.style.display = on ? 'flex' : 'none';
+    if(adminBadge){ adminBadge.style.display = on ? 'inline-block' : 'none'; adminBadge.textContent = on ? ('Admin: ' + (sessionStorage.getItem('fi_admin_user')||'')) : ''; }
+    if(adminToggle) adminToggle.textContent = on ? 'Esci admin' : 'Accedi admin';
+    if(adminTools) adminTools.style.display = on ? 'flex' : 'none';
+    if(newsAdminBar) newsAdminBar.style.display = on ? 'flex' : 'none';
+    if(newsEditor) newsEditor.style.display = on ? '' : 'none';
+  }
+
+  /* === Helpers form === */
+  function clearForm(){
+    ['f_title','f_author','f_publisher','f_series','f_cover','f_desc','f_amz','f_store','f_isbn'].forEach(id=>{
+      const el=$('#'+id); if(el) el.value='';
+    });
+    const fy=$('#f_year'); if(fy) fy.value=new Date().getFullYear();
+    const fd=$('#f_debut'); if(fd) fd.value='unknown';
+  }
+  function collectForm(){
+    const title=($('#f_title').value||'').trim();
+    const author=($('#f_author').value||'').trim();
+    const publisher=($('#f_publisher').value||'').trim();
+    const year=parseInt($('#f_year').value,10);
+    if(!title||!author||!publisher||!year){ alert('Compila titolo, autore, editore e anno.'); return null; }
+    const series=$('#f_series').value.trim();
+    const coverUrl=$('#f_cover').value.trim();
+    const description=$('#f_desc').value.trim();
+    const storeAmazonUrl=$('#f_amz').value.trim();
+    const storePublisherUrl=$('#f_store').value.trim();
+    const isbn=$('#f_isbn').value.trim();
+    const sel=$('#f_debut').value; const isDebut = (sel==='yes')?true:(sel==='no')?false:null;
+    return { id:'b'+Date.now().toString(36), title, author, publisher, year, series, isbn, coverUrl, description, storeAmazonUrl, storePublisherUrl, isDebut, labels:[], status:'pending', featured:false };
+  }
+  const btnSaveNewEl=$('#btnSaveNew');
+  if(btnSaveNewEl){
+    btnSaveNewEl.addEventListener('click', ()=>{
+      const b=collectForm(); if(!b) return;
+      b.status='pending'; if(!Array.isArray(state.books)) state.books=[];
+      state.books.push(b); save('fi_books_site_v38', state.books);
+      renderCatalogo(); clearForm(); alert('Titolo salvato in Revisione.');
+    });
+  }
+
+  /* === Catalogo === */
+  function tagEl(text, cls){ const t=document.createElement('span'); t.className=cls||'tag'; t.textContent=text; return t; }
   function placeholderCover(){
     return 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="160" viewBox="0 0 120 160"><rect width="100%" height="100%" fill="#0b0e13"/><rect x="10" y="10" width="100" height="140" rx="8" ry="8" fill="#0f141d" stroke="#1d2230"/><text x="60" y="83" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="14" fill="#5e657a">Copertina</text></svg>');
   }
-  function tagEl(t, cls){ const s=document.createElement('span'); s.className=cls||'tag'; s.textContent=t; return s; }
   function bookCard(b){
     const el=document.createElement('div'); el.className='card';
+    if(b.featured){ const bd=document.createElement('div'); bd.className='badge'; bd.textContent='Consigliato'; el.appendChild(bd); }
     const img=document.createElement('img'); img.className='cover'; img.alt='Copertina'; img.src=b.coverUrl||placeholderCover();
     const meta=document.createElement('div'); meta.className='meta';
     const h3=document.createElement('h3'); h3.textContent=b.title||'(Senza titolo)';
     const by=document.createElement('div'); by.className='by'; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • ');
     const desc=document.createElement('div'); desc.className='small muted'; desc.textContent=(b.description||'').length>200? (b.description.slice(0,199)+'…') : (b.description||'');
     const tags=document.createElement('div'); tags.className='tags';
-    tags.appendChild(tagEl(b.isDebut===true?'Esordio: sì':b.isDebut===false?'Esordio: no':'Esordio: ?'));
+    const debutText = (b.isDebut===true)?'Esordio: sì' : (b.isDebut===false?'Esordio: no':'Esordio: ?');
+    tags.appendChild(tagEl(debutText));
     if(Array.isArray(b.labels)) b.labels.slice(0,6).forEach(l=>tags.appendChild(tagEl(l,'tag label')));
+
     const actions=document.createElement('div'); actions.className='actions';
-    if(b.storeAmazonUrl){ const a=document.createElement('a'); a.href=b.storeAmazonUrl; a.target='_blank'; a.rel='noopener'; a.className='btn'; a.textContent='Store Amazon'; actions.appendChild(a); }
-    if(b.storePublisherUrl){ const s=document.createElement('a'); s.href=b.storePublisherUrl; s.target='_blank'; s.rel='noopener'; s.className='btn'; s.textContent='Store editore'; actions.appendChild(s); }
+    const amz=b.storeAmazonUrl||b.storeUrl||'';
+    if(amz){
+      const btn=document.createElement('a'); btn.href=amz; btn.target='_blank'; btn.rel='noopener'; btn.className='btn-amz'; btn.title='Amazon'; btn.setAttribute('aria-label','Apri su Amazon');
+      const imgA=document.createElement('img'); imgA.alt='Amazon'; imgA.loading='lazy';
+      imgA.src = 'Logo Amazon.png';
+      imgA.onerror = ()=>{ imgA.onerror=null; imgA.src = AMAZON_IMG_RAW_URL; };
+      btn.appendChild(imgA); actions.appendChild(btn);
+    }
+    if(b.storePublisherUrl){
+      const s=document.createElement('a'); s.href=b.storePublisherUrl; s.target='_blank'; s.rel='noopener'; s.className='btn btn-store'; s.textContent='Store editore';
+      actions.appendChild(s);
+    }
+
     meta.appendChild(h3); meta.appendChild(by); meta.appendChild(desc); meta.appendChild(tags); meta.appendChild(actions);
     el.appendChild(img); el.appendChild(meta);
     return el;
   }
   function renderCatalogo(){
-    const grid=$('#gridCatalogo'); if(!grid) return;
-    grid.innerHTML='';
-    let list = Array.isArray(state.books) ? state.books.slice() : [];
-    /* <<< FIX: mostra SOLO gli approvati >>> */
-    list = list.filter(b=> (b.status||'approved')==='approved');
-    const q=($('#q')?.value||'').toLowerCase().trim();
-    const fy=$('#filterYear')?.value||'all';
-    if(fy!=='all'){ const y=parseInt(fy,10)||0; list=list.filter(b=>(+b.year||0)>=y); }
-    if(q){ list=list.filter(b=>[b.title,b.author,b.publisher,(b.labels||[]).join(' ')].filter(Boolean).join(' ').toLowerCase().includes(q)); }
-    list.sort((a,b)=>{ if(!!b.featured!==!!a.featured) return (b.featured?1:0)-(a.featured?1:0); const ya=(+a.year||0), yb=(+b.year||0); if(ya!==yb) return yb-ya; return (a.title||'').localeCompare(b.title||'','it'); });
-    if(!list.length){ grid.innerHTML='<div class="muted">Nessun risultato.</div>'; return; }
+    const grid=$('#gridCatalogo'); grid.innerHTML='';
+    const q=($('#q').value||'').toLowerCase().trim(); const fy=$('#filterYear').value;
+    let list=Array.isArray(state.books)? state.books.slice():[];
+
+    /* <<< FIX principale: mostra SOLO gli approvati >>> */
+    list = list.filter(b => (b.status||'approved') === 'approved');
+
+    if(fy!=='all'){ const y=parseInt(fy,10)||0; list=list.filter(b => (+b.year||0)>=y); }
+    if(q){ list=list.filter(b => [b.title,b.author,b.publisher,(b.labels||[]).join(' ')].filter(Boolean).join(' ').toLowerCase().includes(q)); }
+    list.sort((a,b)=>{
+      const fa=(a.featured?1:0), fb=(b.featured?1:0); if(fa!==fb) return fb-fa;
+      const ya=(+a.year||0), yb=(+b.year||0); if(ya!==yb) return yb-ya;
+      const ta=(a.title||'').toLocaleLowerCase(), tb=(b.title||'').toLocaleLowerCase(); return ta.localeCompare(tb,'it');
+    });
+    if(!list.length){ grid.innerHTML='<div class="muted">Nessun titolo.</div>'; return; }
     list.forEach(b=>grid.appendChild(bookCard(b)));
   }
-  on($('#filterYear'),'change', renderCatalogo);
-  (function(){ let t; on($('#q'),'input',()=>{ clearTimeout(t); t=setTimeout(renderCatalogo,200); }); })();
-  on($('#btnExport'),'click', ()=>{
-    const blob=new Blob([JSON.stringify(state.books,null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='catalogo.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  });
+  const fyEl=$('#filterYear'); if(fyEl){ fyEl.addEventListener('change', renderCatalogo); }
+  const qEl=$('#q'); if(qEl){ let t; qEl.addEventListener('input', ()=>{ clearTimeout(t); t=setTimeout(renderCatalogo,200); }); }
+  const btnExportEl=$('#btnExport');
+  if(btnExportEl){
+    btnExportEl.addEventListener('click', ()=>{
+      const blob=new Blob([JSON.stringify(state.books,null,2)], {type:'application/json'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='catalogo.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+  }
 
-  /* ===== Moderazione ===== */
+  /* === Moderazione === */
+  function tagEl(text, cls){ const t=document.createElement('span'); t.className=cls||'tag'; t.textContent=text; return t; }
   function modCard(b){
-    const el=document.createElement('div'); el.className='card';
-    const img=document.createElement('img'); img.className='cover'; img.alt='Copertina'; img.src=b.coverUrl||placeholderCover();
-    const meta=document.createElement('div'); meta.className='meta';
-    const h3=document.createElement('h3'); h3.textContent=b.title||'(Senza titolo)';
-    const by=document.createElement('div'); by.className='by'; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • ');
+    const el = document.createElement('div'); el.className='card'; el.dataset.id = b.id||'';
+    const img = document.createElement('img'); img.className='cover'; img.alt='Copertina'; img.src=b.coverUrl||placeholderCover();
+
+    const badge = document.createElement('div'); badge.className='badge'; badge.textContent='Consigliato';
+    if(!b.featured) badge.style.display='none';
+    el.appendChild(badge);
+
+    const meta = document.createElement('div'); meta.className='meta';
+    const h3 = document.createElement('h3'); h3.textContent = b.title || '(Senza titolo)';
+    const by = document.createElement('div'); by.className='by'; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • ');
+
     const labelsWrap=document.createElement('div'); labelsWrap.className='tags';
     function refreshLabels(){ labelsWrap.innerHTML=''; (b.labels||[]).forEach(l=>labelsWrap.appendChild(tagEl(l,'tag label'))); }
     refreshLabels();
-    const row=document.createElement('div'); row.className='row';
-    const inLab=document.createElement('input'); inLab.type='text'; inLab.placeholder='Nuova etichetta'; inLab.style.minWidth='160px';
-    const addBtn=document.createElement('button'); addBtn.className='btn small'; addBtn.textContent='Aggiungi';
-    on(addBtn,'click',()=>{ const v=(inLab.value||'').trim(); if(!v) return; if(!Array.isArray(b.labels)) b.labels=[]; if(!b.labels.includes(v)) b.labels.push(v); inLab.value=''; save('fi_books_site_v38', state.books); refreshLabels(); renderCatalogo(); });
-    const featWrap=document.createElement('label'); featWrap.className='small muted'; featWrap.style.display='inline-flex'; featWrap.style.alignItems='center'; featWrap.style.gap='6px';
-    const featChk=document.createElement('input'); featChk.type='checkbox'; featChk.checked=!!b.featured;
-    on(featChk,'change',()=>{ b.featured=!!featChk.checked; save('fi_books_site_v38', state.books); renderCatalogo(); });
-    featWrap.appendChild(featChk); featWrap.append('Consigliato');
+
+    const addRow = document.createElement('div'); addRow.className='row';
+    const addField = document.createElement('input'); addField.type='text'; addField.placeholder='Nuova etichetta'; addField.style.minWidth='200px';
+    const addBtn = document.createElement('button'); addBtn.className='btn'; addBtn.textContent='Aggiungi';
+    addBtn.addEventListener('click', ()=>{ const val=(addField.value||'').trim(); if(!val) return; if(!Array.isArray(b.labels)) b.labels=[]; if(!b.labels.includes(val)) b.labels.push(val); addField.value=''; save('fi_books_site_v38', state.books); refreshLabels(); renderCatalogo(); });
+
+    const featLbl = document.createElement('label'); featLbl.className='small muted';
+    const featChk = document.createElement('input'); featChk.type='checkbox'; featChk.checked=!!b.featured; featChk.style.marginRight='6px';
+    featChk.addEventListener('change', ()=>{ b.featured=!!featChk.checked; badge.style.display=b.featured?'':'none'; save('fi_books_site_v38', state.books); renderCatalogo(); });
+    featLbl.appendChild(featChk); featLbl.appendChild(document.createTextNode(' Consigliato'));
+
     const debutSel=document.createElement('select');
-    [['unknown','Non specificato'],['yes','Sì'],['no','No']].forEach(([v,t])=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; debutSel.appendChild(o); });
+    ['Non specificato','Sì','No'].forEach((t,i)=>{ const o=document.createElement('option'); o.textContent=t; o.value=['unknown','yes','no'][i]; debutSel.appendChild(o); });
     debutSel.value = (b.isDebut===true?'yes':b.isDebut===false?'no':'unknown');
-    on(debutSel,'change',()=>{ const v=debutSel.value; b.isDebut=(v==='yes')?true:(v==='no')?false:null; save('fi_books_site_v38', state.books); renderCatalogo(); });
-    const actions=document.createElement('div'); actions.className='actions';
-    const approve=document.createElement('button'); approve.className='btn primary'; approve.textContent=(b.status==='approved')?'Revoca approvazione':'Approva';
-    on(approve,'click',()=>{ b.status=(b.status==='approved')?'pending':'approved'; approve.textContent=(b.status==='approved')?'Revoca approvazione':'Approva'; save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); });
-    const saveB=document.createElement('button'); saveB.className='btn'; saveB.textContent='Salva';
-    on(saveB,'click',()=>{ save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); alert('Modifiche salvate.'); });
-    row.appendChild(inLab); row.appendChild(addBtn);
+    debutSel.addEventListener('change', ()=>{ const v=debutSel.value; b.isDebut = (v==='yes'?true:(v==='no'?false:null)); save('fi_books_site_v38', state.books); renderCatalogo(); });
+
+    const actions = document.createElement('div'); actions.className='actions';
+    const approve = document.createElement('button'); approve.className='btn primary'; approve.textContent = (b.status==='approved') ? 'Revoca approvazione' : 'Approva';
+    approve.addEventListener('click', ()=>{ b.status = (b.status==='approved') ? 'pending' : 'approved'; approve.textContent = (b.status==='approved') ? 'Revoca approvazione' : 'Approva'; save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); });
+
+    const saveBtn = document.createElement('button'); saveBtn.className='btn'; saveBtn.textContent='Salva';
+    saveBtn.addEventListener('click', ()=>{ save('fi_books_site_v38', state.books); renderModeration(); renderCatalogo(); alert('Modifiche salvate.'); });
+
+    addRow.appendChild(addField); addRow.appendChild(addBtn);
     meta.appendChild(h3); meta.appendChild(by);
-    meta.appendChild(labelsWrap); meta.appendChild(row);
-    meta.appendChild(featWrap);
-    const debutRow=document.createElement('div'); debutRow.className='small'; debutRow.style.marginTop='6px'; debutRow.append(' Esordio: ', debutSel);
-    meta.appendChild(debutRow);
-    meta.appendChild(actions); actions.appendChild(approve); actions.appendChild(saveB);
+    meta.appendChild(labelsWrap); meta.appendChild(addRow);
+    meta.appendChild(featLbl);
+    const debutWrap=document.createElement('div'); debutWrap.className='small'; debutWrap.style.marginTop='6px'; debutWrap.append(' Esordio: ', debutSel);
+    meta.appendChild(debutWrap);
+    meta.appendChild(actions); actions.appendChild(approve); actions.appendChild(saveBtn);
+
     el.appendChild(img); el.appendChild(meta);
     return el;
   }
   function renderModeration(){
-    const grid=$('#gridModeration'); if(!grid) return;
+    const grid = $('#gridModeration'); if(!grid) return;
+    const f = $('#moderationFilter').value;
+    let list = Array.isArray(state.books) ? state.books.slice() : [];
+    if(f==='pending')  list = list.filter(b => b.status!=='approved');
+    if(f==='approved') list = list.filter(b => b.status==='approved');
     grid.innerHTML='';
-    let list = Array.isArray(state.books)? state.books.slice():[];
-    const f=$('#moderationFilter')?.value||'pending';
-    if(f==='pending')  list=list.filter(b=>(b.status||'pending')!=='approved');
-    if(f==='approved') list=list.filter(b=>(b.status||'approved')==='approved');
-    if(!list.length){ grid.innerHTML='<div class="muted">Niente da mostrare.</div>'; return; }
-    list.forEach(b=>grid.appendChild(modCard(b)));
+    if(!list.length){ grid.innerHTML='<div class="muted">Nessun titolo.</div>'; return; }
+    list.forEach(b => grid.appendChild(modCard(b)));
   }
-  on($('#moderationFilter'),'change', renderModeration);
+  const modFilterEl=$('#moderationFilter');
+  if(modFilterEl){ modFilterEl.addEventListener('change', renderModeration); }
 
-  /* ===== Notizie ===== */
-  function sanitizeHtml(html){ return (html||'').replace(/<script/gi,'&lt;script'); }
+  /* === Notizie === */
+  function sanitizeHtml(html){ return html.replace(/<script/gi,'&lt;script'); }
+
+  function startEditNews(item){
+    $('#news_title').value = item.title||'';
+    $('#news_body_html').innerHTML = item.bodyHtml||'';
+    state.editingNewsId = item.id;
+    $('#btnSaveNews').textContent = 'Aggiorna notizia';
+    const cancelEl=$('#btnCancelEdit'); if(cancelEl) cancelEl.style.display = 'inline-flex';
+    showTab('notizie');
+  }
+
+  function deleteNews(id){
+    if(!sessionIsValid()){ alert('Solo admin.'); return; }
+    if(!confirm('Eliminare definitivamente questa notizia?')) return;
+    state.news = (state.news||[]).filter(n => String(n.id)!==String(id));
+    save('fi_news_site_v38', state.news);
+    if((location.hash||'').indexOf('#news/'+id)===0) location.hash='#notizie';
+    renderNews();
+  }
+
   function renderNews(){
-    const grid=$('#gridNews'); if(!grid) return; grid.innerHTML='';
-    const list=(state.news||[]).slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
-    if(!list.length){ grid.innerHTML='<div class="muted">Ancora nessuna notizia.</div>'; return; }
-    for(const n of list){
+    const grid=$('#gridNews'); grid.innerHTML='';
+    const list=(state.news||[]).slice().sort((a,b)=> (b.ts||0)-(a.ts||0) );
+    list.forEach(n=>{
       const card=document.createElement('div'); card.className='news-card'; card.tabIndex=0;
-      on(card,'click',()=>{ location.hash='#news/'+(n.id||''); });
-      const h3=document.createElement('h3'); h3.textContent=n.title||'(Senza titolo)';
-      const prev=document.createElement('div'); prev.className='muted line-clamp';
-      const plain=(n.bodyHtml||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
-      prev.textContent = plain.length>360? plain.slice(0,360)+'…' : plain;
-      card.appendChild(h3); card.appendChild(prev);
-      grid.appendChild(card);
-    }
-  }
-  function openNewsById(id){
-    const n=(state.news||[]).find(x=>String(x.id)===String(id));
-    if(!n) return false;
-    $('#articleTitle').textContent = n.title || '';
-    $('#articleMeta').textContent  = new Date(n.ts||Date.now()).toLocaleString('it-IT');
-    $('#articleBody').innerHTML    = n.bodyHtml || '';
-    showTab('newsview');
-    const safe=encodeURIComponent(String(id));
-    history.replaceState(null,'',location.pathname+'?n='+safe+'#news/'+safe);
-    return true;
-  }
-  function backToNews(e){ e?.preventDefault(); history.pushState(null,'',location.pathname+'#notizie'); showTab('notizie'); }
-  on($('#btnBackTop'),'click', backToNews);
-  on($('#btnBackBottom'),'click', backToNews);
+      card.addEventListener('click', ()=>{ location.hash='#news/'+(n.id||''); });
+      card.addEventListener('keydown', e=>{ if(e.key==='Enter') card.click(); });
 
-  // mini-editor
+      const h3=document.createElement('h3'); h3.textContent=n.title||'(Senza titolo)';
+      const body=document.createElement('div'); body.className='muted line-clamp';
+      const text = (n.bodyHtml||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      body.textContent = text.length>280 ? text.slice(0,280)+'…' : text;
+
+      card.appendChild(h3); card.appendChild(body);
+
+      if(sessionIsValid()){
+        const adminBar=document.createElement('div'); adminBar.className='news-admin-actions';
+        const editBtn=document.createElement('button'); editBtn.className='btn small'; editBtn.textContent='Modifica';
+        const delBtn=document.createElement('button'); delBtn.className='btn small danger'; delBtn.textContent='Elimina';
+        editBtn.addEventListener('click', ev=>{ ev.stopPropagation(); startEditNews(n); });
+        delBtn.addEventListener('click', ev=>{ ev.stopPropagation(); deleteNews(n.id); });
+        adminBar.appendChild(editBtn); adminBar.appendChild(delBtn);
+        card.appendChild(adminBar);
+      }
+
+      grid.appendChild(card);
+    });
+    state.newsReady=true;
+  }
+
   $$('#newsEditor [data-cmd]').forEach(btn=>{
-    on(btn,'click', ()=>{
-      const ed=$('#news_body_html'); if(!ed) return; ed.focus();
-      const cmd=btn.getAttribute('data-cmd');
+    btn.addEventListener('click', ()=>{
+      const cmd=btn.getAttribute('data-cmd'); const ed=$('#news_body_html'); ed.focus();
       if(cmd==='bold') document.execCommand('bold', false, null);
       else if(cmd==='italic') document.execCommand('italic', false, null);
       else if(cmd==='underline') document.execCommand('underline', false, null);
       else if(cmd==='ul') document.execCommand('insertUnorderedList', false, null);
       else if(cmd==='link'){ const url=prompt('Inserisci URL (https://...)'); if(url && /^https?:/i.test(url)) document.execCommand('createLink', false, url); }
-      else if(cmd==='bigger' || cmd==='smaller'){ const sel=window.getSelection(); if(!sel||!sel.rangeCount) return; const range=sel.getRangeAt(0); const span=document.createElement('span'); span.style.fontSize=(cmd==='bigger'?'1.15em':'0.9em'); range.surroundContents(span); }
+      else if(cmd==='bigger' || cmd==='smaller'){ const sel=window.getSelection(); if(!sel.rangeCount) return; const range=sel.getRangeAt(0); const span=document.createElement('span'); span.style.fontSize=(cmd==='bigger'?'1.15em':'0.9em'); range.surroundContents(span); }
       else if(cmd==='clear'){ ed.innerHTML=''; }
     });
   });
-  on($('#btnSaveNews'),'click', (ev)=>{
-    ev.preventDefault(); ev.stopPropagation();
-    if(!sessionIsValid()){ alert('Solo admin.'); return; }  /* <-- parentesi corretta */
-    const title=($('#news_title')?.value||'').trim();
-    const html=sanitizeHtml($('#news_body_html')?.innerHTML||'');
-    if(!title){ alert('Titolo obbligatorio.'); return; }
-    if(!html){ alert('Inserisci un testo.'); return; }
-    const item={ id:'n'+Date.now().toString(36), title, bodyHtml:html, ts:Date.now() };
-    if(!Array.isArray(state.news)) state.news=[];
-    state.news.push(item);
-    save('fi_news_site_v38', state.news);
-    $('#news_title').value=''; $('#news_body_html').innerHTML='';
-    renderNews(); alert('Notizia pubblicata.');
-  });
 
-  /* ===== Router ===== */
+  (function hookSave(){
+    const btn=$('#btnSaveNews'); if(!btn) return;
+    btn.addEventListener('click', function(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      if(!sessionIsValid()){ alert('Solo admin.'); return; }
+      const title=($('#news_title').value||'').trim();
+      const html=sanitizeHtml($('#news_body_html').innerHTML||'');
+      if(!title){ alert('Titolo obbligatorio.'); return; }
+      if(!html){ alert('Inserisci un testo.'); return; }
+
+      if(state.editingNewsId){
+        const idx=(state.news||[]).findIndex(n => String(n.id)===String(state.editingNewsId));
+        if(idx>=0){ state.news[idx].title=title; state.news[idx].bodyHtml=html; state.news[idx].ts=Date.now(); }
+        state.editingNewsId=null;
+        $('#btnSaveNews').textContent='Pubblica notizia';
+        const cancelEl=$('#btnCancelEdit'); if(cancelEl) cancelEl.style.display='none';
+        alert('Notizia aggiornata.');
+      }else{
+        const item={ id:'n'+Date.now().toString(36), title, bodyHtml:html, ts:Date.now() };
+        if(!Array.isArray(state.news)) state.news=[];
+        state.news.push(item);
+        alert('Notizia pubblicata.');
+      }
+      save('fi_news_site_v38', state.news);
+      $('#news_title').value=''; $('#news_body_html').innerHTML='';
+      renderNews();
+    }, true);
+  })();
+
+  const cancelEditEl=$('#btnCancelEdit');
+  if(cancelEditEl){
+    cancelEditEl.addEventListener('click', ()=>{
+      state.editingNewsId=null;
+      $('#btnSaveNews').textContent='Pubblica notizia';
+      cancelEditEl.style.display='none';
+      $('#news_title').value=''; $('#news_body_html').innerHTML='';
+    });
+  }
+
+  const exportNewsEl=$('#btnExportNews');
+  if(exportNewsEl){
+    exportNewsEl.addEventListener('click', ()=>{
+      const blob=new Blob([JSON.stringify(state.news,null,2)], {type:'application/json'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='news.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+  }
+
+  /* ------- Routing & Deep Link ------- */
   function showTab(tab){
     $$('.tab').forEach(s=>s.style.display='none');
-    $('#'+tab).style.display='';
+    const el=$('#'+tab); if(el) el.style.display='';
     $$('#navPublic button, #navAdmin button').forEach(b=>b.classList.toggle('active', b.getAttribute('data-tab')===tab));
   }
-  function handleRoute(){
-    const hash=(location.hash||'').replace(/^#/, '');
-    if(hash.startsWith('news/')){ const id=decodeURIComponent(hash.slice(5)); if(!openNewsById(id)){ alert('Articolo non trovato.'); showTab('notizie'); } return; }
-    if(hash==='notizie'){ showTab('notizie'); return; }
-    if(hash==='nuovo'){ showTab('nuovo'); return; }
-    if(hash==='moderazione'){ if(sessionIsValid()){ renderModeration(); showTab('moderazione'); } else { alert('Area riservata: accedi come admin.'); showTab('catalogo'); } return; }
-    if(hash==='impostazioni'){ if(sessionIsValid()){ showTab('impostazioni'); } else { alert('Area riservata: accedi come admin.'); showTab('catalogo'); } return; }
-    showTab('catalogo');
+
+  function openNewsById(id){
+    const item = (state.news||[]).find(n => String(n.id)===String(id));
+    if(!item){ return false; }
+    $('#articleTitle').textContent = item.title || '';
+    $('#articleMeta').textContent = new Date(item.ts||Date.now()).toLocaleString('it-IT');
+    $('#articleBody').innerHTML = item.bodyHtml || '';
+    showTab('newsview');
+
+    /* URL condivisibile: ?n=<id>#news/<id> */
+    const safeId = encodeURIComponent(String(id));
+    const newUrl = location.pathname + '?n='+ safeId + '#news/' + safeId;
+    if(location.search !== ('?n='+safeId) || location.hash !== ('#news/'+safeId)){
+      history.replaceState(null, '', newUrl);
+    }
+    return true;
   }
-  on(window,'hashchange', handleRoute);
+
+  /* Pulsanti Torna all’app */
+  function backToNews(e){
+    if(e && e.preventDefault) e.preventDefault();
+    history.pushState(null, '', location.pathname + '#notizie');
+    showTab('notizie');
+  }
+  const backTop = $('#btnBackTop');    if(backTop)    backTop.addEventListener('click', backToNews);
+  const backBottom = $('#btnBackBottom'); if(backBottom) backBottom.addEventListener('click,', backToNews);
+
+  /* Se un social toglie il #, uso la query (?n= / ?news=) per ripristinare il deep link */
+  function applyDeepLinkFromQuery(){
+    if(location.hash && location.hash.length>1) return;
+    const p = new URLSearchParams(location.search);
+    const id = p.get('n') || p.get('news');
+    if(id){
+      const safeId = encodeURIComponent(String(id));
+      history.replaceState(null, '', location.pathname + '?n='+safeId + '#news/' + safeId);
+    }
+  }
+
+  async function ensureNewsLoaded(){
+    if((state.news||[]).length>0) return;
+    const n = await tryFetchAny('news');
+    if(n.ok){
+      state.news = normalizeNews(n.data);
+      save('fi_news_site_v38', state.news);
+      renderNews();
+    }
+  }
+
+  async function handleRoute(){
+    const hash=(location.hash||'').replace(/^#/, '');
+    if(hash.indexOf('news/')===0){
+      const id = decodeURIComponent(hash.slice(5));
+      if(!openNewsById(id)){
+        await ensureNewsLoaded();
+        if(!openNewsById(id)){
+          alert('Articolo non trovato.');
+          showTab('notizie');
+        }
+      }
+      return;
+    }
+    if(hash==='notizie'){ renderNews(); showTab('notizie'); }
+    else if(hash==='nuovo'){ showTab('nuovo'); }
+    else if(hash==='moderazione'){ renderModeration(); showTab('moderazione'); }
+    else if(hash==='impostazioni'){ showTab('impostazioni'); }
+    else { showTab('catalogo'); }
+  }
+  window.addEventListener('hashchange', ()=>{ handleRoute(); });
+
+  /* Hook nav buttons */
   $$('#navPublic button, #navAdmin button').forEach(btn=>{
-    on(btn,'click', ()=>{
+    btn.addEventListener('click', ()=>{
       const tab=btn.getAttribute('data-tab');
-      if(tab==='moderazione'||tab==='impostazioni'){ if(!sessionIsValid()){ alert('Area riservata: accedi come admin.'); return; } touchSession(); }
+      if(tab==='moderazione' || tab==='impostazioni'){
+        if(!sessionIsValid()){ alert('Area riservata: accedi come admin.'); return; }
+        touchSession();
+      }
       if(tab==='moderazione') renderModeration();
       if(tab==='notizie') renderNews();
-      location.hash='#'+tab;
+      showTab(tab);
+      if(['catalogo','nuovo','notizie','moderazione','impostazioni'].includes(tab)) location.hash = '#'+tab;
     });
   });
 
-  /* ===== Init ===== */
+  /* Init */
   (async function init(){
-    try{ state.remoteAdmins = await fetchJson(state.settings.adminsUrl); }catch(_){}
-    if(sessionIsValid()){ touchSession(); }
+    preloadAdmins();
+    if(sessionIsValid()){ touchSession(); state.isAdmin=true; state.meUser=sessionStorage.getItem('fi_admin_user'); }
     applyAdminUI();
 
     // Render immediato da locale
@@ -586,19 +887,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Se locale è vuoto, bootstrap dal remoto
     await bootstrapIfEmpty();
 
-    // Revalidazione (mostra aggiornamenti dei JSON appena pubblicati)
+    // Re-validazione dal remoto anche se il locale NON è vuoto (così vedi i JSON aggiornati)
     await revalidateRemotes();
 
-    // Deep-link fallback da query param (?n=/ ?news=)
-    if(!location.hash){
-      const p=new URLSearchParams(location.search);
-      const id=p.get('n')||p.get('news');
-      if(id){ history.replaceState(null,'',location.pathname+'?n='+encodeURIComponent(id)+'#news/'+encodeURIComponent(id)); }
-    }
-    handleRoute();
+    // Fallback deep link da query (?n=/ ?news=)
+    applyDeepLinkFromQuery();
+    await handleRoute();
   })();
 
-});
+})();
 </script>
 </body>
 </html>
