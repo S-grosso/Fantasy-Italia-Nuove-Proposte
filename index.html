@@ -26,7 +26,7 @@
   .adminToggle{background:#132033;border:1px solid var(--border);color:#dfe;padding:8px 12px;border-radius:10px;cursor:pointer}
   .subnav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   nav{display:flex;gap:8px;flex-wrap:wrap}
-  nav button{background:#151826;color:var(--ink);border:1px solid var(--border);padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:600}
+  nav button{background:#151826;color:var(--ink);border:1px solid var(--border);padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:600}␊
   nav button.active{outline:2px solid var(--accent)}
 
   /* Layout */
@@ -72,6 +72,11 @@
   .muted{color:var(--muted)}
   .small{font-size:12px}
   .banner{background:#142036;border:1px solid #223a66;color:#cfe;border-radius:12px;padding:8px 12px;margin:8px 0;display:none}
+  .notice{display:none;border-radius:12px;padding:10px 12px;font-size:13px}
+  .notice.show{display:block}
+  .notice.success{background:#142036;border:1px solid #223a66;color:#cfe}
+  .notice.error{background:#361a22;border:1px solid #5a2a2a;color:#ffd0d0}
+  .contact-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
 
   /* News */
   .news-card{display:block;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:12px;text-decoration:none;color:inherit;cursor:pointer}
@@ -98,10 +103,11 @@
       <button id="adminToggle" class="adminToggle" title="Accedi/Esci dalla sessione amministratore">Accedi admin</button>
     </div>
     <div class="subnav">
-      <nav id="navPublic">
+       <nav id="navPublic">
         <button data-tab="catalogo" class="active">Catalogo</button>
         <button data-tab="nuovo">Nuovo titolo</button>
         <button data-tab="notizie">Notizie</button>
+        <button data-tab="contatti">Contatti</button>
       </nav>
       <nav id="navAdmin" style="display:none">
         <button data-tab="moderazione">Moderazione</button>
@@ -214,7 +220,7 @@
   </section>
 
   <!-- Notizia (articolo) -->
-  <section id="newsview" class="tab" style="display:none">
+  <section id="newsview" class="tab" style="display:none"
     <div class="news-article">
       <button class="btn" id="btnBackTop">Torna all’app</button>
       <h2 id="articleTitle" style="margin:6px 0 4px 0"></h2>
@@ -255,13 +261,54 @@
       <button class="btn danger" id="btnLogout">Esci dalla sessione admin</button>
     </div>
   </section>
+
+  <!-- Contatti -->
+  <section id="contatti" class="tab" style="display:none">
+    <div class="muted" style="margin-bottom:12px">Compila il modulo per inviarci richieste, segnalazioni o proposte legate a Fantasy Italia — Nuove proposte.</div>
+    <form id="contactForm" class="contact-form" autocomplete="on">
+      <div class="row">
+        <div class="field">
+          <label for="contactName">Nome *</label>
+          <input id="contactName" name="name" type="text" placeholder="Nome e cognome" required autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="contactEmail">Email *</label>
+          <input id="contactEmail" name="email" type="email" placeholder="nome@email.it" required autocomplete="email">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="contactTopic">Motivo del contatto *</label>
+          <select id="contactTopic" name="topic" required>
+            <option value="Richiesta generale" selected>Richiesta generale</option>
+            <option value="Segnalazione catalogo">Segnalazione catalogo</option>
+            <option value="Collaborazioni">Collaborazioni</option>
+            <option value="Supporto tecnico">Supporto tecnico</option>
+            <option value="Altro">Altro</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="contactMessage">Messaggio *</label>
+          <textarea id="contactMessage" name="message" placeholder="Raccontaci come possiamo aiutarti" required></textarea>
+        </div>
+      </div>
+      <div id="contactStatus" class="notice" role="status" aria-live="polite"></div>
+      <div class="contact-actions">
+        <button type="submit" class="btn primary">Invia il messaggio</button>
+        <button type="reset" class="btn">Svuota</button>
+        <span class="small muted">Preferisci scrivere direttamente? <a href="mailto:simonegrosso.writer@gmail.com">simonegrosso.writer@gmail.com</a></span>
+      </div>
+    </form>
+  </section>
 </main>
 
 <footer>
   <div>Fantasy Italia — Nuove proposte è un catalogo collaborativo dedicato alla narrativa fantasy italiana contemporanea.</div>
   <div style="margin-top:6px">
     <a href="legal.html">Note legali & privacy</a><span class="sep">•</span>
-    <a href="mailto:simonegrosso.writer@gmail.com">Contatti</a>
+    <a href="#contatti">Contatti</a>
   </div>
 </footer>
 
@@ -278,6 +325,8 @@
     catalogUrl: DEFAULT_GITHUB_BASE + 'catalogo.json',
     newsUrl:    DEFAULT_GITHUB_BASE + 'news.json'
   };
+
+  const CONTACT_EMAIL = 'simonegrosso.writer@gmail.com';
 
   /* ==== Stato ==== */
   const state = {
@@ -636,10 +685,65 @@
       alert('Bozza notizia salvata. Per pubblicarla, esporta e carica su GitHub.');
     }, true);
   })();
-  $('#btnExportNews')?.addEventListener('click', ()=>{
+   $('#btnExportNews')?.addEventListener('click', ()=>{
     const merged=[...state.remoteNews, ...state.pendingNews].sort((a,b)=>(b.ts||0)-(a.ts||0));
     const blob=new Blob([JSON.stringify(merged,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='news.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
+
+  /* ==== Contatti ==== */
+  const contactForm = $('#contactForm');
+  const contactStatus = $('#contactStatus');
+  function hideContactStatus(){
+    if(!contactStatus) return;
+    contactStatus.classList.remove('show','success','error');
+    contactStatus.innerHTML='';
+  }
+  function showContactStatus(type, message){
+    if(!contactStatus) return;
+    contactStatus.classList.remove('success','error');
+    contactStatus.innerHTML = message || '';
+    if(message){
+      contactStatus.classList.add(type==='error'?'error':'success','show');
+    }else{
+      contactStatus.classList.remove('show');
+    }
+  }
+  function focusContactForm(){
+    hideContactStatus();
+    setTimeout(()=>{ $('#contactName')?.focus({preventScroll:true}); }, 150);
+  }
+  contactForm?.addEventListener('reset', (event)=>{ if(event.isTrusted) hideContactStatus(); });
+  contactForm?.addEventListener('submit', (event)=>{
+    event.preventDefault();
+    if(!contactForm.reportValidity()) return;
+    const name = ($('#contactName').value||'').trim();
+    const email = ($('#contactEmail').value||'').trim();
+    const topicSelect = $('#contactTopic');
+    const topicValue = topicSelect?.value || '';
+    const topicLabel = topicSelect?.selectedOptions?.[0]?.textContent || topicValue || 'Richiesta generale';
+    const message = ($('#contactMessage').value||'').trim();
+    if(!name || !email || !message){
+      showContactStatus('error','Compila tutti i campi obbligatori per proseguire.');
+      return;
+    }
+    const subject = encodeURIComponent(`Contatto dal sito: ${topicLabel}`);
+    const bodyLines = [
+      `Nome: ${name}`,
+      `Email: ${email}`,
+      topicLabel ? `Motivo: ${topicLabel}` : null,
+      '',
+      message
+    ].filter(Boolean).join('\n');
+    const mailHref = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${encodeURIComponent(bodyLines)}`;
+    const fallbackHref = mailHref.replace(/&/g,'&amp;');
+    const fallbackLink = `<a href="${fallbackHref}">clicca qui se non si apre automaticamente</a>`;
+    showContactStatus('success', `Ti stiamo reindirizzando al tuo client email, ${fallbackLink}. In alternativa puoi scriverci a <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.`);
+    try{
+      navigator.clipboard?.writeText?.(`${CONTACT_EMAIL}\n\n${bodyLines}`);
+    }catch(_){/* opzionale */}
+    contactForm.reset();
+    setTimeout(()=>{ location.href = mailHref; }, 100);
   });
 
   /* ==== Router ==== */
@@ -653,6 +757,7 @@
     if(hash.startsWith('news/')){ const id=decodeURIComponent(hash.slice(5)); if(!openNewsById(id)){ alert('Articolo non trovato.'); showTab('notizie'); } return; }
     if(hash==='notizie'){ showTab('notizie'); return; }
     if(hash==='nuovo'){ showTab('nuovo'); return; }
+    if(hash==='contatti'){ showTab('contatti'); focusContactForm(); return; }
     if(hash==='moderazione'){ if(sessionIsValid()){ renderModeration(); showTab('moderazione'); } else { alert('Area riservata: accedi come admin.'); showTab('catalogo'); } return; }
     if(hash==='impostazioni'){ if(sessionIsValid()){ showTab('impostazioni'); } else { alert('Area riservata: accedi come admin.'); showTab('catalogo'); } return; }
     showTab('catalogo');
@@ -686,3 +791,4 @@
 </script>
 </body>
 </html>
+
