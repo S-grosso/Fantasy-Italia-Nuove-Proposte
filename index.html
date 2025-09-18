@@ -395,7 +395,7 @@
     }catch(e){ console.error(e); alert('Errore durante il login.'); return false; }
   }
   $('#adminToggle')?.addEventListener('click', async ()=>{
-    if(sessionIsValid){ clearSession(); applyAdminUI(); alert('Sei uscito dalla sessione admin.'); }
+    if(sessionIsValid()){ clearSession(); applyAdminUI(); alert('Sei uscito dalla sessione admin.'); }
     else await doLoginFlow();
   });
   $('#btnLogout')?.addEventListener('click', ()=>{ clearSession(); applyAdminUI(); alert('Sei uscito dalla sessione admin.'); });
@@ -814,4 +814,5 @@
 </script>
 </body>
 </html>
+
 
