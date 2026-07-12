@@ -53,15 +53,22 @@ jobs:
 
       - name: Salva i candidati trovati
         run: |
-          if git diff --quiet data/candidates.json 2>/dev/null; then
-            echo "Nessun nuovo candidato: niente da committare."
+          if [ ! -f data/candidates.json ]; then
+            echo "Nessun file candidati prodotto."
             exit 0
           fi
-
-          NUOVI=$(python -c "import json;print(len(json.load(open('data/candidates.json'))))" 2>/dev/null || echo "?")
 
           git config user.name  "Scout"
           git config user.email "actions@github.com"
           git add data/candidates.json
+
+          # --cached confronta con l'indice: funziona anche su file nuovi,
+          # a differenza di 'git diff' nudo, che ignora i file non tracciati.
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica: niente da committare."
+            exit 0
+          fi
+
+          NUOVI=$(python -c "import json;print(len(json.load(open('data/candidates.json'))))")
           git commit -m "Scout: $NUOVI candidati in attesa di moderazione"
           git push
