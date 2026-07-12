@@ -40,6 +40,7 @@ CANDIDATES_FILE = ROOT / "data" / "candidates.json"
 
 TIMEOUT = 25
 PAUSA = 1.0  # cortesia verso i server degli editori
+PAUSA_MODELLO = 6.0  # GitHub Models free tier: ~10 richieste/minuto
 UA = {"User-Agent": "FantasyItaliaBot/1.0 (+https://www.fantasyitalianuoveproposte.it)"}
 
 GOOGLE_BOOKS = "https://www.googleapis.com/books/v1/volumes"
@@ -57,15 +58,6 @@ GENERI_ESPLICITI = [
     "grimdark", "sword and sorcery", "portal fantasy",
     "fantasy epico", "fantasy eroico", "science fantasy",
     "fantasy",  # generico, per ultimo: match piu' debole
-]
-
-# Prefiltro per gli editori generalisti: se nessuna di queste parole compare
-# nei tag/categorie/testo, il prodotto non arriva nemmeno al classificatore.
-# Serve a non annegare nel catalogo di Giunti.
-PREFILTRO = [
-    "fantasy", "fantastico", "romantasy", "magia", "magic",
-    "draghi", "dragon", "elfi", "young adult", "ya", "fantascienza",
-    "urban fantasy", "dark fantasy", "sovrannaturale", "soprannaturale",
 ]
 
 # Roba che NON e' un romanzo: bundle, gadget, abbonamenti, merchandising.
@@ -470,27 +462,103 @@ def conta_opere_precedenti(autore):
 
 
 # --------------------------------------------------------------------------
-# Prefiltro: scarta il rumore prima di spendere chiamate al modello
+# Prefiltro
+#
+# Il prefiltro esiste per non annegare nel catalogo di Giunti (2000+ prodotti,
+# di cui forse cinque sono fantasy italiani). La prima versione cercava parole
+# come "magic" e faceva passare "Albo magico", "pennarelli magici", "Mondi
+# magici": il fantasy per bambini di 4 anni non e' il fantasy di questo catalogo.
+#
+# La logica ora e' a due stadi:
+#   1. ESCLUSIONE — se il prodotto ha i segni di NON essere un romanzo per
+#      adulti/YA (album, sticker, cartonato, manga, Disney...), esce subito.
+#   2. INCLUSIONE — dopo l'esclusione, deve comunque mostrare un indizio
+#      di fantasy per passare al modello.
+# L'esclusione viene prima perche' e' molto piu' affidabile: "sticker" nel
+# titolo e' una prova quasi certa, "magico" non prova nulla.
 # --------------------------------------------------------------------------
 
-def passa_prefiltro(cand, obbligatorio):
-    testo = " ".join([
-        cand.get("titolo", ""),
-        cand.get("sinossi", "")[:600],
-        cand.get("paratesto", "")[:400],
-        " ".join(str(c) for c in cand.get("categorie", [])),
-    ]).lower()
+# Se una di queste compare nel titolo, NON e' un romanzo. Punto.
+# Sono i falsi positivi visti nel primo run su Giunti.
+ESCLUSIONI_TITOLO = [
+    # Libri-attivita' e cartoleria
+    "albo magico", "album", "sticker", "staccattacca", "da colorare",
+    "colouring", "coloring", "colora", "pennarelli", "glitter",
+    "attività", "giochi", "enigmistica", "quiz", "labirinti", "cornicette",
+    "libro bagno", "sagomine", "puzzle", "leporello", "cartonato",
+    "librottini", "libriccini", "mini libri", "party pack", "super collection",
+    "calendario", "avvento", "tarocchi", "segnalibro", "poster", "mappamondo",
+    # Prescolare / didattica
+    "imparo", "vado in prima", "il mio primo", "primo libro", "prescolare",
+    "impara", "stampatello", "grafismi",
+    # Fumetti e periodici
+    "vol.", "graphic tales", "graphic novel", "fumetti", "manga",
+    "art e dossier", "n. ", "rivista",
+    # Merchandising e bundle (gia' in NON_LIBRI, ripetuti per sicurezza)
+    "quiz box", "cofanetto", "gift", "collana ",
+]
 
-    # Scarta ciò che non e' un romanzo (bundle, gadget, abbonamenti)
+# Franchise e marchi che non producono narrativa fantasy italiana d'autore.
+ESCLUSIONI_BRAND = [
+    "disney", "marvel", "pixar", "barbie", "hot wheels", "stitch", "dumbo",
+    "toy story", "zootropolis", "oceania", "minions", "w.i.t.c.h.",
+    "cenerentola", "aladdin", "bella addormentata", "cappuccetto",
+    "principesse", "unicorni", "gabby", "nebulous stars", "mini cuccioli",
+    "babbo natale", "natale",
+]
+
+# Dopo l'esclusione, serve almeno un indizio POSITIVO di fantasy.
+# Niente "magic" nudo: troppo permissivo. Solo termini che nel paratesto
+# editoriale indicano davvero il genere.
+INDIZI_FANTASY = [
+    "fantasy", "romantasy", "fantastico", "dark fantasy", "urban fantasy",
+    "epic fantasy", "high fantasy", "grimdark", "sword and sorcery",
+    "worldbuilding", "sistema magico", "magia", "stregoneria", "incantesim",
+    "creature magiche", "soprannaturale", "sovrannaturale",
+    "elfi", "elfico", "draghi", "necromant", "vampir", "licantrop",
+    "regno", "profezia", "arcano", "grimorio",
+]
+
+
+def passa_prefiltro(cand, obbligatorio):
     titolo_low = cand.get("titolo", "").lower()
+
+    # Stadio 0: bundle, gadget, abbonamenti (vale per tutti gli editori)
     if any(x in titolo_low for x in NON_LIBRI):
         return False, "non e' un romanzo"
 
     if not obbligatorio:
         return True, ""
 
-    if not any(p in testo for p in PREFILTRO):
+    # --- Da qui in poi solo gli editori generalisti (Giunti, Sperling) ---
+
+    # Stadio 1: esclusione. Piu' affidabile dell'inclusione.
+    if any(x in titolo_low for x in ESCLUSIONI_TITOLO):
+        return False, "non e' un romanzo"
+    if any(x in titolo_low for x in ESCLUSIONI_BRAND):
+        return False, "non e' un romanzo"
+
+    # I titoli tutti maiuscoli su Shopify sono quasi sempre manga o periodici.
+    # I titoli con '::' sono sottotitoli commerciali ("::Con 7 storie", "::In
+    # maiuscolo"), tipici dei prodotti per l'infanzia.
+    if "::" in cand.get("titolo", ""):
+        return False, "non e' un romanzo"
+
+    # Stadio 2: inclusione. Serve un indizio positivo di fantasy.
+    testo = " ".join([
+        cand.get("titolo", ""),
+        cand.get("sinossi", "")[:1000],
+        cand.get("paratesto", "")[:600],
+        " ".join(str(c) for c in cand.get("categorie", [])),
+    ]).lower()
+
+    if not any(p in testo for p in INDIZI_FANTASY):
         return False, "prefiltro: nessun indizio di fantasy"
+
+    # Stadio 3: una sinossi troppo corta e' segno di prodotto non narrativo.
+    # I romanzi hanno quarte di copertina; i libri-gioco no.
+    if len(cand.get("sinossi", "")) < 150:
+        return False, "prefiltro: sinossi troppo breve per un romanzo"
 
     return True, ""
 
@@ -556,11 +624,19 @@ Rispondi SOLO con JSON valido, nessun preambolo, nessun markdown:
 }"""
 
 
-def classifica(cand, token):
+def classifica(cand, token, tentativi=4):
     """
-    Chiama GitHub Models. Se fallisce, il candidato NON viene scartato:
-    passa in moderazione con flag 'non classificato', perche' un errore di rete
-    non deve farti perdere un libro.
+    Chiama GitHub Models.
+
+    Il free tier ha un limite stretto di richieste al minuto: al primo run
+    il 429 e' arrivato dopo ~15 chiamate e da li' in poi TUTTI i candidati
+    sono passati senza classificazione (91 su 97 con confidenza bassa).
+    Il fallback funzionava, ma il risultato era inutilizzabile.
+
+    Ora: quando arriva un 429 aspetta e riprova, con attesa crescente.
+    Se dopo tutti i tentativi il modello non risponde, il candidato passa
+    comunque in revisione manuale — un errore di rete non deve farti perdere
+    un libro — ma questo diventa l'eccezione, non la regola.
     """
     if not token:
         return {"ammesso": True, "motivo": "nessun token: classificazione saltata",
@@ -580,48 +656,77 @@ PRESENTAZIONE DELL'EDITORE:
 SINOSSI:
 {cand.get('sinossi', '')[:1800]}"""
 
-    try:
-        r = requests.post(
-            GH_MODELS_URL,
-            headers={
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": GH_MODEL,
-                "messages": [
-                    {"role": "system", "content": PROMPT},
-                    {"role": "user", "content": scheda},
-                ],
-                "temperature": 0.1,
-                "max_tokens": 300,
-            },
-            timeout=45,
-        )
-        if r.status_code != 200:
-            log(f"      ! modello HTTP {r.status_code}")
-            raise RuntimeError("chiamata fallita")
+    attesa = 20  # secondi; raddoppia a ogni 429
 
-        testo = r.json()["choices"][0]["message"]["content"].strip()
-        testo = re.sub(r"^```(?:json)?|```$", "", testo, flags=re.MULTILINE).strip()
-        esito = json.loads(testo)
+    for tentativo in range(1, tentativi + 1):
+        try:
+            r = requests.post(
+                GH_MODELS_URL,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": GH_MODEL,
+                    "messages": [
+                        {"role": "system", "content": PROMPT},
+                        {"role": "user", "content": scheda},
+                    ],
+                    "temperature": 0.1,
+                    "max_tokens": 300,
+                },
+                timeout=60,
+            )
 
-        # Rete di sicurezza: se il paratesto dichiara un genere e il modello
-        # non ne ha trovato uno, ci fidiamo dell'editore.
-        if not esito.get("genere"):
-            esito["genere"] = genere_esplicito(cand)
+            if r.status_code == 429:
+                # Il server dice spesso quanto aspettare: ascoltiamolo.
+                suggerita = r.headers.get("retry-after") or r.headers.get("x-ratelimit-timeremaining")
+                try:
+                    pausa = int(suggerita) + 2
+                except (TypeError, ValueError):
+                    pausa = attesa
 
-        return esito
+                if tentativo == tentativi:
+                    log(f"      ! quota esaurita dopo {tentativi} tentativi")
+                    break
 
-    except (requests.RequestException, KeyError, ValueError, RuntimeError) as e:
-        log(f"      ! classificazione fallita ({type(e).__name__}): passa in revisione manuale")
-        return {
-            "ammesso": True,
-            "motivo": "CLASSIFICAZIONE NON RIUSCITA — da verificare a mano",
-            "genere": genere_esplicito(cand),
-            "esordio": None,
-            "confidenza": "bassa",
-        }
+                log(f"      · limite raggiunto, attendo {pausa}s "
+                    f"(tentativo {tentativo}/{tentativi})")
+                time.sleep(pausa)
+                attesa *= 2
+                continue
+
+            if r.status_code != 200:
+                log(f"      ! modello HTTP {r.status_code}")
+                break
+
+            testo = r.json()["choices"][0]["message"]["content"].strip()
+            testo = re.sub(r"^```(?:json)?|```$", "", testo, flags=re.MULTILINE).strip()
+            esito = json.loads(testo)
+
+            # Rete di sicurezza: se il paratesto dichiara un genere e il modello
+            # non ne ha trovato uno, ci fidiamo dell'editore.
+            if not esito.get("genere"):
+                esito["genere"] = genere_esplicito(cand)
+
+            return esito
+
+        except (requests.RequestException, KeyError, ValueError) as e:
+            log(f"      ! errore {type(e).__name__}")
+            if tentativo == tentativi:
+                break
+            time.sleep(attesa)
+            attesa *= 2
+
+    # Tutti i tentativi falliti: passa in revisione manuale.
+    log("      ! classificazione non riuscita: passa in revisione manuale")
+    return {
+        "ammesso": True,
+        "motivo": "CLASSIFICAZIONE NON RIUSCITA — da verificare a mano",
+        "genere": genere_esplicito(cand),
+        "esordio": None,
+        "confidenza": "bassa",
+    }
 
 
 # --------------------------------------------------------------------------
@@ -632,8 +737,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dal", help="Data di partenza (YYYY-MM-DD). Default: 30 giorni fa.")
     ap.add_argument("--dry-run", action="store_true", help="Non scrive nulla.")
-    ap.add_argument("--limite", type=int, default=200,
-                    help="Tetto ai candidati classificati, per non bruciare quota.")
+    ap.add_argument("--limite", type=int, default=80,
+                    help="Tetto ai candidati classificati. Con la pausa anti-429 "
+                         "ogni candidato costa ~8s: 80 sono circa 11 minuti.")
     args = ap.parse_args()
 
     if args.dal:
@@ -748,6 +854,12 @@ def main():
             time.sleep(0.3)
 
         esito = classifica(c, token)
+
+        # Pausa tra una classificazione e l'altra: il free tier di GitHub Models
+        # ha un limite di richieste al minuto. Meglio andare piano e classificare
+        # bene 60 candidati che correre e non classificarne nessuno.
+        if token:
+            time.sleep(PAUSA_MODELLO)
 
         if not esito.get("ammesso"):
             log(f"        ✗ {esito.get('motivo', '')[:60]}")
