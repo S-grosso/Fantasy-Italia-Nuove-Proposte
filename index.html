@@ -423,6 +423,7 @@
     if(b.status==null || b.status==='') b.status='approved';
     if(!Array.isArray(b.labels)) b.labels = b.labels ? [].concat(b.labels) : [];
     b.featured=!!b.featured;
+    if(b.genre===undefined) b.genre=null;
     return b;
   }
   function cloneBook(b){
