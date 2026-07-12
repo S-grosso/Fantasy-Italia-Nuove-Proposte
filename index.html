@@ -479,7 +479,6 @@
       state.remoteBooksBase = (books||[]).map(x=>cloneBook(normalizeBook(x)));
       applyApprovedEdits();
       state.remoteNews  = normalizeNews(news||[]);
-      renderCatalogo(); renderNews(); renderModeration();
     }catch(e){
       console.error(e);
       bann.innerHTML = '⚠️ Non riesco a caricare i JSON da GitHub. Controlla gli URL Raw in <b>Impostazioni</b>.';
@@ -487,6 +486,20 @@
       $('#gridCatalogo').innerHTML='<div class="muted">Errore nel caricamento del catalogo.</div>';
       $('#gridNews').innerHTML='<div class="muted">Errore nel caricamento delle notizie.</div>';
     }
+
+    // I candidati dello Scout sono un extra: se il file non esiste ancora
+    // (primo avvio, o Action mai eseguita) il sito deve funzionare lo stesso.
+    try{
+      const cands = await fetchJson(state.settings.candidatesUrl);
+      const respinti = new Set(state.autoRejected||[]);
+      state.autoCandidates = (cands||[])
+        .filter(c => !respinti.has(c.id))
+        .map(c => normalizeBook(c));
+    }catch(_){
+      state.autoCandidates = [];  // nessun candidato: normale, non è un errore
+    }
+
+    renderCatalogo(); renderNews(); renderModeration();
   }
 
   /* ==== Impostazioni ==== */
