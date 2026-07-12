@@ -711,14 +711,40 @@
   function renderModeration(){
     const grid=$('#gridModeration'); grid.innerHTML='';
     const f=$('#moderationFilter').value;
-    if(f==='pending'){
-      const list=state.pendingBooks.slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
-      if(!list.length){ grid.innerHTML='<div class="muted">Nessuna bozza locale.</div>'; return; }
-      list.forEach(b=>grid.appendChild(modCard(b,'pending')));
-    }else{
+
+    if(f==='approved'){
       const list=state.remoteBooks.slice();
       if(!list.length){ grid.innerHTML='<div class="muted">Nessun titolo approvato.</div>'; return; }
       list.forEach(b=>grid.appendChild(modCard(b,'approved')));
+      return;
+    }
+
+    // "Da approvare" = candidati dello Scout + bozze scritte a mano.
+    // I candidati automatici vengono prima: sono la novità da vagliare.
+    const auto  = state.autoCandidates.slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
+    const mani  = state.pendingBooks.slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
+
+    if(!auto.length && !mani.length){
+      grid.innerHTML='<div class="muted">Nessuna bozza in attesa.</div>';
+      return;
+    }
+
+    if(auto.length){
+      const h=document.createElement('div');
+      h.style.gridColumn='1/-1'; h.className='small muted';
+      h.innerHTML='<b>Trovati dallo Scout</b> — approva per spostarli tra le bozze, '
+                + 'poi esporta il catalogo come sempre.';
+      grid.appendChild(h);
+      auto.forEach(b=>grid.appendChild(modCard(b,'auto')));
+    }
+
+    if(mani.length){
+      const h=document.createElement('div');
+      h.style.gridColumn='1/-1'; h.className='small muted';
+      h.style.marginTop='10px';
+      h.innerHTML='<b>Bozze tue</b>';
+      grid.appendChild(h);
+      mani.forEach(b=>grid.appendChild(modCard(b,'pending')));
     }
   }
   $('#moderationFilter')?.addEventListener('change', renderModeration);
