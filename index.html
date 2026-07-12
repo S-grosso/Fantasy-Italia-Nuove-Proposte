@@ -649,7 +649,32 @@
     }
     refreshLabels();
 
-    meta.appendChild(h3); meta.appendChild(by); meta.appendChild(labelsWrap);
+    meta.appendChild(h3); meta.appendChild(by);
+
+    if(isAuto){
+      const info=document.createElement('div'); info.className='tags';
+      if(b.genre) info.appendChild(tagEl(b.genre,'tag genre'));
+      info.appendChild(tagEl('trovato: '+(b._source||'?'),'tag auto'));
+      if(b._confidence==='bassa'){
+        info.appendChild(tagEl('⚠ da verificare','tag warn'));
+      }
+      meta.appendChild(info);
+
+      if(b._reason){
+        const why=document.createElement('div'); why.className='small muted';
+        why.style.marginTop='4px'; why.textContent=b._reason;
+        meta.appendChild(why);
+      }
+      if(b.storePublisherUrl){
+        const a=document.createElement('a'); a.className='small';
+        a.href=b.storePublisherUrl; a.target='_blank'; a.rel='noopener';
+        a.style.color='#9fc8ff'; a.style.display='inline-block'; a.style.marginTop='4px';
+        a.textContent='Apri sul sito dell\'editore →';
+        meta.appendChild(a);
+      }
+    }
+
+    meta.appendChild(labelsWrap);
 
     if(isApproved){
       const note=document.createElement('div'); note.className='small muted';
