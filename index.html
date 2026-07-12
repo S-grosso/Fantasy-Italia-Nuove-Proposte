@@ -516,6 +516,7 @@
     state.settings.adminsUrl=$('#adminsUrl').value.trim()||state.settings.adminsUrl;
     state.settings.catalogUrl=$('#catalogUrl').value.trim()||state.settings.catalogUrl;
     state.settings.newsUrl=$('#newsUrl').value.trim()||state.settings.newsUrl;
+    if(!state.settings.candidatesUrl) state.settings.candidatesUrl = DEFAULTS.candidatesUrl;
     save('fi_settings_site_v38', state.settings);
     alert('URL salvati. Ricarico i dati da GitHub.');
     loadFromGitHub();
