@@ -1,0 +1,99 @@
+{
+  "_commento": "Configurazione delle fonti monitorate. Esito della ricognizione del 2026-07. Se un editore rifà il sito, si corregge qui: nessun'altra modifica al codice.",
+  "sources": [
+    {
+      "publisher": "Lumien",
+      "adapter": "woocommerce",
+      "endpoint": "https://www.lumien.it/wp-json/wp/v2/product",
+      "author_taxonomy": "autore",
+      "attivo": true,
+      "note": "Espone la tassonomia 'autore': nome autore recuperabile senza inferenza."
+    },
+    {
+      "publisher": "La Corte Editore",
+      "adapter": "woocommerce",
+      "endpoint": "https://www.lacorteditore.it/wp-json/wp/v2/product",
+      "attivo": true
+    },
+    {
+      "publisher": "La nuova carne Edizioni",
+      "adapter": "woocommerce",
+      "endpoint": "https://www.lanuovacarne.it/wp-json/wp/v2/product",
+      "attivo": true
+    },
+    {
+      "publisher": "Agenzia Alcatraz",
+      "adapter": "woocommerce",
+      "endpoint": "https://www.agenziaalcatraz.it/wp-json/wp/v2/product",
+      "attivo": true
+    },
+    {
+      "publisher": "Parallelo45 Edizioni",
+      "adapter": "woocommerce",
+      "endpoint": "https://www.parallelo45edizioni.it/wp-json/wp/v2/product",
+      "attivo": true
+    },
+    {
+      "publisher": "Giunti",
+      "adapter": "shopify",
+      "endpoint": "https://giunti.it/products.json",
+      "attivo": true,
+      "prefiltro_obbligatorio": true,
+      "note": "Editore generalista: catalogo enorme. Il prefiltro sui tag e' indispensabile, altrimenti si sommerge il classificatore."
+    },
+    {
+      "publisher": "Another Coffee Stories Editore",
+      "adapter": "shopify",
+      "endpoint": "https://anothercoffeestories.com/products.json",
+      "attivo": true
+    },
+    {
+      "publisher": "Acheron Books",
+      "adapter": "rss",
+      "endpoint": "https://www.acheron.it/feed/",
+      "attivo": true,
+      "note": "Solo feed: metadati poveri. I dati veri si recuperano da Google Books via titolo+autore."
+    },
+    {
+      "publisher": "Zona 42",
+      "adapter": "rss",
+      "endpoint": "https://www.zona42.it/feed/",
+      "attivo": true
+    },
+    {
+      "publisher": "Astro Edizioni",
+      "adapter": "rss",
+      "endpoint": "https://www.astroedizioni.it/feed/",
+      "attivo": true
+    },
+    {
+      "publisher": "Sperling & Kupfer",
+      "adapter": "rss",
+      "endpoint": "https://www.sperling.it/feed/",
+      "attivo": true,
+      "prefiltro_obbligatorio": true,
+      "note": "Generalista. Come Giunti: prefiltro indispensabile."
+    },
+    {
+      "publisher": "Angolazioni",
+      "adapter": "woocommerce",
+      "endpoint": "https://angolazioni.it/wp-json/wp/v2/product",
+      "attivo": true,
+      "note": "Dominio corretto: .it (non .net, come nella prima ricognizione). Da verificare al primo run: se fallisce, cade automaticamente su Google Books."
+    },
+    {
+      "publisher": "Delos Digital",
+      "adapter": "google_books",
+      "endpoint": null,
+      "attivo": true,
+      "note": "Sito custom senza API. Coperto interamente da Google Books via inpublisher."
+    },
+    {
+      "publisher": "PresentARTsi",
+      "adapter": "google_books",
+      "endpoint": null,
+      "attivo": true,
+      "note": "Associazione culturale, pochi titoli l'anno, nessun catalogo strutturato online."
+    }
+  ]
+}
