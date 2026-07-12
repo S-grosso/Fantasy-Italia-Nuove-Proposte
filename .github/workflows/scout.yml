@@ -14,7 +14,7 @@ on:
       limite:
         description: "Massimo numero di candidati da classificare"
         required: false
-        default: "200"
+        default: "80"
         type: string
 
 # Serve per scrivere data/candidates.json e per parlare con GitHub Models
@@ -62,8 +62,9 @@ jobs:
           git config user.email "actions@github.com"
           git add data/candidates.json
 
-          # --cached confronta con l'indice: funziona anche su file nuovi,
-          # a differenza di 'git diff' nudo, che ignora i file non tracciati.
+          # --cached confronta con l'indice, non con la working tree.
+          # Serve perché 'git diff' nudo IGNORA i file non tracciati: al primo
+          # run il file veniva creato, giudicato "identico", e perso.
           if git diff --cached --quiet; then
             echo "Nessuna modifica: niente da committare."
             exit 0
