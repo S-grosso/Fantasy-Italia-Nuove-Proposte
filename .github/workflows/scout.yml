@@ -1,0 +1,67 @@
+name: Scout nuove uscite
+
+on:
+  # Ogni lunedì alle 6:00 (ora italiana d'inverno; UTC non segue l'ora legale)
+  schedule:
+    - cron: "0 5 * * 1"
+  # Avviabile a mano dalla tab Actions, utile per il backfill
+  workflow_dispatch:
+    inputs:
+      dal:
+        description: "Cerca uscite a partire da questa data (YYYY-MM-DD). Vuoto = ultimi 30 giorni."
+        required: false
+        type: string
+      limite:
+        description: "Massimo numero di candidati da classificare"
+        required: false
+        default: "200"
+        type: string
+
+# Serve per scrivere data/candidates.json e per parlare con GitHub Models
+permissions:
+  contents: write
+  models: read
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Scarica il repository
+        uses: actions/checkout@v4
+
+      - name: Prepara Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installa le dipendenze
+        run: pip install requests
+
+      - name: Cerca le nuove uscite
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.dal }}" ]; then
+            ARGS="$ARGS --dal ${{ inputs.dal }}"
+          fi
+          if [ -n "${{ inputs.limite }}" ]; then
+            ARGS="$ARGS --limite ${{ inputs.limite }}"
+          fi
+          python scripts/scout.py $ARGS
+
+      - name: Salva i candidati trovati
+        run: |
+          if git diff --quiet data/candidates.json 2>/dev/null; then
+            echo "Nessun nuovo candidato: niente da committare."
+            exit 0
+          fi
+
+          NUOVI=$(python -c "import json;print(len(json.load(open('data/candidates.json'))))" 2>/dev/null || echo "?")
+
+          git config user.name  "Scout"
+          git config user.email "actions@github.com"
+          git add data/candidates.json
+          git commit -m "Scout: $NUOVI candidati in attesa di moderazione"
+          git push
