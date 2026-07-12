@@ -705,6 +705,59 @@
       meta.appendChild(addRow);
     }
 
+    if(isAuto){
+      // Il genere è modificabile: il classificatore sbaglia, tu no.
+      const gRow=document.createElement('div'); gRow.className='row';
+      const gIn=document.createElement('input'); gIn.type='text';
+      gIn.placeholder='Genere'; gIn.value=b.genre||'';
+      gIn.style.minWidth='160px';
+      gIn.addEventListener('change', ()=>{ b.genre=gIn.value.trim()||null; });
+      gRow.appendChild(gIn);
+      meta.appendChild(gRow);
+
+      const dSel=document.createElement('select');
+      [['unknown','Non specificato'],['yes','Sì'],['no','No']].forEach(([v,t])=>{
+        const o=document.createElement('option'); o.value=v; o.textContent=t; dSel.appendChild(o);
+      });
+      dSel.value=(b.isDebut===true?'yes':b.isDebut===false?'no':'unknown');
+      dSel.addEventListener('change',()=>{
+        const v=dSel.value; b.isDebut=(v==='yes')?true:(v==='no')?false:null;
+      });
+      const dRow=document.createElement('div'); dRow.className='small';
+      dRow.style.marginTop='6px'; dRow.append(' Esordio: ', dSel);
+      meta.appendChild(dRow);
+
+      const acts=document.createElement('div'); acts.className='actions';
+
+      const ok=document.createElement('button'); ok.className='btn primary';
+      ok.textContent='Accetta';
+      ok.addEventListener('click', ()=>{
+        // Passa tra le bozze locali, dove puoi rifinirlo e poi esportarlo.
+        const nuovo={...b, status:'approved', _local:true, ts:Date.now()};
+        delete nuovo._auto; delete nuovo._confidence;
+        delete nuovo._reason; delete nuovo._source;
+        state.pendingBooks.push(nuovo);
+        save('fi_books_pending_v1', state.pendingBooks);
+
+        state.autoRejected.push(b.id);          // non riproporlo più
+        save('fi_auto_rejected_v1', state.autoRejected);
+        state.autoCandidates = state.autoCandidates.filter(x=>x.id!==b.id);
+        renderModeration();
+      });
+
+      const no=document.createElement('button'); no.className='btn danger small';
+      no.textContent='Scarta';
+      no.addEventListener('click', ()=>{
+        state.autoRejected.push(b.id);
+        save('fi_auto_rejected_v1', state.autoRejected);
+        state.autoCandidates = state.autoCandidates.filter(x=>x.id!==b.id);
+        renderModeration();
+      });
+
+      acts.appendChild(ok); acts.appendChild(no);
+      meta.appendChild(acts);
+    }
+
     if(isPending){
       const featLbl=document.createElement('label'); featLbl.className='small muted'; featLbl.style.display='inline-flex'; featLbl.style.alignItems='center'; featLbl.style.gap='6px';
       const featChk=document.createElement('input'); featChk.type='checkbox'; featChk.checked=!!b.featured;
