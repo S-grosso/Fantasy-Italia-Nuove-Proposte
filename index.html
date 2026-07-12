@@ -619,9 +619,10 @@
     const h3=document.createElement('h3'); h3.textContent=b.title||'(Senza titolo)';
     const by=document.createElement('div'); by.className='by'; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • ');
 
-    const isPending = mode==='pending';
+    const isPending  = mode==='pending';
     const isApproved = mode==='approved';
-    const allowLabelEdit = isPending || isApproved;
+    const isAuto     = mode==='auto';
+    const allowLabelEdit = isPending || isApproved || isAuto;
 
     const labelsWrap=document.createElement('div'); labelsWrap.className='tags';
     function currentLabels(){ return Array.isArray(b.labels)?b.labels.slice():[]; }
