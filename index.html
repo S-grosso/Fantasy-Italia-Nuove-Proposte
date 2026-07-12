@@ -347,6 +347,14 @@
     approvedEdits: load(APPROVED_EDITS_KEY, {}),
     remoteAdmins: null
   };
+  // Le impostazioni salvate da versioni precedenti non conoscono candidatesUrl:
+  // senza questa migrazione il sito prova a fetchare "undefined" (404) e i
+  // candidati non compaiono mai in Moderazione.
+  for(const k of Object.keys(DEFAULTS)){
+    if(!state.settings[k]) state.settings[k] = DEFAULTS[k];
+  }
+  save('fi_settings_site_v38', state.settings);
+
   if(!state.approvedEdits || typeof state.approvedEdits!=='object' || Array.isArray(state.approvedEdits)){
     state.approvedEdits={};
   }
