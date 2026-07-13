@@ -946,6 +946,7 @@
   (async function init(){
     if(sessionIsValid()) touchSession();
     applyAdminUI();
+    buildYearFilter();
 
     // Precompila campi Impostazioni con i default o quelli salvati
     $('#adminsUrl').value = state.settings.adminsUrl;
