@@ -25,6 +25,9 @@ permissions:
 jobs:
   scout:
     runs-on: ubuntu-latest
+    # Rete di sicurezza: se qualcosa si impianta, meglio fallire
+    # in 40 minuti che restare appesi per ore.
+    timeout-minutes: 40
 
     steps:
       - name: Scarica il repository
