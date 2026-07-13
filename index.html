@@ -863,6 +863,9 @@
           alert('Titolo, autore ed editore sono obbligatori.'); return;
         }
         const nuovo={...b, status:'approved', _local:true, ts:Date.now()};
+        // Nuovo id nel formato del catalogo: quello del candidato (c...) è
+        // effimero e potrebbe collidere con un futuro run dello Scout.
+        nuovo.id = 'b'+Date.now().toString(36);
         delete nuovo._auto; delete nuovo._confidence;
         delete nuovo._reason; delete nuovo._source;
         state.pendingBooks.push(nuovo);
