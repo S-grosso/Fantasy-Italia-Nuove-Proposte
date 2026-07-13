@@ -636,18 +636,65 @@
     pill.appendChild(t); pill.appendChild(x);
     return pill;
   }
-  function modCard(b, mode){
-    const el=document.createElement('div'); el.className='card';
-    const img=document.createElement('img'); img.className='cover'; img.alt='Copertina'; img.src=b.coverUrl||placeholderCover();
-    const meta=document.createElement('div'); meta.className='meta';
-    const h3=document.createElement('h3'); h3.textContent=b.title||'(Senza titolo)';
-    const by=document.createElement('div'); by.className='by'; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • ');
+  // Un campo di testo etichettato, che salva su ogni modifica.
+  // Usato da tutti i campi editabili della card in moderazione.
+  function editField(label, value, onChange, opts){
+    opts = opts || {};
+    const wrap=document.createElement('div');
+    wrap.className='field';
+    if(opts.width) wrap.style.maxWidth=opts.width;
+    const lab=document.createElement('label'); lab.textContent=label;
+    const inp=document.createElement(opts.textarea ? 'textarea' : 'input');
+    if(!opts.textarea) inp.type = opts.type || 'text';
+    if(opts.textarea) inp.style.height='90px';
+    if(opts.placeholder) inp.placeholder=opts.placeholder;
+    inp.value = value==null ? '' : value;
+    inp.addEventListener('input', ()=>onChange(inp.value));
+    wrap.appendChild(lab); wrap.appendChild(inp);
+    return wrap;
+  }
 
+  function modCard(b, mode){
     const isPending  = mode==='pending';
     const isApproved = mode==='approved';
     const isAuto     = mode==='auto';
+    const editabile  = isPending || isAuto;   // le schede già in catalogo no
     const allowLabelEdit = isPending || isApproved || isAuto;
 
+    const el=document.createElement('div'); el.className='card';
+    if(editabile) el.style.flexDirection='column';
+
+    const img=document.createElement('img'); img.className='cover'; img.alt='Copertina';
+    img.src=b.coverUrl||placeholderCover();
+    const meta=document.createElement('div'); meta.className='meta';
+
+    // Salva la modifica dove serve: le bozze nel localStorage, i candidati
+    // automatici solo in memoria (vivono nel JSON su GitHub finché non li accetti).
+    function persist(){
+      if(isPending) save('fi_books_pending_v1', state.pendingBooks);
+    }
+
+    const h3=document.createElement('h3'); h3.textContent=b.title||'(Senza titolo)';
+    const by=document.createElement('div'); by.className='by';
+    by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • ');
+    meta.appendChild(h3); meta.appendChild(by);
+
+    // Provenienza e confidenza: solo per i candidati dello Scout
+    if(isAuto){
+      const info=document.createElement('div'); info.className='tags';
+      info.appendChild(tagEl('trovato: '+(b._source||'?'),'tag auto'));
+      if(b._confidence==='bassa'){
+        info.appendChild(tagEl('⚠ da verificare','tag warn'));
+      }
+      meta.appendChild(info);
+      if(b._reason){
+        const why=document.createElement('div'); why.className='small muted';
+        why.style.marginTop='4px'; why.textContent=b._reason;
+        meta.appendChild(why);
+      }
+    }
+
+    // ---- Etichette (premi) ----
     const labelsWrap=document.createElement('div'); labelsWrap.className='tags';
     function currentLabels(){ return Array.isArray(b.labels)?b.labels.slice():[]; }
     function refreshLabels(){
@@ -659,12 +706,8 @@
           labelsWrap.appendChild(labelPill(l, (lab)=>{
             const next=currentLabels().filter(x=>x!==lab);
             b.labels = next;
-            if(isPending){
-              save('fi_books_pending_v1', state.pendingBooks);
-              refreshLabels();
-            }else if(isApproved){
-              persistApprovedLabels(b.id, next);
-            }
+            if(isApproved){ persistApprovedLabels(b.id, next); }
+            else { persist(); refreshLabels(); }
           }));
         }else{
           labelsWrap.appendChild(tagEl(l,'tag label'));
@@ -672,97 +715,155 @@
       });
     }
     refreshLabels();
-
-    meta.appendChild(h3); meta.appendChild(by);
-
-    if(isAuto){
-      const info=document.createElement('div'); info.className='tags';
-      if(b.genre) info.appendChild(tagEl(b.genre,'tag genre'));
-      info.appendChild(tagEl('trovato: '+(b._source||'?'),'tag auto'));
-      if(b._confidence==='bassa'){
-        info.appendChild(tagEl('⚠ da verificare','tag warn'));
-      }
-      meta.appendChild(info);
-
-      if(b._reason){
-        const why=document.createElement('div'); why.className='small muted';
-        why.style.marginTop='4px'; why.textContent=b._reason;
-        meta.appendChild(why);
-      }
-      if(b.storePublisherUrl){
-        const a=document.createElement('a'); a.className='small';
-        a.href=b.storePublisherUrl; a.target='_blank'; a.rel='noopener';
-        a.style.color='#9fc8ff'; a.style.display='inline-block'; a.style.marginTop='4px';
-        a.textContent='Apri sul sito dell\'editore →';
-        meta.appendChild(a);
-      }
-    }
-
     meta.appendChild(labelsWrap);
-
-    if(isApproved){
-      const note=document.createElement('div'); note.className='small muted';
-      note.textContent='Titoli già in catalogo. Le modifiche restano in locale finché non esporti il JSON.';
-      meta.appendChild(note);
-    }
 
     if(allowLabelEdit){
       const addRow=document.createElement('div'); addRow.className='row';
-      const addField=document.createElement('input'); addField.type='text'; addField.placeholder='Nuova etichetta'; addField.style.minWidth='200px';
-      const addBtn=document.createElement('button'); addBtn.className='btn small'; addBtn.textContent='Aggiungi';
+      const addField=document.createElement('input'); addField.type='text';
+      addField.placeholder='Nuova etichetta (es. Vincitore Premio Italia)';
+      addField.style.minWidth='200px';
+      const addBtn=document.createElement('button'); addBtn.className='btn small';
+      addBtn.textContent='Aggiungi';
       addBtn.addEventListener('click', ()=>{
         const v=(addField.value||'').trim(); if(!v) return;
         const labels=currentLabels();
         if(labels.includes(v)) { addField.value=''; return; }
-        labels.push(v);
-        b.labels = labels;
-        addField.value='';
-        if(isPending){
-          save('fi_books_pending_v1', state.pendingBooks);
-          refreshLabels();
-        }else if(isApproved){
-          persistApprovedLabels(b.id, labels);
-        }
+        labels.push(v); b.labels = labels; addField.value='';
+        if(isApproved){ persistApprovedLabels(b.id, labels); }
+        else { persist(); refreshLabels(); }
       });
       addRow.appendChild(addField); addRow.appendChild(addBtn);
       meta.appendChild(addRow);
     }
 
+    if(isApproved){
+      const note=document.createElement('div'); note.className='small muted';
+      note.textContent='Titolo già in catalogo. Le modifiche restano in locale finché non esporti il JSON.';
+      meta.appendChild(note);
+      el.appendChild(img); el.appendChild(meta);
+      const badge=document.createElement('div'); badge.className='badge';
+      badge.textContent='Consigliato';
+      if(!b.featured) badge.style.display='none';
+      el.appendChild(badge);
+      return el;
+    }
+
+    // ================= EDITOR COMPLETO (bozze + candidati) =================
+    const form=document.createElement('div');
+    form.style.width='100%'; form.style.marginTop='10px';
+
+    const r1=document.createElement('div'); r1.className='row';
+    r1.appendChild(editField('Titolo *', b.title, v=>{
+      b.title=v; h3.textContent=v||'(Senza titolo)'; persist();
+    }));
+    r1.appendChild(editField('Autore *', b.author, v=>{
+      b.author=v; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • '); persist();
+    }));
+    form.appendChild(r1);
+
+    const r2=document.createElement('div'); r2.className='row';
+    r2.appendChild(editField('Editore *', b.publisher, v=>{
+      b.publisher=v; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • '); persist();
+    }));
+    r2.appendChild(editField('Anno *', b.year, v=>{
+      b.year=parseInt(v,10)||b.year;
+      by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • '); persist();
+    }, {type:'number', width:'110px'}));
+    r2.appendChild(editField('Collana', b.series, v=>{ b.series=v; persist(); }, {width:'160px'}));
+    form.appendChild(r2);
+
+    const r3=document.createElement('div'); r3.className='row';
+    r3.appendChild(editField('ISBN', b.isbn, v=>{ b.isbn=v; persist(); }, {width:'200px'}));
+    r3.appendChild(editField('Genere', b.genre, v=>{
+      b.genre=v.trim()||null; persist();
+    }, {placeholder:'dark fantasy, romantasy…', width:'200px'}));
+    form.appendChild(r3);
+
+    // Copertina: con anteprima che si aggiorna mentre scrivi
+    const r4=document.createElement('div'); r4.className='row';
+    r4.appendChild(editField('URL copertina', b.coverUrl, v=>{
+      b.coverUrl=v.trim();
+      img.src = b.coverUrl || placeholderCover();
+      persist();
+    }, {type:'url', placeholder:'https://.../cover.jpg'}));
+    form.appendChild(r4);
+
+    const r5=document.createElement('div'); r5.className='row';
+    r5.appendChild(editField('Store Amazon', b.storeAmazonUrl, v=>{
+      b.storeAmazonUrl=v.trim(); persist();
+    }, {type:'url', placeholder:'https://amazon.it/...'}));
+    r5.appendChild(editField('Store editore', b.storePublisherUrl, v=>{
+      b.storePublisherUrl=v.trim(); persist();
+    }, {type:'url', placeholder:'https://shop.editore.it/...'}));
+    form.appendChild(r5);
+
+    // Se lo Scout ha messo un link di RICERCA Amazon invece del prodotto,
+    // conviene aprirlo, trovare il libro, e incollare l'URL definitivo sopra.
+    if(b.storeAmazonUrl && b.storeAmazonUrl.includes('/s?k=')){
+      const avviso=document.createElement('div'); avviso.className='small muted';
+      avviso.style.marginTop='-4px'; avviso.style.marginBottom='6px';
+      const a=document.createElement('a');
+      a.href=b.storeAmazonUrl; a.target='_blank'; a.rel='noopener';
+      a.style.color='#9fc8ff'; a.textContent='cerca su Amazon →';
+      avviso.append('Link di ricerca, non del prodotto: ', a,
+                    ' e incolla qui sopra l\'URL definitivo.');
+      form.appendChild(avviso);
+    }
+
+    const r6=document.createElement('div'); r6.className='row';
+    r6.appendChild(editField('Sinossi', b.description, v=>{
+      b.description=v; persist();
+    }, {textarea:true}));
+    form.appendChild(r6);
+
+    // Esordio + Consigliato
+    const r7=document.createElement('div'); r7.className='row';
+    r7.style.alignItems='center';
+
+    const dWrap=document.createElement('div'); dWrap.className='field';
+    dWrap.style.maxWidth='200px';
+    const dLab=document.createElement('label'); dLab.textContent='Romanzo d\'esordio?';
+    const dSel=document.createElement('select');
+    [['unknown','Non specificato'],['yes','Sì'],['no','No']].forEach(([v,t])=>{
+      const o=document.createElement('option'); o.value=v; o.textContent=t; dSel.appendChild(o);
+    });
+    dSel.value=(b.isDebut===true?'yes':b.isDebut===false?'no':'unknown');
+    dSel.addEventListener('change',()=>{
+      const v=dSel.value;
+      b.isDebut=(v==='yes')?true:(v==='no')?false:null;
+      persist();
+    });
+    dWrap.appendChild(dLab); dWrap.appendChild(dSel);
+    r7.appendChild(dWrap);
+
+    const fLab=document.createElement('label');
+    fLab.className='small muted';
+    fLab.style.display='inline-flex'; fLab.style.alignItems='center';
+    fLab.style.gap='6px'; fLab.style.marginTop='18px';
+    const fChk=document.createElement('input'); fChk.type='checkbox'; fChk.checked=!!b.featured;
+    fChk.addEventListener('change', ()=>{ b.featured=!!fChk.checked; persist(); });
+    fLab.appendChild(fChk); fLab.append(' Consigliato');
+    r7.appendChild(fLab);
+    form.appendChild(r7);
+
+    // ---- Azioni ----
+    const acts=document.createElement('div'); acts.className='actions';
+    acts.style.flexWrap='wrap';
+
     if(isAuto){
-      // Il genere è modificabile: il classificatore sbaglia, tu no.
-      const gRow=document.createElement('div'); gRow.className='row';
-      const gIn=document.createElement('input'); gIn.type='text';
-      gIn.placeholder='Genere'; gIn.value=b.genre||'';
-      gIn.style.minWidth='160px';
-      gIn.addEventListener('change', ()=>{ b.genre=gIn.value.trim()||null; });
-      gRow.appendChild(gIn);
-      meta.appendChild(gRow);
-
-      const dSel=document.createElement('select');
-      [['unknown','Non specificato'],['yes','Sì'],['no','No']].forEach(([v,t])=>{
-        const o=document.createElement('option'); o.value=v; o.textContent=t; dSel.appendChild(o);
-      });
-      dSel.value=(b.isDebut===true?'yes':b.isDebut===false?'no':'unknown');
-      dSel.addEventListener('change',()=>{
-        const v=dSel.value; b.isDebut=(v==='yes')?true:(v==='no')?false:null;
-      });
-      const dRow=document.createElement('div'); dRow.className='small';
-      dRow.style.marginTop='6px'; dRow.append(' Esordio: ', dSel);
-      meta.appendChild(dRow);
-
-      const acts=document.createElement('div'); acts.className='actions';
-
       const ok=document.createElement('button'); ok.className='btn primary';
-      ok.textContent='Accetta';
+      ok.textContent='Accetta e metti in bozze';
       ok.addEventListener('click', ()=>{
-        // Passa tra le bozze locali, dove puoi rifinirlo e poi esportarlo.
+        if(!b.title || !b.author || !b.publisher){
+          alert('Titolo, autore ed editore sono obbligatori.'); return;
+        }
         const nuovo={...b, status:'approved', _local:true, ts:Date.now()};
         delete nuovo._auto; delete nuovo._confidence;
         delete nuovo._reason; delete nuovo._source;
         state.pendingBooks.push(nuovo);
         save('fi_books_pending_v1', state.pendingBooks);
 
-        state.autoRejected.push(b.id);          // non riproporlo più
+        state.autoRejected.push(b.id);   // non riproporlo più
         save('fi_auto_rejected_v1', state.autoRejected);
         state.autoCandidates = state.autoCandidates.filter(x=>x.id!==b.id);
         renderModeration();
@@ -778,37 +879,35 @@
       });
 
       acts.appendChild(ok); acts.appendChild(no);
-      meta.appendChild(acts);
     }
 
     if(isPending){
-      const featLbl=document.createElement('label'); featLbl.className='small muted'; featLbl.style.display='inline-flex'; featLbl.style.alignItems='center'; featLbl.style.gap='6px';
-      const featChk=document.createElement('input'); featChk.type='checkbox'; featChk.checked=!!b.featured;
-      featChk.addEventListener('change', ()=>{ b.featured=!!featChk.checked; save('fi_books_pending_v1', state.pendingBooks); });
-      featLbl.appendChild(featChk); featLbl.append(' Consigliato');
-      meta.appendChild(featLbl);
-
-      const debutSel=document.createElement('select');
-      [['unknown','Non specificato'],['yes','Sì'],['no','No']].forEach(([v,t])=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; debutSel.appendChild(o); });
-      debutSel.value=(b.isDebut===true?'yes':b.isDebut===false?'no':'unknown');
-      debutSel.addEventListener('change',()=>{ const v=debutSel.value; b.isDebut=(v==='yes')?true:(v==='no')?false:null; save('fi_books_pending_v1', state.pendingBooks); });
-      const debutRow=document.createElement('div'); debutRow.className='small'; debutRow.style.marginTop='6px'; debutRow.append(' Esordio: ', debutSel);
-      meta.appendChild(debutRow);
-
-      const actions=document.createElement('div'); actions.className='actions';
-      const approve=document.createElement('button'); approve.className='btn primary'; approve.textContent=(b.status==='approved')?'Segna come pending':'Approva (per export)';
-      approve.addEventListener('click', ()=>{ b.status=(b.status==='approved')?'pending':'approved'; approve.textContent=(b.status==='approved')?'Segna come pending':'Approva (per export)'; save('fi_books_pending_v1', state.pendingBooks); });
-      const remove=document.createElement('button'); remove.className='btn danger small'; remove.textContent='Elimina bozza';
-      remove.addEventListener('click', ()=>{ if(!confirm('Eliminare questa bozza?')) return; state.pendingBooks = state.pendingBooks.filter(x=>x.id!==b.id); save('fi_books_pending_v1', state.pendingBooks); renderModeration(); });
-      actions.appendChild(approve); actions.appendChild(remove);
-      meta.appendChild(actions);
+      const approve=document.createElement('button'); approve.className='btn primary';
+      approve.textContent=(b.status==='approved')?'✓ Pronta per l\'export':'Approva (per export)';
+      approve.addEventListener('click', ()=>{
+        b.status=(b.status==='approved')?'pending':'approved';
+        approve.textContent=(b.status==='approved')?'✓ Pronta per l\'export':'Approva (per export)';
+        save('fi_books_pending_v1', state.pendingBooks);
+      });
+      const remove=document.createElement('button'); remove.className='btn danger small';
+      remove.textContent='Elimina bozza';
+      remove.addEventListener('click', ()=>{
+        if(!confirm('Eliminare questa bozza?')) return;
+        state.pendingBooks = state.pendingBooks.filter(x=>x.id!==b.id);
+        save('fi_books_pending_v1', state.pendingBooks);
+        renderModeration();
+      });
+      acts.appendChild(approve); acts.appendChild(remove);
     }
 
-    const badge=document.createElement('div'); badge.className='badge'; badge.textContent='Consigliato';
-    if(!b.featured) badge.style.display='none';
-    el.appendChild(badge);
+    form.appendChild(acts);
 
-    el.appendChild(img); el.appendChild(meta);
+    // Layout: copertina e intestazione in alto, form sotto
+    const top=document.createElement('div');
+    top.style.display='flex'; top.style.gap='10px'; top.style.width='100%';
+    top.appendChild(img); top.appendChild(meta);
+    el.appendChild(top);
+    el.appendChild(form);
     return el;
   }
   function renderModeration(){
