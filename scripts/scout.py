@@ -40,7 +40,14 @@ CANDIDATES_FILE = ROOT / "data" / "candidates.json"
 
 TIMEOUT = 25
 PAUSA = 1.0  # cortesia verso i server degli editori
-PAUSA_MODELLO = 6.0  # GitHub Models free tier: ~10 richieste/minuto
+
+# Pausa tra chiamate al modello. Parte da ZERO: il free tier regge una raffica
+# iniziale, e farla aspettare a vuoto e' tempo buttato. Si alza da sola al primo
+# 429 e si riabbassa quando il modello torna a rispondere.
+# (La versione a pausa fissa di 6s faceva durare il run un'ora e mezza.)
+PAUSA_MODELLO_MIN = 0.0
+PAUSA_MODELLO_MAX = 12.0
+
 UA = {"User-Agent": "FantasyItaliaBot/1.0 (+https://www.fantasyitalianuoveproposte.it)"}
 
 GOOGLE_BOOKS = "https://www.googleapis.com/books/v1/volumes"
@@ -261,8 +268,13 @@ def adapter_shopify(source, dal):
     """
     trovati = []
     pagina = 1
+    # Giunti ha migliaia di prodotti ma li serve in ordine cronologico inverso:
+    # le pagine oltre la quarta sono libri vecchi che il filtro data scarterebbe
+    # comunque. Quattro pagine (1000 prodotti) coprono abbondantemente un anno.
+    max_pagine = 4 if source.get("prefiltro_obbligatorio") else 10
+    fuori_finestra = 0
 
-    while pagina <= 10:  # Giunti e' grosso: fino a 2500 prodotti
+    while pagina <= max_pagine:
         dati = get_json(source["endpoint"], {"limit": 250, "page": pagina})
         if not isinstance(dati, dict):
             break
@@ -276,6 +288,7 @@ def adapter_shopify(source, dal):
                 try:
                     quando = datetime.fromisoformat(pubblicato.replace("Z", "+00:00"))
                     if quando < dal:
+                        fuori_finestra += 1
                         continue
                 except ValueError:
                     pass
@@ -298,6 +311,10 @@ def adapter_shopify(source, dal):
                 "categorie": p.get("tags", []) + [p.get("product_type", "")],
                 "_fonte": "shopify",
             })
+
+        # Se un'intera pagina e' fuori finestra, le successive lo saranno di piu'.
+        if fuori_finestra >= 250 and not trovati:
+            break
 
         if len(prodotti) < 250:
             break
@@ -536,22 +553,36 @@ def cerca_amazon(cand):
     return f"https://www.amazon.it/s?k={quote_plus(termine)}"
 
 
-def conta_opere_precedenti(autore):
+def segnale_esordio_dal_paratesto(cand):
     """
-    Segnale per il tag esordiente: quante opere ha gia' pubblicato questo autore?
-    Zero o una (quella corrente) = probabile esordio.
-    E' un indizio, non una prova: il classificatore lo pesa insieme al paratesto.
+    Il testo dell'editore dice quasi sempre se l'autore e' al debutto.
+    Quando lo dice, e' un segnale piu' forte del conteggio su Google Books
+    (che gli omonimi inquinano) — e ci risparmia una chiamata di rete.
+
+    Restituisce True (esordio), False (non esordio), o None (non si capisce).
     """
-    if not autore:
-        return None
-    dati = get_json(GOOGLE_BOOKS, {
-        "q": f'inauthor:"{autore}"',
-        "langRestrict": "it",
-        "maxResults": 20,
-    })
-    if not isinstance(dati, dict):
-        return None
-    return dati.get("totalItems", 0)
+    testo = " ".join([
+        cand.get("paratesto", ""),
+        cand.get("sinossi", "")[:500],
+    ]).lower()
+
+    NON_ESORDIO = [
+        "già autore", "gia' autore", "dopo il successo", "torna con",
+        "torna in libreria", "autore di numerosi", "ha pubblicato",
+        "dopo la trilogia", "dopo la dilogia", "dopo la saga",
+        "nuovo romanzo di", "il suo secondo", "il suo terzo",
+    ]
+    ESORDIO = [
+        "romanzo d'esordio", "romanzo di esordio", "esordio narrativo",
+        "esordisce", "primo romanzo", "opera prima", "debutto narrativo",
+        "il suo debutto",
+    ]
+
+    if any(x in testo for x in NON_ESORDIO):
+        return False
+    if any(x in testo for x in ESORDIO):
+        return True
+    return None
 
 
 # --------------------------------------------------------------------------
@@ -717,23 +748,64 @@ Rispondi SOLO con JSON valido, nessun preambolo, nessun markdown:
 }"""
 
 
-def classifica(cand, token, tentativi=4):
+class Quota:
+    """
+    Tiene traccia di come sta rispondendo il modello, e regola il ritmo.
+
+    Il problema che risolve: con un backoff che raddoppia (20s, 40s, 80s) e
+    quattro tentativi, un candidato che va sempre in 429 costa 140 secondi.
+    Su ottanta candidati sono tre ore di attesa a vuoto.
+
+    Qui la pausa e' condivisa tra tutti i candidati: se il modello e' sotto
+    pressione rallentiamo TUTTI, invece di far ricominciare ognuno da capo.
+    E se e' esaurito davvero, si smette di provare: meglio quaranta candidati
+    classificati bene e quaranta da rivedere a mano, che tre ore di attesa.
+    """
+    def __init__(self):
+        self.pausa = PAUSA_MODELLO_MIN
+        self.esaurita = False
+        self.consecutivi_429 = 0
+
+    def prima_della_chiamata(self):
+        if self.pausa > 0:
+            time.sleep(self.pausa)
+
+    def ok(self):
+        self.consecutivi_429 = 0
+        # Il modello risponde: allenta gradualmente
+        if self.pausa > PAUSA_MODELLO_MIN:
+            self.pausa = max(PAUSA_MODELLO_MIN, self.pausa - 1.0)
+
+    def rate_limited(self, attesa_suggerita=None):
+        self.consecutivi_429 += 1
+        # Alza la pausa per tutti, non solo per questo candidato
+        self.pausa = min(PAUSA_MODELLO_MAX, max(self.pausa * 2, 3.0))
+
+        # Cinque 429 di fila: la quota giornaliera e' finita, inutile insistere.
+        if self.consecutivi_429 >= 5:
+            self.esaurita = True
+            log("\n  ! Quota del modello esaurita. I candidati restanti passano")
+            log("    in moderazione senza classificazione: li rivedi a mano,")
+            log("    oppure rilanci lo Scout domani e li riprende.\n")
+            return 0
+
+        pausa = attesa_suggerita if attesa_suggerita else self.pausa
+        return min(pausa, 30)  # mai oltre mezzo minuto per un singolo retry
+
+
+def classifica(cand, token, quota, tentativi=2):
     """
     Chiama GitHub Models.
 
-    Il free tier ha un limite stretto di richieste al minuto: al primo run
-    il 429 e' arrivato dopo ~15 chiamate e da li' in poi TUTTI i candidati
-    sono passati senza classificazione (91 su 97 con confidenza bassa).
-    Il fallback funzionava, ma il risultato era inutilizzabile.
-
-    Ora: quando arriva un 429 aspetta e riprova, con attesa crescente.
-    Se dopo tutti i tentativi il modello non risponde, il candidato passa
-    comunque in revisione manuale — un errore di rete non deve farti perdere
-    un libro — ma questo diventa l'eccezione, non la regola.
+    Due tentativi, non quattro: se il modello e' sotto pressione, insistere sul
+    singolo candidato non aiuta — meglio rallentare il ritmo generale (lo fa
+    l'oggetto Quota) e andare avanti.
     """
-    if not token:
-        return {"ammesso": True, "motivo": "nessun token: classificazione saltata",
-                "genere": genere_esplicito(cand), "esordio": None, "confidenza": "bassa"}
+    if not token or quota.esaurita:
+        return {"ammesso": True,
+                "motivo": "non classificato — da verificare a mano",
+                "genere": genere_esplicito(cand), "esordio": None,
+                "confidenza": "bassa"}
 
     opere = cand.get("_opere_autore")
     scheda = f"""TITOLO: {cand.get('titolo', '')}
@@ -749,16 +821,14 @@ PRESENTAZIONE DELL'EDITORE:
 SINOSSI:
 {cand.get('sinossi', '')[:1800]}"""
 
-    attesa = 20  # secondi; raddoppia a ogni 429
-
     for tentativo in range(1, tentativi + 1):
+        quota.prima_della_chiamata()
+
         try:
             r = requests.post(
                 GH_MODELS_URL,
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json",
-                },
+                headers={"Authorization": f"Bearer {token}",
+                         "Content-Type": "application/json"},
                 json={
                     "model": GH_MODEL,
                     "messages": [
@@ -768,54 +838,44 @@ SINOSSI:
                     "temperature": 0.1,
                     "max_tokens": 300,
                 },
-                timeout=60,
+                timeout=40,
             )
 
             if r.status_code == 429:
-                # Il server dice spesso quanto aspettare: ascoltiamolo.
-                suggerita = r.headers.get("retry-after") or r.headers.get("x-ratelimit-timeremaining")
+                suggerita = r.headers.get("retry-after")
                 try:
-                    pausa = int(suggerita) + 2
+                    suggerita = int(suggerita)
                 except (TypeError, ValueError):
-                    pausa = attesa
+                    suggerita = None
 
-                if tentativo == tentativi:
-                    log(f"      ! quota esaurita dopo {tentativi} tentativi")
+                attesa = quota.rate_limited(suggerita)
+                if quota.esaurita or tentativo == tentativi:
                     break
-
-                log(f"      · limite raggiunto, attendo {pausa}s "
-                    f"(tentativo {tentativo}/{tentativi})")
-                time.sleep(pausa)
-                attesa *= 2
+                log(f"      · rallento a {quota.pausa:.0f}s")
+                time.sleep(attesa)
                 continue
 
             if r.status_code != 200:
-                log(f"      ! modello HTTP {r.status_code}")
+                log(f"      ! HTTP {r.status_code}")
                 break
 
             testo = r.json()["choices"][0]["message"]["content"].strip()
             testo = re.sub(r"^```(?:json)?|```$", "", testo, flags=re.MULTILINE).strip()
             esito = json.loads(testo)
+            quota.ok()
 
-            # Rete di sicurezza: se il paratesto dichiara un genere e il modello
-            # non ne ha trovato uno, ci fidiamo dell'editore.
             if not esito.get("genere"):
                 esito["genere"] = genere_esplicito(cand)
-
             return esito
 
-        except (requests.RequestException, KeyError, ValueError) as e:
-            log(f"      ! errore {type(e).__name__}")
+        except (requests.RequestException, KeyError, ValueError):
             if tentativo == tentativi:
                 break
-            time.sleep(attesa)
-            attesa *= 2
+            time.sleep(2)
 
-    # Tutti i tentativi falliti: passa in revisione manuale.
-    log("      ! classificazione non riuscita: passa in revisione manuale")
     return {
         "ammesso": True,
-        "motivo": "CLASSIFICAZIONE NON RIUSCITA — da verificare a mano",
+        "motivo": "non classificato — da verificare a mano",
         "genere": genere_esplicito(cand),
         "esordio": None,
         "confidenza": "bassa",
@@ -930,35 +990,43 @@ def main():
         log("\n  ! GITHUB_TOKEN assente: i candidati passeranno senza classificazione.\n")
 
     nuovi = []
+    quota = Quota()
     log(f"\nClassifico {len(superstiti)} candidati...")
+    inizio = time.time()
 
     for i, c in enumerate(superstiti, 1):
         log(f"  [{i}/{len(superstiti)}] {c['titolo'][:55]}")
 
-        c = arricchisci(c)
-        time.sleep(0.3)
+        # --- Arricchimento: solo se serve davvero ---
+        # Un candidato che ha gia' copertina e ISBN non ha bisogno di Google Books.
+        # (Nella versione precedente il giro si faceva sempre: 80 chiamate inutili.)
+        if not (c.get("isbn") and c.get("copertina")):
+            c = arricchisci(c)
+            time.sleep(0.2)
 
-        # Se l'autore e' gia' in catalogo, non e' un esordiente: segnale forte.
+        # --- Esordio: prima il paratesto, la rete solo se serve ---
+        # Il testo dell'editore ("gia' autore di...", "romanzo d'esordio") e' piu'
+        # affidabile del conteggio su Google Books, e costa zero.
         autore_low = (c.get("autore") or "").strip().lower()
+
         if autore_low and autore_low in autori_noti:
-            c["_opere_autore"] = "già presente nel tuo catalogo"
+            # Gia' in catalogo con un altro libro: non e' un esordiente.
+            c["_opere_autore"] = "già presente nel tuo catalogo (non è un esordio)"
         else:
-            c["_opere_autore"] = conta_opere_precedenti(c.get("autore", ""))
-            time.sleep(0.3)
+            segnale = segnale_esordio_dal_paratesto(c)
+            if segnale is True:
+                c["_opere_autore"] = "il paratesto dichiara un ESORDIO"
+            elif segnale is False:
+                c["_opere_autore"] = "il paratesto dichiara opere precedenti"
+            else:
+                c["_opere_autore"] = "ignoto"
 
-        esito = classifica(c, token)
-
-        # Pausa tra una classificazione e l'altra: il free tier di GitHub Models
-        # ha un limite di richieste al minuto. Meglio andare piano e classificare
-        # bene 60 candidati che correre e non classificarne nessuno.
-        if token:
-            time.sleep(PAUSA_MODELLO)
+        esito = classifica(c, token, quota)
 
         if not esito.get("ammesso"):
             log(f"        ✗ {esito.get('motivo', '')[:60]}")
             continue
 
-        # Data di uscita -> anno
         anno = datetime.now().year
         m = re.search(r"(20\d{2})", str(c.get("data", "")))
         if m:
@@ -989,6 +1057,9 @@ def main():
         })
         log(f"        ✓ {esito.get('genere') or 'fantasy'} · "
             f"esordio={esito.get('esordio')} · conf={esito.get('confidenza')}")
+
+    durata = int(time.time() - inizio)
+    log(f"\n  (classificazione: {durata//60}m {durata%60}s)")
 
     # --- Scrittura ---
     log("\n" + "=" * 60)
