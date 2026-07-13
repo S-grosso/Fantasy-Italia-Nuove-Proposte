@@ -597,6 +597,22 @@
     if(!list.length){ grid.innerHTML='<div class="muted">Nessun titolo.</div>'; return; }
     list.forEach(b=>grid.appendChild(bookCard(b)));
   }
+  function buildYearFilter(){
+    // Gli anni si generano dall'anno corrente: niente da aggiornare a mano
+    // ogni primo gennaio. Si parte dall'anno in corso e si scende di tre.
+    const sel = $('#filterYear');
+    if(!sel) return;
+    const now = new Date().getFullYear();
+    sel.innerHTML = '';
+    for(let y = now; y >= now - 3; y--){
+      const o = document.createElement('option');
+      o.value = String(y); o.textContent = String(y);
+      sel.appendChild(o);
+    }
+    const all = document.createElement('option');
+    all.value = 'all'; all.textContent = 'Tutti'; all.selected = true;
+    sel.appendChild(all);
+  }
   $('#filterYear')?.addEventListener('change', renderCatalogo);
   (function(){ let t; $('#q')?.addEventListener('input', ()=>{ clearTimeout(t); t=setTimeout(renderCatalogo,200); }); })();
   $('#btnExport')?.addEventListener('click', ()=>{
