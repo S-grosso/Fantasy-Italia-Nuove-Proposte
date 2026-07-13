@@ -196,6 +196,10 @@ def adapter_woocommerce(source, dal):
             "after": dal.isoformat(),
             "orderby": "date",
             "order": "desc",
+            # _embed fa restituire a WordPress anche i dati collegati, tra cui
+            # l'immagine in evidenza. Senza questo, 'featured_media' e' solo un
+            # ID numerico e le copertine restano vuote.
+            "_embed": "wp:featuredmedia",
         })
         if not isinstance(dati, list) or not dati:
             break
@@ -215,6 +219,20 @@ def adapter_woocommerce(source, dal):
                 nomi = [autori_cache.get(i, "") for i in p[tax]]
                 autore = " & ".join(n for n in nomi if n)
 
+            # La copertina arriva dentro _embedded, annidata in profondita'.
+            copertina = ""
+            try:
+                media = p["_embedded"]["wp:featuredmedia"][0]
+                # 'full' e' l'originale; se manca si ripiega sul source_url.
+                sizes = media.get("media_details", {}).get("sizes", {})
+                copertina = (
+                    sizes.get("full", {}).get("source_url")
+                    or sizes.get("large", {}).get("source_url")
+                    or media.get("source_url", "")
+                )
+            except (KeyError, IndexError, TypeError):
+                pass  # nessuna immagine: la recupereremo da Google Books
+
             trovati.append({
                 "titolo": titolo,
                 "autore": autore,
@@ -222,6 +240,7 @@ def adapter_woocommerce(source, dal):
                 "url": p.get("link", ""),
                 "sinossi": contenuto or excerpt,
                 "paratesto": excerpt,  # separato: e' la voce dell'editore
+                "copertina": copertina,
                 "data": p.get("date", ""),
                 "categorie": p.get("class_list", []),  # contiene product_cat-*
                 "_fonte": "woocommerce",
@@ -261,6 +280,12 @@ def adapter_shopify(source, dal):
                 except ValueError:
                     pass
 
+            # Shopify porta le immagini nel payload: bastava leggerle.
+            copertina = ""
+            immagini = p.get("images") or []
+            if immagini and isinstance(immagini[0], dict):
+                copertina = immagini[0].get("src", "")
+
             trovati.append({
                 "titolo": p.get("title", ""),
                 "autore": p.get("vendor", ""),  # su Shopify l'autore sta spesso qui
@@ -268,6 +293,7 @@ def adapter_shopify(source, dal):
                 "url": f"{source['endpoint'].replace('/products.json', '')}/products/{p.get('handle', '')}",
                 "sinossi": strip_html(p.get("body_html", "")),
                 "paratesto": "",
+                "copertina": copertina,
                 "data": pubblicato,
                 "categorie": p.get("tags", []) + [p.get("product_type", "")],
                 "_fonte": "shopify",
@@ -337,52 +363,74 @@ def adapter_rss(source, dal):
 def adapter_google_books(source, dal):
     """
     Per gli editori senza API: si interroga Google Books per editore.
-    Copre: Delos Digital, PresentARTsi, piu' i fallback.
+    Copre: Delos Digital, PresentARTsi.
+
+    La query 'inpublisher' e' capricciosa: il nome dell'editore su Google Books
+    non coincide sempre con quello che usi tu ("Delos Digital" vs "Delos Books"
+    vs "Delos"). Al primo run restituiva zero risultati. Ora si provano piu'
+    varianti del nome e si tiene tutto quello che esce.
     """
     trovati = []
     editore = source["publisher"]
+    visti = set()
 
-    dati = get_json(GOOGLE_BOOKS, {
-        "q": f'inpublisher:"{editore}"',
-        "langRestrict": "it",
-        "orderBy": "newest",
-        "maxResults": 40,
-        "printType": "books",
-    })
-    if not isinstance(dati, dict):
-        return []
+    # Varianti del nome: completo, prima parola, e alias configurabili.
+    varianti = [editore]
+    prima = editore.split()[0]
+    if prima != editore:
+        varianti.append(prima)
+    varianti.extend(source.get("alias", []))
 
-    for v in dati.get("items", []):
-        info = v.get("volumeInfo", {})
-        data_pub = info.get("publishedDate", "")
+    for nome in varianti:
+        dati = get_json(GOOGLE_BOOKS, {
+            "q": f'inpublisher:"{nome}"',
+            "langRestrict": "it",
+            "orderBy": "newest",
+            "maxResults": 40,
+            "printType": "books",
+        })
+        time.sleep(0.5)
 
-        # Google Books da' date in formati diversi: 2025, 2025-06, 2025-06-01
-        try:
-            anno = int(data_pub[:4])
-            if anno < dal.year:
-                continue
-        except (ValueError, IndexError):
+        if not isinstance(dati, dict) or not dati.get("items"):
             continue
 
-        isbn = ""
-        for ident in info.get("industryIdentifiers", []):
-            if ident.get("type") == "ISBN_13":
-                isbn = ident.get("identifier", "")
-                break
+        for v in dati["items"]:
+            info = v.get("volumeInfo", {})
+            titolo = info.get("title", "")
+            if not titolo or titolo in visti:
+                continue
+            visti.add(titolo)
 
-        trovati.append({
-            "titolo": info.get("title", ""),
-            "autore": ", ".join(info.get("authors", [])),
-            "editore": editore,
-            "url": info.get("infoLink", ""),
-            "sinossi": info.get("description", ""),
-            "paratesto": "",
-            "isbn": isbn,
-            "copertina": (info.get("imageLinks") or {}).get("thumbnail", ""),
-            "data": data_pub,
-            "categorie": info.get("categories", []),
-            "_fonte": "google_books",
-        })
+            data_pub = info.get("publishedDate", "")
+            try:
+                anno = int(data_pub[:4])
+                if anno < dal.year:
+                    continue
+            except (ValueError, IndexError):
+                continue
+
+            isbn = ""
+            for ident in info.get("industryIdentifiers", []):
+                if ident.get("type") == "ISBN_13":
+                    isbn = ident.get("identifier", "")
+                    break
+
+            img = (info.get("imageLinks") or {}).get("thumbnail", "")
+            trovati.append({
+                "titolo": titolo,
+                "autore": ", ".join(info.get("authors", [])),
+                "editore": editore,  # sempre il nome canonico, non la variante
+                "url": info.get("infoLink", ""),
+                "sinossi": info.get("description", ""),
+                "paratesto": "",
+                "isbn": isbn,
+                "copertina": (img.replace("http://", "https://")
+                                 .replace("&zoom=1", "&zoom=2")
+                                 .replace("&edge=curl", "")),
+                "data": data_pub,
+                "categorie": info.get("categories", []),
+                "_fonte": "google_books",
+            })
 
     return trovati
 
@@ -399,10 +447,28 @@ ADAPTERS = {
 # Arricchimento: ISBN e copertina da Google Books
 # --------------------------------------------------------------------------
 
+def somiglianza(a, b):
+    """
+    Quanto si somigliano due titoli normalizzati (0.0 - 1.0).
+    Serve perche' Google Books scrive i titoli in modo leggermente diverso
+    dagli editori: sottotitoli, articoli, due punti. Un confronto esatto
+    scarta match validi.
+    """
+    if not a or not b:
+        return 0.0
+    from difflib import SequenceMatcher
+    return SequenceMatcher(None, a, b).ratio()
+
+
 def arricchisci(cand):
     """
-    I feed degli editori quasi mai danno ISBN e copertina in formato utile.
-    Google Books li ha. Cerchiamo per titolo + autore.
+    I feed degli editori non danno ISBN, e non sempre danno la copertina.
+    Google Books li ha.
+
+    La verifica anti-omonimo confronta i titoli con tolleranza: la prima
+    versione esigeva che i primi 20 caratteri normalizzati coincidessero, e
+    scartava match buoni per un sottotitolo di differenza — lasciando i
+    candidati senza ISBN NE' copertina.
     """
     if cand.get("isbn") and cand.get("copertina"):
         return cand
@@ -414,15 +480,20 @@ def arricchisci(cand):
     dati = get_json(GOOGLE_BOOKS, {
         "q": query,
         "langRestrict": "it",
-        "maxResults": 3,
+        "maxResults": 5,
     })
     if not isinstance(dati, dict):
         return cand
 
+    mio = chiave_titolo(cand["titolo"])
+
     for v in dati.get("items", []):
         info = v.get("volumeInfo", {})
-        # Verifica che sia davvero lo stesso libro, non un omonimo
-        if chiave_titolo(info.get("title", ""))[:20] != chiave_titolo(cand["titolo"])[:20]:
+        suo = chiave_titolo(info.get("title", ""))
+
+        # Accetta se i titoli si somigliano abbastanza, oppure se uno contiene
+        # l'altro (caso tipico: "Namirya" vs "Namirya. L'enigma degli Elfi").
+        if not (somiglianza(mio, suo) > 0.75 or mio in suo or suo in mio):
             continue
 
         if not cand.get("isbn"):
@@ -434,13 +505,35 @@ def arricchisci(cand):
             cand["autore"] = ", ".join(info["authors"])
         if not cand.get("copertina"):
             img = (info.get("imageLinks") or {}).get("thumbnail", "")
-            # Google serve le thumbnail in http e piccole: le portiamo a https e grandi
-            cand["copertina"] = img.replace("http://", "https://").replace("&zoom=1", "&zoom=2")
+            # Google serve le thumbnail in http e piccole: https e zoom maggiore.
+            cand["copertina"] = (img.replace("http://", "https://")
+                                    .replace("&zoom=1", "&zoom=2")
+                                    .replace("&edge=curl", ""))
         if not cand.get("sinossi") and info.get("description"):
             cand["sinossi"] = info["description"]
         break
 
     return cand
+
+
+def cerca_amazon(cand):
+    """
+    Compone un link di ricerca Amazon.it a partire da ISBN o titolo+autore.
+
+    Non e' il link diretto al prodotto — quello richiederebbe di interrogare
+    Amazon, che non ha un'API aperta e blocca lo scraping. E' una ricerca
+    precompilata: apri il link e il libro e' li' in cima. In moderazione puoi
+    sostituirlo con l'URL definitivo in due click.
+    """
+    from urllib.parse import quote_plus
+
+    if cand.get("isbn"):
+        termine = cand["isbn"]
+    else:
+        termine = f"{cand.get('titolo', '')} {cand.get('autore', '')}".strip()
+    if not termine:
+        return ""
+    return f"https://www.amazon.it/s?k={quote_plus(termine)}"
 
 
 def conta_opere_precedenti(autore):
@@ -881,7 +974,7 @@ def main():
             "isbn": c.get("isbn", ""),
             "coverUrl": c.get("copertina", ""),
             "description": (c.get("sinossi") or "")[:2000],
-            "storeAmazonUrl": "",
+            "storeAmazonUrl": cerca_amazon(c),
             "storePublisherUrl": c.get("url", ""),
             "isDebut": esito.get("esordio"),
             "genre": esito.get("genere"),
