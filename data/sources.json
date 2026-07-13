@@ -86,14 +86,24 @@
       "adapter": "google_books",
       "endpoint": null,
       "attivo": true,
-      "note": "Sito custom senza API. Coperto interamente da Google Books via inpublisher."
+      "note": "Sito custom senza API. Google Books via inpublisher, con varianti del nome: 'Delos Digital' da solo restituiva zero.",
+      "alias": [
+        "Delos Books",
+        "Delos",
+        "Delos Digital srl"
+      ]
     },
     {
       "publisher": "PresentARTsi",
       "adapter": "google_books",
       "endpoint": null,
       "attivo": true,
-      "note": "Associazione culturale, pochi titoli l'anno, nessun catalogo strutturato online."
+      "note": "Associazione culturale, pochi titoli l'anno, nessun catalogo strutturato online.",
+      "alias": [
+        "PresentARTsì",
+        "Present ARTsì",
+        "Presentartsi"
+      ]
     }
   ]
 }
