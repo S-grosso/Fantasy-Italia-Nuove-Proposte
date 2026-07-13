@@ -662,7 +662,12 @@
     const allowLabelEdit = isPending || isApproved || isAuto;
 
     const el=document.createElement('div'); el.className='card';
-    if(editabile) el.style.flexDirection='column';
+    if(editabile){
+      el.style.flexDirection='column';
+      // .card ha align-items:flex-start, che in colonna fa collassare i figli:
+      // senza stretch il form non occupa la larghezza della card.
+      el.style.alignItems='stretch';
+    }
 
     const img=document.createElement('img'); img.className='cover'; img.alt='Copertina';
     img.src=b.coverUrl||placeholderCover();
