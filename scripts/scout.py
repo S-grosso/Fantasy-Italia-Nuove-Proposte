@@ -293,6 +293,25 @@ def adapter_shopify(source, dal):
                 except ValueError:
                     pass
 
+            # ATTENZIONE: su Shopify editoriale 'vendor' e' l'EDITORE, non l'autore.
+            # Per Giunti, 'vendor' vale "Giunti Editore": usarlo come autore faceva
+            # risultare "Uncharmed" (di Lucy Jane Wood, tradotta) come scritto da
+            # un italiano. Se vendor coincide con l'editore, l'autore va cercato
+            # altrove: nei tag "Autore_..." o, in mancanza, da Google Books.
+            vendor = (p.get("vendor") or "").strip()
+            editore_nome = source["publisher"].lower()
+            autore = ""
+            if vendor and vendor.lower() not in editore_nome and editore_nome not in vendor.lower():
+                autore = vendor  # e' un vero autore, non l'editore
+
+            # Cerca un tag "Autore: X" / "Autore_X" (comune negli store editoriali)
+            for tag in (p.get("tags") or []):
+                t = str(tag)
+                m = re.match(r"(?:autore|author)[\s:_-]+(.+)", t, re.IGNORECASE)
+                if m:
+                    autore = m.group(1).strip()
+                    break
+
             # Shopify porta le immagini nel payload: bastava leggerle.
             copertina = ""
             immagini = p.get("images") or []
@@ -301,7 +320,7 @@ def adapter_shopify(source, dal):
 
             trovati.append({
                 "titolo": p.get("title", ""),
-                "autore": p.get("vendor", ""),  # su Shopify l'autore sta spesso qui
+                "autore": autore,
                 "editore": source["publisher"],
                 "url": f"{source['endpoint'].replace('/products.json', '')}/products/{p.get('handle', '')}",
                 "sinossi": strip_html(p.get("body_html", "")),
@@ -618,8 +637,19 @@ ESCLUSIONI_TITOLO = [
     # Fumetti e periodici
     "vol.", "graphic tales", "graphic novel", "fumetti", "manga",
     "art e dossier", "n. ", "rivista",
+    # Libri per bambini, primi lettori, libro-gioco
+    "primi lettori", "prime letture", "libro-gioco", "libro gioco",
+    "librogame", "libro game", "cerca e trova", "aguzza la vista",
+    "leggo e imparo", "filastrocche", "ninna nanna",
     # Merchandising e bundle (gia' in NON_LIBRI, ripetuti per sicurezza)
     "quiz box", "cofanetto", "gift", "collana ",
+]
+
+# Fasce d'eta' esplicite: quasi sempre libri per bambini.
+ETA_BAMBINI = [
+    "dai 3 anni", "dai 4 anni", "dai 5 anni", "dai 6 anni", "dai 7 anni",
+    "3-5 anni", "4-6 anni", "5-7 anni", "6-8 anni", "età prescolare",
+    "0-3 anni", "1-3 anni", "2-4 anni", "primissima infanzia",
 ]
 
 # Franchise e marchi che non producono narrativa fantasy italiana d'autore.
@@ -656,10 +686,19 @@ def passa_prefiltro(cand, obbligatorio):
 
     # --- Da qui in poi solo gli editori generalisti (Giunti, Sperling) ---
 
+    # Testo esteso per i controlli su eta' e contenuto
+    testo_esteso = " ".join([
+        titolo_low,
+        cand.get("sinossi", "")[:500],
+        " ".join(str(c) for c in cand.get("categorie", [])),
+    ]).lower()
+
     # Stadio 1: esclusione. Piu' affidabile dell'inclusione.
     if any(x in titolo_low for x in ESCLUSIONI_TITOLO):
         return False, "non e' un romanzo"
     if any(x in titolo_low for x in ESCLUSIONI_BRAND):
+        return False, "non e' un romanzo"
+    if any(x in testo_esteso for x in ETA_BAMBINI):
         return False, "non e' un romanzo"
 
     # I titoli tutti maiuscoli su Shopify sono quasi sempre manga o periodici.
@@ -685,6 +724,40 @@ def passa_prefiltro(cand, obbligatorio):
         return False, "prefiltro: sinossi troppo breve per un romanzo"
 
     return True, ""
+
+
+def autore_probabilmente_straniero(autore):
+    """
+    Euristica leggera per scartare le traduzioni prima di chiamare il modello.
+    NON e' infallibile (esistono italiani con nomi esteri e viceversa), quindi
+    e' volutamente prudente: segnala solo i casi abbastanza chiari, e la parola
+    finale resta al classificatore.
+
+    Restituisce True solo per nomi con marcatori stranieri evidenti.
+    """
+    if not autore:
+        return False
+    a = autore.lower()
+
+    # Pattern anglosassoni tipici: iniziale puntata centrale (J. R. R.),
+    # cognomi con doppia consonante finale rara in italiano, ecc.
+    marcatori = [
+        "j.", "k.", "w.", "th ", "ph", "ck", "sh", "oo", "ee", "wood",
+        "smith", "jones", "brown", "wilson", "taylor", "williams",
+    ]
+    # Nomi di battesimo palesemente non italiani
+    nomi_esteri = [
+        "lucy", "sarah", "emily", "jennifer", "jessica", "ashley", "brandon",
+        "jake", "ryan", "kyle", "dylan", "chloe", "megan", "hannah", "grace",
+        "leigh", "jane", "james", "john", "william", "george", "charles",
+    ]
+
+    parole = a.replace(".", ". ").split()
+    if any(n in parole for n in nomi_esteri):
+        return True
+    if any(m in a for m in ["wood", "smith", "jones", "brown", " j. ", " k. "]):
+        return True
+    return False
 
 
 def genere_esplicito(cand):
@@ -721,8 +794,23 @@ CRITERI DI AMMISSIONE (tutti necessari):
    (fantascienza CON magia esplicita), horror soprannaturale con struttura fantasy.
    NON sono fantasy: fantascienza senza magia, thriller, giallo, romance senza
    elemento soprannaturale, realismo magico puramente letterario.
-3. L'AUTORE è ITALIANO (nome italiano, editore italiano, testo originale in italiano;
-   non una traduzione).
+3. L'AUTORE è ITALIANO. Questo criterio è STRINGENTE:
+   - Se l'autore ha un nome palesemente straniero (es. "Lucy Jane Wood",
+     "Sarah J. Maas"), l'opera è una TRADUZIONE: SCARTA, anche se l'editore
+     è italiano (Giunti, Sperling e altri pubblicano moltissime traduzioni).
+   - Se il campo autore è VUOTO, "(ignoto)", o coincide col nome dell'editore,
+     NON puoi confermare che l'autore sia italiano: SCARTA con confidenza bassa.
+     Non dare il beneficio del dubbio: un catalogo di autori italiani non può
+     includere libri di cui non si conosce l'autore.
+   - Consideri italiano solo un autore con nome italiano credibile, o quando
+     il testo dell'editore lo qualifica esplicitamente come autore italiano.
+
+4. NON è un libro per bambini in età prescolare/primi lettori, un libro-gioco,
+   un librogame, un albo illustrato, una raccolta di attività, un cartonato.
+   Cerchiamo ROMANZI per un pubblico adulto o young adult. Segnali da scartare:
+   "dai 5 anni", "dai 6 anni", "primi lettori", "libro-gioco", "librogame",
+   "album", "attività", poche decine di pagine, linguaggio da catalogo per
+   l'infanzia.
 
 REGOLA DECISIVA — LA QUALIFICAZIONE ESPLICITA BATTE L'INFERENZA:
 Se il testo dell'editore, il premio ricevuto o la scheda prodotto qualificano
@@ -1020,6 +1108,13 @@ def main():
                 c["_opere_autore"] = "il paratesto dichiara opere precedenti"
             else:
                 c["_opere_autore"] = "ignoto"
+
+        # Scarto le traduzioni prima di spendere una chiamata al modello:
+        # se dopo l'arricchimento l'autore ha un nome palesemente straniero,
+        # e' quasi certamente una traduzione (tipico di Giunti/Sperling).
+        if autore_probabilmente_straniero(c.get("autore", "")):
+            log(f"        ✗ autore straniero ({c.get('autore')}): traduzione")
+            continue
 
         esito = classifica(c, token, quota)
 
