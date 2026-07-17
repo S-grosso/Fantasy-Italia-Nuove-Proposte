@@ -49,30 +49,38 @@
     },
     {
       "publisher": "Acheron Books",
-      "adapter": "rss",
-      "endpoint": "https://www.acheron.it/feed/",
+      "adapter": "google_books_autori",
+      "endpoint": null,
       "attivo": true,
-      "note": "Solo feed: metadati poveri. I dati veri si recuperano da Google Books via titolo+autore."
+      "note": "Nessuna API di catalogo (post type assente o non esposto via REST). Ricerca su Google Books per autore: quelli gia' in catalogo + watchlist. Aggiungi qui gli autori ricorrenti per ampliare la copertura.",
+      "autori_watch": [
+        "Giacomo Arzani",
+        "Lorenzo Manara",
+        "Giorgia Cappelletti",
+        "Laura Seegard"
+      ]
     },
     {
       "publisher": "Zona 42",
-      "adapter": "rss",
-      "endpoint": "https://www.zona42.it/feed/",
-      "attivo": true
+      "adapter": "google_books_autori",
+      "endpoint": null,
+      "attivo": true,
+      "note": "Nessuna API di catalogo (post type assente o non esposto via REST). Ricerca su Google Books per autore: quelli gia' in catalogo + watchlist. Aggiungi qui gli autori ricorrenti per ampliare la copertura."
     },
     {
       "publisher": "Astro Edizioni",
-      "adapter": "rss",
-      "endpoint": "https://www.astroedizioni.it/feed/",
-      "attivo": true
+      "adapter": "google_books_autori",
+      "endpoint": null,
+      "attivo": true,
+      "note": "Nessuna API di catalogo (post type assente o non esposto via REST). Ricerca su Google Books per autore: quelli gia' in catalogo + watchlist. Aggiungi qui gli autori ricorrenti per ampliare la copertura."
     },
     {
       "publisher": "Sperling & Kupfer",
-      "adapter": "rss",
-      "endpoint": "https://www.sperling.it/feed/",
+      "adapter": "google_books_autori",
+      "endpoint": null,
       "attivo": true,
       "prefiltro_obbligatorio": true,
-      "note": "Generalista. Come Giunti: prefiltro indispensabile."
+      "note": "Nessuna API di catalogo (post type assente o non esposto via REST). Ricerca su Google Books per autore: quelli gia' in catalogo + watchlist. Aggiungi qui gli autori ricorrenti per ampliare la copertura."
     },
     {
       "publisher": "Angolazioni",
@@ -83,14 +91,18 @@
     },
     {
       "publisher": "Delos Digital",
-      "adapter": "google_books",
+      "adapter": "google_books_autori",
       "endpoint": null,
       "attivo": true,
-      "note": "Sito custom senza API. Google Books via inpublisher, con varianti del nome: 'Delos Digital' da solo restituiva zero.",
+      "note": "Sito custom senza API. Google Books per autore (watchlist + autori in catalogo). inpublisher da solo rendeva male.",
       "alias": [
         "Delos Books",
         "Delos",
         "Delos Digital srl"
+      ],
+      "autori_watch": [
+        "Grace D.",
+        "Damiano Lotto"
       ]
     },
     {
