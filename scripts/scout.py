@@ -162,7 +162,56 @@ def chiave_titolo(titolo, autore=""):
     return testo
 
 
+def chiave_solo_titolo(titolo):
+    """
+    Chiave basata SOLO sul titolo normalizzato, senza autore e senza troncare.
+    Il confronto vero e proprio (per contenimento) lo fa titolo_gia_noto():
+    qui restituiamo solo la forma pulita.
+    """
+    SOSTITUZIONI = {
+        "đ": "d", "Đ": "D", "ð": "d", "Ð": "D", "ø": "o", "Ø": "O",
+        "ł": "l", "Ł": "L", "æ": "ae", "œ": "oe", "ß": "ss", "þ": "th",
+    }
+    t = titolo or ""
+    for k, v in SOSTITUZIONI.items():
+        t = t.replace(k, v)
+    t = unicodedata.normalize("NFKD", t.lower())
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9]+", "", t)
+
+
+def titolo_gia_noto(titolo_candidato, prefissi_noti):
+    """
+    Vero se il titolo del candidato e' gia' in catalogo, tollerando i
+    sottotitoli in entrambe le direzioni:
+      'Namirya'  vs  'Namirya. L'enigma degli Elfi'  -> stesso libro
+    Confronta per CONTENIMENTO sul piu' corto dei due, con una soglia minima
+    di 6 caratteri per non far collidere titoli genericamente brevi.
+    """
+    c = chiave_solo_titolo(titolo_candidato)
+    if len(c) < 6:
+        # Titolo troppo corto: il contenimento darebbe falsi positivi.
+        # Ci si affida al confronto esatto altrove.
+        return c in prefissi_noti
+    for noto in prefissi_noti:
+        if len(noto) < 6:
+            continue
+        corto, lungo = (c, noto) if len(c) <= len(noto) else (noto, c)
+        if lungo.startswith(corto):
+            return True
+    return False
+
+
+GOOGLE_BOOKS_KEY = os.environ.get("GOOGLE_BOOKS_KEY", "")
+
+
 def get_json(url, params=None):
+    # Aggancia la API key a ogni chiamata Google Books. Senza chiave la quota
+    # anonima e' praticamente zero (429 "quota_limit_value: 0"): e' la ragione
+    # per cui arricchimento e ricerca per autore fallivano a intermittenza.
+    if GOOGLE_BOOKS_KEY and url.startswith(GOOGLE_BOOKS):
+        params = dict(params or {})
+        params["key"] = GOOGLE_BOOKS_KEY
     try:
         r = requests.get(url, headers=UA, params=params, timeout=TIMEOUT)
         if r.status_code != 200:
@@ -176,11 +225,14 @@ def get_json(url, params=None):
 # Adapter: uno per piattaforma
 # --------------------------------------------------------------------------
 
-def adapter_woocommerce(source, dal):
+def adapter_wordpress(source, dal):
     """
-    WooCommerce via REST API di WordPress.
-    Copre: Lumien, La Corte, La Nuova Carne, Alcatraz, Parallelo45, Angolazioni.
-    Restituisce i prodotti pubblicati dopo `dal`.
+    Adapter generico per la REST API di WordPress. Funziona con qualunque
+    post type: 'product' (WooCommerce), 'book'/'books' (custom, come Acheron),
+    o altri. L'endpoint nel sources.json decide quale.
+
+    Copre: Lumien, La Corte, La Nuova Carne, Alcatraz, Parallelo45, Angolazioni
+    (product) e Acheron (books).
     """
     trovati = []
     endpoint = source["endpoint"]
@@ -225,6 +277,18 @@ def adapter_woocommerce(source, dal):
             if tax and isinstance(p.get(tax), list):
                 nomi = [autori_cache.get(i, "") for i in p[tax]]
                 autore = " & ".join(n for n in nomi if n)
+
+            # Fallback autore per i post type senza tassonomia dedicata (es. il
+            # 'book' di Acheron): molti temi mettono l'autore in un meta o in
+            # una tassonomia dal nome diverso. Proviamo i nomi piu' comuni.
+            if not autore:
+                for campo in ("author_name", "book_author", "autore", "authors"):
+                    val = p.get(campo) or (p.get("meta") or {}).get(campo)
+                    if isinstance(val, list):
+                        val = ", ".join(str(x) for x in val)
+                    if val and isinstance(val, str) and val.strip():
+                        autore = strip_html(val)
+                        break
 
             # La copertina arriva dentro _embedded, annidata in profondita'.
             copertina = ""
@@ -396,6 +460,95 @@ def adapter_rss(source, dal):
     return trovati
 
 
+def adapter_google_books_autori(source, dal, autori_editore=None):
+    """
+    Per gli editori SENZA API di catalogo (Acheron, Zona 42, Astro, Sperling):
+    invece di sperare nel feed RSS — che perde quasi tutti i libri, come hanno
+    dimostrato i cinque titoli Acheron sfuggiti — si cerca su Google Books per
+    AUTORE.
+
+    L'intuizione: questi editori hanno una scuderia ricorrente. Se Giacomo Arzani
+    e' gia' in catalogo con un titolo Acheron, cercando 'inauthor:Arzani' si
+    trovano anche i suoi libri nuovi. Gli autori vengono da due fonti:
+      1. quelli gia' in catalogo per questo editore (passati in autori_editore)
+      2. una watchlist manuale nel sources.json (campo 'autori_watch')
+
+    Non trova autori mai visti prima — per quelli serve la segnalazione manuale —
+    ma recupera tutta la produzione degli autori noti, che e' la maggioranza.
+    """
+    trovati = []
+    editore = source["publisher"]
+    visti = set()
+
+    autori = set(autori_editore or [])
+    autori.update(source.get("autori_watch", []))
+    autori.discard("")
+
+    if not autori:
+        return []  # nessun autore noto: niente da cercare
+
+    for autore in sorted(autori):
+        dati = get_json(GOOGLE_BOOKS, {
+            "q": f'inauthor:"{autore}"',
+            "langRestrict": "it",
+            "orderBy": "newest",
+            "maxResults": 20,
+            "printType": "books",
+        })
+        time.sleep(0.4)
+        if not isinstance(dati, dict):
+            continue
+
+        for v in dati.get("items", []):
+            info = v.get("volumeInfo", {})
+            titolo = info.get("title", "")
+            if not titolo or titolo in visti:
+                continue
+
+            # Deve essere di QUESTO editore — ma se Google Books non riporta il
+            # publisher (frequente per gli ebook dei piccoli editori), NON scarto:
+            # l'autore e' gia' associato a questo editore dalla watchlist o dal
+            # catalogo, e questo basta come indizio. Scarto solo se il publisher
+            # c'e' ed e' un ALTRO editore.
+            ed_pubblicato = (info.get("publisher") or "").lower()
+            nome_ed = editore.lower().split()[0]  # 'acheron' da 'Acheron Books'
+            if ed_pubblicato and nome_ed not in ed_pubblicato:
+                continue
+
+            visti.add(titolo)
+            data_pub = info.get("publishedDate", "")
+            try:
+                if int(data_pub[:4]) < dal.year:
+                    continue
+            except (ValueError, IndexError):
+                continue
+
+            isbn = ""
+            for ident in info.get("industryIdentifiers", []):
+                if ident.get("type") == "ISBN_13":
+                    isbn = ident.get("identifier", "")
+                    break
+
+            img = (info.get("imageLinks") or {}).get("thumbnail", "")
+            trovati.append({
+                "titolo": titolo,
+                "autore": ", ".join(info.get("authors", [])) or autore,
+                "editore": editore,
+                "url": info.get("infoLink", ""),
+                "sinossi": info.get("description", ""),
+                "paratesto": "",
+                "isbn": isbn,
+                "copertina": (img.replace("http://", "https://")
+                                 .replace("&zoom=1", "&zoom=2")
+                                 .replace("&edge=curl", "")),
+                "data": data_pub,
+                "categorie": info.get("categories", []),
+                "_fonte": "google_books_autori",
+            })
+
+    return trovati
+
+
 def adapter_google_books(source, dal):
     """
     Per gli editori senza API: si interroga Google Books per editore.
@@ -472,10 +625,12 @@ def adapter_google_books(source, dal):
 
 
 ADAPTERS = {
-    "woocommerce": adapter_woocommerce,
+    "wordpress": adapter_wordpress,
+    "woocommerce": adapter_wordpress,  # alias: e' lo stesso adapter generico
     "shopify": adapter_shopify,
     "rss": adapter_rss,
     "google_books": adapter_google_books,
+    "google_books_autori": adapter_google_books_autori,
 }
 
 
@@ -896,8 +1051,14 @@ def classifica(cand, token, quota, tentativi=2):
                 "confidenza": "bassa"}
 
     opere = cand.get("_opere_autore")
+    nota_naz = ""
+    if cand.get("_dubbio_nazionalita"):
+        nota_naz = ("\nNOTA: il nome dell'autore potrebbe sembrare straniero, ma "
+                    "MOLTI autori italiani usano nomi o pseudonimi dal suono estero. "
+                    "NON dedurre la nazionalità dal solo nome: usa il paratesto, "
+                    "l'editore e la lingua. Scarta solo se e' chiaramente una traduzione.")
     scheda = f"""TITOLO: {cand.get('titolo', '')}
-AUTORE: {cand.get('autore', '(ignoto)')}
+AUTORE: {cand.get('autore', '(ignoto)')}{nota_naz}
 EDITORE: {cand.get('editore', '')}
 CATEGORIE/TAG: {', '.join(str(c) for c in cand.get('categorie', []))[:300]}
 GENERE ESPLICITO RILEVATO: {genere_esplicito(cand) or '(nessuno)'}
@@ -998,7 +1159,19 @@ def main():
     isbn_noti = {normalizza_isbn(b.get("isbn")) for b in catalogo}
     isbn_noti.discard(None)
     titoli_noti = {chiave_titolo(b.get("title", ""), b.get("author", "")) for b in catalogo}
+    prefissi_noti = {chiave_solo_titolo(b.get("title", "")) for b in catalogo}
+    prefissi_noti.discard("")
     autori_noti = {(b.get("author") or "").strip().lower() for b in catalogo}
+
+    # Mappa editore -> autori gia' in catalogo. Serve all'adapter "per autore":
+    # per gli editori senza API, si cercano su Google Books i libri degli autori
+    # gia' noti per quell'editore (Arzani con Acheron -> trova i suoi titoli nuovi).
+    autori_per_editore = {}
+    for b in catalogo:
+        ed = (b.get("publisher") or "").strip()
+        au = (b.get("author") or "").strip()
+        if ed and au:
+            autori_per_editore.setdefault(ed, set()).add(au)
 
     log(f"Catalogo: {len(catalogo)} titoli, {len(isbn_noti)} ISBN validi\n")
 
@@ -1030,7 +1203,11 @@ def main():
 
         log(f"  {nome} [{src['adapter']}] ... ", )
         try:
-            trovati = fn(src, dal)
+            if src["adapter"] == "google_books_autori":
+                autori_ed = autori_per_editore.get(nome, set())
+                trovati = fn(src, dal, autori_ed)
+            else:
+                trovati = fn(src, dal)
         except Exception as e:
             log(f"      ! errore ({type(e).__name__}: {e}) — proseguo con gli altri")
             trovati = []
@@ -1054,6 +1231,11 @@ def main():
             scartati["gia_in_catalogo"] += 1
             continue
         if chiave_titolo(g["titolo"], g.get("autore", "")) in titoli_noti:
+            scartati["gia_in_catalogo"] += 1
+            continue
+        # Rete aggiuntiva: stesso titolo, sottotitolo diverso ('Namirya' vs
+        # 'Namirya. L'enigma degli Elfi'). Confronto per contenimento.
+        if titolo_gia_noto(g["titolo"], prefissi_noti):
             scartati["gia_in_catalogo"] += 1
             continue
 
@@ -1092,6 +1274,15 @@ def main():
             c = arricchisci(c)
             time.sleep(0.2)
 
+        # Secondo dedup: ora che l'arricchimento ha (forse) trovato l'ISBN,
+        # ricontrolliamo. Il primo dedup girava prima, quando l'ISBN mancava e
+        # solo il titolo poteva collidere: e' qui che si prendono i doppioni
+        # sfuggiti, tipici dei candidati arrivati senza ISBN dai feed.
+        isbn_arricchito = normalizza_isbn(c.get("isbn"))
+        if isbn_arricchito and isbn_arricchito in isbn_noti:
+            log(f"        ✗ già in catalogo (ISBN {isbn_arricchito})")
+            continue
+
         # --- Esordio: prima il paratesto, la rete solo se serve ---
         # Il testo dell'editore ("gia' autore di...", "romanzo d'esordio") e' piu'
         # affidabile del conteggio su Google Books, e costa zero.
@@ -1109,12 +1300,12 @@ def main():
             else:
                 c["_opere_autore"] = "ignoto"
 
-        # Scarto le traduzioni prima di spendere una chiamata al modello:
-        # se dopo l'arricchimento l'autore ha un nome palesemente straniero,
-        # e' quasi certamente una traduzione (tipico di Giunti/Sperling).
+        # Nome dell'autore potenzialmente straniero? NON scarto piu' in automatico:
+        # "Grace D." e' italiana nonostante il nome, e un filtro che scarta da solo
+        # perdeva libri buoni. Passo il dubbio al classificatore, che leggendo il
+        # paratesto (in italiano, con "l'autrice italiana...") decide meglio di me.
         if autore_probabilmente_straniero(c.get("autore", "")):
-            log(f"        ✗ autore straniero ({c.get('autore')}): traduzione")
-            continue
+            c["_dubbio_nazionalita"] = True
 
         esito = classifica(c, token, quota)
 
