@@ -1139,7 +1139,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dal", help="Data di partenza (YYYY-MM-DD). Default: 30 giorni fa.")
     ap.add_argument("--dry-run", action="store_true", help="Non scrive nulla.")
-    ap.add_argument("--limite", type=int, default=80,
+    ap.add_argument("--limite", type=int, default=120,
                     help="Tetto ai candidati classificati. Con la pausa anti-429 "
                          "ogni candidato costa ~8s: 80 sono circa 11 minuti.")
     args = ap.parse_args()
@@ -1250,8 +1250,34 @@ def main():
     log(f"  scartati: {scartati['gia_in_catalogo']} già in catalogo, "
         f"{scartati['prefiltro']} fuori tema, {scartati['non_libri']} non romanzi")
 
+    # PRIORITA' DELLE FONTI. Bug scoperto nel log: Giunti da solo produce 1000
+    # elementi, per lo piu' spazzatura generalista, e satura il limite PRIMA che
+    # i libri buoni degli editori specializzati vengano guardati. Risultato: 0
+    # candidati validi, non perche' non ci sono, ma perche' troncati via.
+    #
+    # Soluzione: classifico PRIMA gli editori che pubblicano quasi solo fantasy
+    # (dove quasi ogni candidato e' buono), e lascio i generalisti in coda. Cosi'
+    # il limite protegge la quota senza sacrificare i libri che contano.
+    PRIORITA = {
+        "woocommerce": 0,           # Lumien, La Corte, Alcatraz... quasi solo fantasy
+        "wordpress": 0,
+        "google_books_autori": 1,   # fonti per autore: mirate, poche e buone
+        "google_books": 1,
+        "rss": 1,
+        "shopify": 2,               # Giunti, ACS: generalisti, tanta spazzatura
+    }
+    superstiti.sort(key=lambda g: PRIORITA.get(g.get("_fonte", ""), 3))
+
     if len(superstiti) > args.limite:
-        log(f"  ATTENZIONE: supero il limite di {args.limite}, tronco.")
+        # Conta quanti buoni (priorita' 0) restano dentro e fuori il taglio,
+        # cosi' nel log si vede se il limite sta tagliando roba importante.
+        buoni_totali = sum(1 for g in superstiti if PRIORITA.get(g.get("_fonte",""),3)==0)
+        buoni_dentro = sum(1 for g in superstiti[:args.limite] if PRIORITA.get(g.get("_fonte",""),3)==0)
+        log(f"  Supero il limite di {args.limite}: classifico prima le fonti "
+            f"specializzate ({buoni_dentro}/{buoni_totali} coperte).")
+        if buoni_dentro < buoni_totali:
+            log(f"  → {buoni_totali - buoni_dentro} candidati di qualità restano "
+                f"fuori: rilancia con --limite più alto per recuperarli.")
         superstiti = superstiti[:args.limite]
 
     # --- Arricchimento e classificazione ---
