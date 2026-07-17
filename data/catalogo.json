@@ -80,6 +80,26 @@
     "_local": true
   },
   {
+    "id": "bmrpiisnn",
+    "title": "Il Difensore - Stelle Binarie",
+    "author": "Alrisha Mars",
+    "publisher": "Another Coffee Stories Editore",
+    "year": 2026,
+    "series": "",
+    "isbn": "979-1282645003",
+    "coverUrl": "https://cdn.shopify.com/s/files/1/0518/9766/3679/files/Titolo_6.png?v=1778257355",
+    "description": "In un mondo post-apocalittico diviso tra Umani, Trasformati e Abomini incombe una guerra a tre fronti. Il principe Evan Dark e la sua famiglia devono rendere forte l’Impero di Liberti, come suo padre ha fatto prima di lui, ed è pronto a sacrificare tutto per riuscirci. Damon, Primo Capitano dell’esercito, è sempre stato la più grande arma dei Dark. Dopo l’incontro con la misteriosa Helen, però, le domande a cui non ha mai voluto rispondere tornano a tormentarlo, spingendolo a mettere in dubbio la sua stessa natura. Insieme, Evan e Damon scopriranno che i legami tra le persone possono essere straordinari quanto fragili, ed è facile, quando il confine tra giusto e sbagliato diventa sfumato, ferire coloro che amiamo. Il Difensore è storia di famiglie, mostri e salute mentale, che riporta il lettore nell’universo di Stelle Binarie da una prospettiva completamente nuova.",
+    "storeAmazonUrl": "https://www.amazon.it/Difensore-Stelle-Binarie-Alrisha-Mars/dp/B0GYGT2MLH",
+    "storePublisherUrl": "https://anothercoffeestories.com/products/il-difensore-stelle-binarie",
+    "isDebut": false,
+    "genre": null,
+    "labels": [],
+    "status": "approved",
+    "featured": false,
+    "ts": 1784327497619,
+    "_local": true
+  },
+  {
     "title": "Dalla morte e dalla vendetta",
     "author": "Greta Cipriano",
     "year": 2025,
@@ -342,6 +362,25 @@
     "status": "approved",
     "featured": false,
     "genre": null
+  },
+  {
+    "id": "bmrpilwg1",
+    "title": "L'Erede - Stelle Binarie",
+    "author": "Alrisha Mars",
+    "publisher": "Another Coffee Stories Editore",
+    "year": 2024,
+    "series": "",
+    "isbn": "979-1281564114",
+    "coverUrl": "https://m.media-amazon.com/images/I/614hNa+qv+L._SL1500_.jpg",
+    "description": "In un mondo post-apocalittico diviso tra Umani, Trasformati e Abomini, \"L'Erede\" tesse una storia di amicizia, poteri nascosti e scoperte sorprendenti. Celyne Hero, l'erede al trono del Santuario di New York, incontra Cassandra Morgana, una misteriosa ragazza italiana in fuga da un lutto, scatenando un'epica avventura di magia, tradimento e rivelazioni. Insieme, affrontano colpi di stato e misteri ancestrali, cercando di sanare una faida tra famiglie e salvare il loro mondo, condannato da quando il riscaldamento globale, due secoli prima, ha fatto emergere dai ghiacci un misterioso virus. Un racconto coinvolgente di identità, accettazione e coraggio, dove due ragazze lottano per forgiare un futuro di pace e comprensione. \"L'Erede\" è un viaggio emozionante in un universo dove ogni scelta può cambiare il destino.",
+    "storeAmazonUrl": "https://www.amazon.it/LErede-Stelle-Binarie-Alrisha-Mars/dp/B0CTD9G79Z",
+    "storePublisherUrl": "https://anothercoffeestories.com/products/lerede-stelle-binarie",
+    "isDebut": true,
+    "labels": [],
+    "status": "approved",
+    "featured": false,
+    "_local": true,
+    "ts": 1784327642497
   },
   {
     "id": "b1754853922089",
