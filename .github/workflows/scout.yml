@@ -14,7 +14,7 @@ on:
       limite:
         description: "Massimo numero di candidati da classificare"
         required: false
-        default: "80"
+        default: "120"
         type: string
 
 # Serve per scrivere data/candidates.json e per parlare con GitHub Models
@@ -44,6 +44,7 @@ jobs:
       - name: Cerca le nuove uscite
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOOGLE_BOOKS_KEY: ${{ secrets.GOOGLE_BOOKS_KEY }}
         run: |
           ARGS=""
           if [ -n "${{ inputs.dal }}" ]; then
