@@ -136,7 +136,27 @@
     "status": "approved",
     "featured": false,
     "_local": true,
-    "ts": 1784758386922
+    "ts": 1784758386922,
+    "genre": null
+  },
+  {
+    "id": "bmrwnd1ze",
+    "title": "Il signore dei sussurri",
+    "author": "Giorgia Cappelletti",
+    "publisher": "Acheron Books",
+    "year": 2026,
+    "series": "",
+    "isbn": "979-1254981979",
+    "coverUrl": "https://m.media-amazon.com/images/I/71rGwn4H3NL._SL1470_.jpg",
+    "description": "Venezia, 1755. La città dei segreti, dove il potere non si conquista con le armi, ma con la magia. La corporazione più temuta è l’Arte Magica, riservata agli aristocratici di sangue puro. Sebastiano Bon, dodici anni ed erede di una famiglia in rovina, è un mago dell’Aria con un talento unico: sa catturare i sussurri che corrono per calli, canali e palazzi. E in una città costruita sul silenzio e sulle spie, chi controlla i segreti controlla tutto. Il suo potere attira Giacomo Casanova, mago autodidatta e figura ambigua della politica veneziana, che lo arruola al servizio del potente Marco Foscarini, in corsa per diventare Doge. Per Sebastiano è l’occasione di salvare la sua casata. Finché non scopre il prezzo reale di quei segreti: tradimenti, complotti e magie oscure che minacciano di trascinare Venezia nel caos. Ora deve scegliere: restare strumento del potere o diventare l’unica voce capace di fermarlo. Un romanzo storico-magico ambientato nella Venezia più misteriosa, dove i segreti hanno peso, e la verità può cambiare il destino di una città.",
+    "storeAmazonUrl": "https://www.amazon.it/signore-dei-sussurri-Giorgia-Cappelletti/dp/B0G5251WXD",
+    "storePublisherUrl": "",
+    "isDebut": true,
+    "labels": [],
+    "status": "approved",
+    "featured": false,
+    "_local": true,
+    "ts": 1784758891082
   },
   {
     "title": "Dalla morte e dalla vendetta",
@@ -290,24 +310,23 @@
     "genre": null
   },
   {
-    "id": "bmrwmn0ct",
-    "title": "Sonata per la morte di un dio",
-    "author": "Giacomo Arzani",
+    "id": "bmrwnh1i2",
+    "title": "L'esule dei vulcani. Cronache del palazzo di Lava",
+    "author": "Laura Seegard",
     "publisher": "Acheron Books",
     "year": 2025,
     "series": "",
-    "isbn": "979-1254981108",
-    "coverUrl": "https://m.media-amazon.com/images/I/71asHYyi8TL._SL1470_.jpg",
-    "description": "Gli occhi di Eu sono luce, dalle sue ossa nasce la gravità e pelle di terra fertile su cui vivono i suoi figli, in una realtà scandita dai battiti di un cuore colossale. È un continente, un mondo, un dio… e sta morendo. L'inventore Beto si accorge che la profezia dei suoi genitori si sta avverando e deve partire su una nave volante per comprendere le verità celate dietro alla fine di ogni cosa. Dalla pelle della schiava Mezzaluce si risveglia un potere che la costringe a guidare il suo popolo in una fuga disperata dentro al corpo in rovina. La novizia Velia riceve un sussurro dello stesso Eu. Deve recarsi al cranio per salvarlo. Ma un dubbio minaccia la sua missione. E se persino il creatore potesse mentire?",
-    "storeAmazonUrl": "https://www.amazon.it/Sonata-morte-dio-Giacomo-Arzani/dp/B0D8CYF3GN",
-    "storePublisherUrl": "https://www.acheron.it/Sonata-per-la-Morte-di-un-Dio-p719022582",
-    "isDebut": true,
+    "isbn": "979-1254981269",
+    "coverUrl": "https://m.media-amazon.com/images/I/715b+1Vez0L._SL1468_.jpg",
+    "description": "Dopo la notte di sangue che ha sconvolto le sorti del Palazzo di Lava, tre fratelli sono tutto ciò che resta della potente famiglia Colonna. Valerio ha pagato a caro prezzo la nuova vita che ha sempre desiderato. Privato del titolo e dell'identità di Principe, è fuggito tra le dune di sabbia con la sola compagnia dei ricordi che non lasceranno mai più i suoi incubi. Saetta è ormai parte della guardia Fanteschi sulla catena turchese, ma non prova alcuna gioia per aver realizzato il suo sogno. La scoperta di una verità taciuta da sempre fa crollare ogni sua certezza, per l'ennesima volta. Tormentata da visioni che non le danno tregua, Beatrice vorrebbe il coraggio di ricongiungersi ai fratelli abbandonati tanto tempo fa. Ma il potere oscuro della perla del buio la trascina in luoghi proibiti, nelle memorie di una famiglia che ha molto da nascondere. Minacciati da un passato che non riescono a lasciarsi alle spalle e da nuove forze insidiose decise a cancellare il nome dei Colonna, tutti e tre sono di fronte a una scelta. Continuare a scappare, perfino da se stessi, oppure intrecciare di nuovo i loro destini. E combattere per il loro regno.",
+    "storeAmazonUrl": "https://www.amazon.it/Lesule-dei-vulcani-Laura-Seegard/dp/B0DJCMYQH1",
+    "storePublisherUrl": "",
+    "isDebut": false,
     "labels": [],
     "status": "approved",
     "featured": false,
     "_local": true,
-    "ts": 1784757675917,
-    "genre": null
+    "ts": 1784759077082
   },
   {
     "id": "b1754904564139",
@@ -519,7 +538,8 @@
     "status": "approved",
     "featured": false,
     "_local": true,
-    "ts": 1784758295174
+    "ts": 1784758295174,
+    "genre": null
   },
   {
     "id": "b1754853922089",
@@ -808,6 +828,26 @@
     "status": "approved",
     "featured": false,
     "_local": true,
-    "ts": 1784758211838
+    "ts": 1784758211838,
+    "genre": null
+  },
+  {
+    "id": "bmrwnfyno",
+    "title": "Il principe dei vulcani. Cronache del palazzo di Lava",
+    "author": "Laura Seegard",
+    "publisher": "Acheron Books",
+    "year": 2022,
+    "series": "",
+    "isbn": "978-8832198768",
+    "coverUrl": "https://m.media-amazon.com/images/I/71D3VL-FpgL._SL1446_.jpg",
+    "description": "Valerio Colonna è un principe viziato ed egoista, disinteressato al futuro del regno, che medita di fuggire dal matrimonio combinato che lo aspetta con un'anonima figlia di commercianti. Saetta si è sempre sentita fuori posto e sogna un impossibile futuro lontano da corte. Amata Regis è la ragazza più bella del continente, ma è costretta a sfruttare il suo aspetto per le mire di un padre dispotico. Un presagio su Palazzo di Lava lega le loro vite, proprio mentre il matrimonio è sempre più vicino: qualcuno cerca la corona magica dei Colonna ed è disposto a tradire le più antiche alleanze pur di ottenerla. In una girandola di banchetti sfarzosi e intrighi dinastici, capire di chi fidarsi segna la linea tra sopravvivenza e annientamento.",
+    "storeAmazonUrl": "https://www.amazon.it/principe-vulcani-Cronache-palazzo-Lava/dp/8832198762",
+    "storePublisherUrl": "https://www.acheron.it/Il-Principe-dei-Vulcani-Ebook-p493352951",
+    "isDebut": true,
+    "labels": [],
+    "status": "approved",
+    "featured": false,
+    "_local": true,
+    "ts": 1784759026740
   }
 ]
