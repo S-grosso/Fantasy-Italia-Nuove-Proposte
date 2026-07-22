@@ -100,6 +100,25 @@
     "_local": true
   },
   {
+    "id": "bmrwmjdmj",
+    "title": "Falange dei sogni",
+    "author": "Damiano Lotto",
+    "publisher": "Delos Digital",
+    "year": 2026,
+    "series": "",
+    "isbn": "978-8825437645",
+    "coverUrl": "https://m.media-amazon.com/images/I/81rqb0IqKgL._SL1500_.jpg",
+    "description": "In un mondo oscuro sospeso tra realtà e sogno, in un'epoca segnata da guerra, magia e misteriose creature, la giovane Alice viene strappata da una realtà opprimente per essere coinvolta in un conflitto che la trascina tra poteri arcani e antiche maledizioni. Affiancata da figure enigmatiche come la Strega e il Duca, Alice si trova catapultata in un viaggio pericoloso che intreccia magia, potere, e un destino scritto nel Sogno. Tra battaglie contro mostri e inganni politici risplende una speranza fragile, in un mondo dove il confine tra vita e morte è segnato da incantesimi antichi e sigilli di ferro.",
+    "storeAmazonUrl": "https://www.amazon.it/-/en/Damiano-Lotto-ebook/dp/B0H6W3RTT5",
+    "storePublisherUrl": "https://www.delosstore.it/ebook/56315/falange-dei-sogni/",
+    "isDebut": true,
+    "labels": [],
+    "status": "approved",
+    "featured": false,
+    "_local": true,
+    "ts": 1784757506491
+  },
+  {
     "title": "Dalla morte e dalla vendetta",
     "author": "Greta Cipriano",
     "year": 2025,
@@ -249,6 +268,45 @@
     "featured": false,
     "ts": 1784757134890,
     "_local": true
+  },
+  {
+    "id": "bmrwmbewa",
+    "title": "Saga della Fenice Oscura - Surikila",
+    "author": "Alessio Signoriello",
+    "publisher": "Another Coffee Stories Editore",
+    "year": 2025,
+    "series": "",
+    "isbn": "9791281564848",
+    "coverUrl": "https://m.media-amazon.com/images/I/61yHEw4nozL._SL1438_.jpg",
+    "description": "Autore : Alessio Signoriello Pagine : 675 Genere letterario : fantasy , narrativa , introspettivo Pubblicazione : 25/09/2025 ISBN : 9791281564848 SCARICA L'ESTRATTO Che sia davvero la fine di tutto? SINOSSI Ali ammantate da fiamme nere proiettano la loro ombra fin dove occhi possano vedere. In una terra ormai in declino, dove l’innocenza è una debolezza fatale, un malvagio e potente sefiro oscuro tiene Lerïwase nel palmo della sua mano. Dal suo trono decide vita e morte di intere città. Per molti è la personificazione del male stesso, talmente temuto da essergli valsa la nomea di Surïkïla. I regni protetti dal divino Kyno cadono uno dopo l’altro e nessuno riesce ad opporsi a lui, dato che il suo potere sembra non conoscere limiti. Solo caos e distruzione rimangono dopo il suo passaggio. Circondatosi di potenti alleati persegue il suo obiettivo ultimo: distruggere il mondo. Che sia davvero la fine di tutto? Musica: UNBREAKABLE",
+    "storeAmazonUrl": "https://www.amazon.it/Saga-della-Fenice-Oscura-Surikila/dp/B0FW6KR764",
+    "storePublisherUrl": "https://anothercoffeestories.com/products/saga-della-fenice-oscura-surikila",
+    "isDebut": false,
+    "genre": "fantasy",
+    "labels": [],
+    "status": "approved",
+    "featured": false,
+    "ts": 1784757134890,
+    "_local": true
+  },
+  {
+    "id": "bmrwmn0ct",
+    "title": "Sonata per la morte di un dio",
+    "author": "Giacomo Arzani",
+    "publisher": "Acheron Books",
+    "year": 2025,
+    "series": "",
+    "isbn": "979-1254981108",
+    "coverUrl": "https://m.media-amazon.com/images/I/71asHYyi8TL._SL1470_.jpg",
+    "description": "Gli occhi di Eu sono luce, dalle sue ossa nasce la gravità e pelle di terra fertile su cui vivono i suoi figli, in una realtà scandita dai battiti di un cuore colossale. È un continente, un mondo, un dio… e sta morendo. L'inventore Beto si accorge che la profezia dei suoi genitori si sta avverando e deve partire su una nave volante per comprendere le verità celate dietro alla fine di ogni cosa. Dalla pelle della schiava Mezzaluce si risveglia un potere che la costringe a guidare il suo popolo in una fuga disperata dentro al corpo in rovina. La novizia Velia riceve un sussurro dello stesso Eu. Deve recarsi al cranio per salvarlo. Ma un dubbio minaccia la sua missione. E se persino il creatore potesse mentire?",
+    "storeAmazonUrl": "https://www.amazon.it/Sonata-morte-dio-Giacomo-Arzani/dp/B0D8CYF3GN",
+    "storePublisherUrl": "https://www.acheron.it/Sonata-per-la-Morte-di-un-Dio-p719022582",
+    "isDebut": true,
+    "labels": [],
+    "status": "approved",
+    "featured": false,
+    "_local": true,
+    "ts": 1784757675917
   },
   {
     "id": "b1754904564139",
@@ -460,7 +518,8 @@
     "status": "approved",
     "featured": false,
     "_local": true,
-    "ts": 1784757062726
+    "ts": 1784757062726,
+    "genre": null
   },
   {
     "id": "b1754853922089",
