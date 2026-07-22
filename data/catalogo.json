@@ -211,6 +211,26 @@
     "_local": true
   },
   {
+    "id": "bmrwmbewa",
+    "title": "Saga della Fenice Oscura - Surikila",
+    "author": "Alessio Signoriello",
+    "publisher": "Another Coffee Stories Editore",
+    "year": 2025,
+    "series": "",
+    "isbn": "9791281564848",
+    "coverUrl": "https://cdn.shopify.com/s/files/1/0518/9766/3679/files/SagaFeniceOscura-IG.png?v=1758824088",
+    "description": "Autore : Alessio Signoriello Pagine : 675 Genere letterario : fantasy , narrativa , introspettivo Pubblicazione : 25/09/2025 ISBN : 9791281564848 SCARICA L'ESTRATTO Che sia davvero la fine di tutto? SINOSSI Ali ammantate da fiamme nere proiettano la loro ombra fin dove occhi possano vedere. In una terra ormai in declino, dove l’innocenza è una debolezza fatale, un malvagio e potente sefiro oscuro tiene Lerïwase nel palmo della sua mano. Dal suo trono decide vita e morte di intere città. Per molti è la personificazione del male stesso, talmente temuto da essergli valsa la nomea di Surïkïla. I regni protetti dal divino Kyno cadono uno dopo l’altro e nessuno riesce ad opporsi a lui, dato che il suo potere sembra non conoscere limiti. Solo caos e distruzione rimangono dopo il suo passaggio. Circondatosi di potenti alleati persegue il suo obiettivo ultimo: distruggere il mondo. Che sia davvero la fine di tutto? Musica: UNBREAKABLE",
+    "storeAmazonUrl": "https://www.amazon.it/Saga-della-Fenice-Oscura-Surikila/dp/B0FW6KR764",
+    "storePublisherUrl": "https://anothercoffeestories.com/products/saga-della-fenice-oscura-surikila",
+    "isDebut": false,
+    "genre": "fantasy",
+    "labels": [],
+    "status": "approved",
+    "featured": false,
+    "ts": 1784757134890,
+    "_local": true
+  },
+  {
     "id": "b1754904564139",
     "title": "Le cronache di Leg Horn",
     "author": "Lukha B. Kremo",
@@ -380,7 +400,27 @@
     "status": "approved",
     "featured": false,
     "_local": true,
-    "ts": 1784327642497
+    "ts": 1784327642497,
+    "genre": null
+  },
+  {
+    "id": "bmrwm9v7q",
+    "title": "Saga della Fenice - WARÏHÏRÏ",
+    "author": "Alessio Signoriello",
+    "publisher": "Another Coffee Stories Editore",
+    "year": 2024,
+    "series": "",
+    "isbn": "979-1281564282",
+    "coverUrl": "https://m.media-amazon.com/images/I/71m2earSReL._SL1500_.jpg",
+    "description": "Quando riapre gli occhi, Zenath non riconosce il luogo in cui è capitato, “Pareva tutto strano: il cielo, gli alberi, gli animali. Non era come dovevano essere...” Altuc non si scorge più in lontananza e nemmeno Genra e Annarel sono più al suo fianco. Un amichevole goblin lo raggiunge e lo accompagna nella città più vicina, Mellit, dove Zenath farà una scoperta bizzarra: gli esseri umani sono creature rare, ed è difficile, quasi impossibile incontrarne. Qui fa la conoscenza di Yuln, un elfo cantastorie che lo accompagnerà nel magico regno di Rayle, minacciato pericolosamente dagli Aposfiti. Nel frattempo il mondo che Zenath ha lasciato è in preda ai disastri climatici, vulcani, terremoti, tornado... la natura non risparmia nessuno. Genra e Annarel, con l’aiuto di Soph e Piket, attraversano città, foreste e rovine in cerca della strada che\nli riconduca da Zenath. Il viaggio è lungo, scomodo, difficile, come le scelte che i protagonisti dovranno prendere, consapevoli che non è più la ricerca di casa e dei vecchi compagni l’unico obiettivo della missione, ma anche la salvezza di un mondo meraviglioso, che poco a poco sta precipitando nelle tenebre.",
+    "storeAmazonUrl": "https://www.amazon.it/Saga-della-Fenice-WAR%C3%8FH%C3%8FR%C3%8F/dp/B0D6YYF6TC",
+    "storePublisherUrl": "https://anothercoffeestories.com/products/saga-della-fenice-warihiri",
+    "isDebut": false,
+    "labels": [],
+    "status": "approved",
+    "featured": false,
+    "_local": true,
+    "ts": 1784757062726
   },
   {
     "id": "b1754853922089",
