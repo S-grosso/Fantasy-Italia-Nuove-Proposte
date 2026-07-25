@@ -334,8 +334,7 @@
   const NEWS_ENDPOINT = SUPABASE_URL + '/rest/v1/news'
     + '?select=id,title,body_html,published_at'
     + '&status=eq.published'
-    + '&order=published_at.desc'
-    + '&apikey=' + SUPABASE_KEY;
+    + '&order=published_at.desc';
 
   const DEFAULTS = {
     adminsUrl:     DEFAULT_GITHUB_BASE + 'admins.json',
@@ -501,20 +500,40 @@
   /* ==== Caricamento da GitHub (unica fonte pubblica) ==== */
   async function loadFromGitHub(){
     const bann=$('#banner'); bann.style.display='none';
+
+    // Il catalogo si carica per conto suo: se le notizie danno errore,
+    // il catalogo deve restare in piedi. Prima erano nella stessa
+    // Promise.all e un problema su Supabase buttava giù tutto il sito.
     try{
-      const [books, news] = await Promise.all([
-        fetchJson(state.settings.catalogUrl),
-        fetchJson(state.settings.newsUrl)
-      ]);
+      const books = await fetchJson(state.settings.catalogUrl);
       state.remoteBooksBase = (books||[]).map(x=>cloneBook(normalizeBook(x)));
       applyApprovedEdits();
-      state.remoteNews  = normalizeNews(news||[]);
     }catch(e){
       console.error(e);
       bann.innerHTML = '⚠️ Non riesco a caricare i JSON da GitHub. Controlla gli URL Raw in <b>Impostazioni</b>.';
       bann.style.display='block';
       $('#gridCatalogo').innerHTML='<div class="muted">Errore nel caricamento del catalogo.</div>';
       $('#gridNews').innerHTML='<div class="muted">Errore nel caricamento delle notizie.</div>';
+    }
+
+    // Notizie da Supabase, con la chiave nell'intestazione invece che
+    // nell'indirizzo: è il modo che Supabase documenta e che non soffre
+    // della riscrittura dei parametri fatta da withBust().
+    try{
+      const res = await fetch(NEWS_ENDPOINT, {
+        cache: 'no-store',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY
+        }
+      });
+      if(!res.ok) throw new Error('HTTP ' + res.status + ' — ' + await res.text());
+      state.remoteNews = normalizeNews(await res.json());
+    }catch(e){
+      console.error('Notizie:', e);
+      state.remoteNews = [];
+      $('#gridNews').innerHTML =
+        '<div class="muted">Non riesco a caricare le notizie.</div>';
     }
 
     // I candidati dello Scout sono un extra: se il file non esiste ancora
