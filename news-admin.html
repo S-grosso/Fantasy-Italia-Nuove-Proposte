@@ -72,6 +72,7 @@
 
 <header>
   <div class="wrap topbar">
+    <a class="btn small" href="index.html#notizie">← Sito</a>
     <h1>Redazione</h1>
     <span id="chiSono" class="tag hidden"></span>
     <button id="btnEsci" class="btn small hidden">Esci</button>
@@ -200,16 +201,28 @@
   }
 
   /* ---------------- autenticazione ---------------- */
-  async function aggiornaSessione(){
+  let utenteCorrente = null;
+
+  async function aggiornaSessione(opzioni){
+    opzioni = opzioni || {};
     const { data } = await supa.auth.getSession();
     const utente = data.session ? data.session.user : null;
+    const eraDentro = !!utenteCorrente;
+    utenteCorrente = utente;
 
     $('#chiSono').classList.toggle('hidden', !utente);
     $('#btnEsci').classList.toggle('hidden', !utente);
     if(utente) $('#chiSono').textContent = utente.email;
 
-    if(utente){ mostra('elenco'); caricaElenco(); }
-    else       { mostra('login'); }
+    if(!utente){ mostra('login'); return; }
+
+    // Supabase rinnova il token quando la scheda torna in primo piano.
+    // Reagire a ogni rinnovo riportava all'elenco: se stavi scrivendo,
+    // il testo spariva. Qui la vista cambia solo quando l'accesso cambia
+    // davvero — al primo caricamento, o entrando e uscendo.
+    if(eraDentro && !opzioni.forza) return;
+
+    mostra('elenco'); caricaElenco();
   }
 
   $('#btnEntra').addEventListener('click', async ()=>{
@@ -225,7 +238,7 @@
 
     if(error){ avvisa('Accesso non riuscito: ' + error.message, 'err'); return; }
     $('#password').value = '';
-    aggiornaSessione();
+    aggiornaSessione({forza:true});
   });
 
   // Invio dalla tastiera: comodo da telefono
@@ -235,7 +248,7 @@
 
   $('#btnEsci').addEventListener('click', async ()=>{
     await supa.auth.signOut();
-    aggiornaSessione();
+    aggiornaSessione({forza:true});
   });
 
   /* ---------------- elenco articoli ---------------- */
@@ -328,6 +341,7 @@
 
     mostra('editor');
     window.scrollTo({top:0});
+    segnaSalvato();
   }
 
   async function apriArticolo(id){
@@ -337,8 +351,24 @@
     apriEditor(data);
   }
 
+  // Rete di sicurezza: scrivere da telefono significa essere interrotti
+  // di continuo. Se chiudi la scheda con del testo non salvato, il browser
+  // chiede conferma.
+  let istantanea = '';
+  function segnaSalvato(){
+    istantanea = $('#titolo').value + '\u0000' + $('#editor').innerHTML;
+  }
+  function haModifiche(){
+    if($('#vistaEditor').classList.contains('hidden')) return false;
+    return ($('#titolo').value + '\u0000' + $('#editor').innerHTML) !== istantanea;
+  }
+  window.addEventListener('beforeunload', e=>{
+    if(haModifiche()){ e.preventDefault(); e.returnValue = ''; }
+  });
+
   $('#btnNuovo').addEventListener('click', ()=>apriEditor(null));
   $('#btnAnnulla').addEventListener('click', ()=>{
+    if(haModifiche() && !confirm('Ci sono modifiche non salvate. Chiudere comunque?')) return;
     mostra('elenco'); caricaElenco();
   });
 
@@ -479,7 +509,7 @@
          + 'nella riga SUPABASE_KEY.', 'err');
   }
   supa.auth.onAuthStateChange(()=>aggiornaSessione());
-  aggiornaSessione();
+  aggiornaSessione({forza:true});
 
 })();
 </script>
