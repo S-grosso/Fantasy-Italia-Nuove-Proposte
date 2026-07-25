@@ -530,22 +530,40 @@
       const edit = edits[base.id];
       if(edit){
         if(Array.isArray(edit.labels)) copy.labels = edit.labels.slice();
+        if(typeof edit.featured === 'boolean') copy.featured = edit.featured;
       }
       return copy;
     });
   }
-  function persistApprovedLabels(bookId, labels){
-    const clean = Array.from(new Set((labels||[]).map(l=>String(l).trim()).filter(Boolean)));
+  // Registra una correzione su un titolo già in catalogo. Vale per le
+  // etichette e per il flag "consigliato": in entrambi i casi la modifica
+  // resta locale finché non esporti il JSON e lo carichi su GitHub.
+  function persistApprovedEdit(bookId, campo, valore){
     const base = state.remoteBooksBase.find(b=>String(b.id)===String(bookId));
-    const baseLabels = base ? (base.labels||[]) : [];
     const edit = {...(state.approvedEdits[bookId]||{})};
-    if(base && arraysEqual(clean, baseLabels)) delete edit.labels; else edit.labels = clean;
-    if(Object.keys(edit).length){ state.approvedEdits[bookId] = edit; }
+
+    // Se il valore torna a coincidere con l'originale, l'annotazione si
+    // cancella: così restano memorizzate solo le differenze vere, e togliere
+    // il flag "consigliato" non lascia residui.
+    let uguale = false;
+    if(base){
+      if(campo === 'labels') uguale = arraysEqual(valore, base.labels||[]);
+      else                   uguale = (!!valore === !!base[campo]);
+    }
+    if(uguale) delete edit[campo]; else edit[campo] = valore;
+
+    if(Object.keys(edit).length) state.approvedEdits[bookId] = edit;
     else delete state.approvedEdits[bookId];
+
     save(APPROVED_EDITS_KEY, state.approvedEdits);
     applyApprovedEdits();
     renderCatalogo();
-    if($('#moderationFilter')?.value==='approved'){ renderModeration(); }
+    if($('#moderationFilter')?.value === 'approved') renderModeration();
+  }
+
+  function persistApprovedLabels(bookId, labels){
+    const clean = Array.from(new Set((labels||[]).map(l=>String(l).trim()).filter(Boolean)));
+    persistApprovedEdit(bookId, 'labels', clean);
   }
   function normalizeNews(arr){
     // Accetta sia il formato Supabase (body_html, published_at) sia quello
@@ -850,6 +868,20 @@
     }
 
     if(isApproved){
+      // "Consigliato" modificabile anche sui titoli già pubblicati: prima
+      // si poteva mettere solo in fase di bozza, e non c'era modo di toglierlo.
+      const cLab=document.createElement('label');
+      cLab.className='small muted';
+      cLab.style.display='inline-flex'; cLab.style.alignItems='center';
+      cLab.style.gap='6px'; cLab.style.marginTop='10px';
+      const cChk=document.createElement('input');
+      cChk.type='checkbox'; cChk.checked=!!b.featured;
+      cChk.addEventListener('change', ()=>{
+        persistApprovedEdit(b.id, 'featured', !!cChk.checked);
+      });
+      cLab.appendChild(cChk); cLab.append(' Consigliato');
+      meta.appendChild(cLab);
+
       const note=document.createElement('div'); note.className='small muted';
       note.textContent='Titolo già in catalogo. Le modifiche restano in locale finché non esporti il JSON.';
       meta.appendChild(note);
