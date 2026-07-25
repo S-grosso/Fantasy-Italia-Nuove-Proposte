@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redazione • Fantasy Italia</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root{ --bg:#0f1013; --panel:#171923; --ink:#e7e9ee; --muted:#a9adbb;
+         --accent:#7aa6ff; --border:#232635; --ok:#8fd9a8; --warn:#ffc46b; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+       background:var(--bg);color:var(--ink);padding-bottom:40px}
+
+  header{position:sticky;top:0;z-index:50;background:rgba(13,14,18,.92);
+         backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
+  .wrap{max-width:820px;margin:0 auto;padding:12px 16px}
+  .topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  h1{font-size:18px;margin:0;flex:1}
+  main{max-width:820px;margin:0 auto;padding:16px}
+
+  .card{background:var(--panel);border:1px solid var(--border);
+        border-radius:14px;padding:16px;margin-bottom:14px}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  label{font-size:13px;color:var(--muted)}
+  input,textarea,select{background:#0f1016;color:var(--ink);
+        border:1px solid var(--border);border-radius:10px;padding:11px;
+        font-size:16px;width:100%}
+  /* font-size 16px sugli input evita lo zoom automatico di iOS al focus */
+
+  .btn{background:#151826;border:1px solid var(--border);color:var(--ink);
+       padding:11px 14px;border-radius:10px;cursor:pointer;font-size:15px;
+       display:inline-flex;align-items:center;gap:6px}
+  .btn.primary{outline:2px solid var(--accent)}
+  .btn.danger{outline:1px solid #5a2a2a;color:#ff9aa9}
+  .btn.small{font-size:13px;padding:7px 10px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+  .tag{display:inline-block;font-size:12px;padding:3px 9px;border-radius:999px;
+       border:1px solid var(--border);color:var(--muted)}
+  .tag.pub{color:var(--ok);border-color:#2d6b45}
+  .tag.draft{color:var(--warn);border-color:#8a6420}
+
+  .msg{border-radius:10px;padding:11px 13px;font-size:14px;margin-bottom:14px;
+       display:none}
+  .msg.show{display:block}
+  .msg.ok{background:#142a20;border:1px solid #2d6b45;color:#cfe9d8}
+  .msg.err{background:#361a22;border:1px solid #5a2a2a;color:#ffd0d0}
+
+  /* Barra di formattazione dell'editor */
+  .toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  #editor{border:1px solid var(--border);border-radius:10px;padding:12px;
+          min-height:280px;background:#0f1016;line-height:1.6;font-size:16px}
+  #editor:focus{outline:2px solid var(--accent)}
+  #editor h2{font-size:19px;margin:16px 0 8px}
+  #editor p{margin:0 0 12px}
+  #editor a{color:#9fc8ff}
+
+  .item{display:flex;gap:12px;align-items:flex-start;padding:13px 0;
+        border-bottom:1px solid var(--border)}
+  .item:last-child{border-bottom:none}
+  .item .info{flex:1;min-width:0}
+  .item h3{margin:0 0 5px;font-size:16px;line-height:1.3}
+  .item .meta{font-size:12px;color:var(--muted)}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap topbar">
+    <h1>Redazione</h1>
+    <span id="chiSono" class="tag hidden"></span>
+    <button id="btnEsci" class="btn small hidden">Esci</button>
+  </div>
+</header>
+
+<main>
+  <div id="messaggio" class="msg"></div>
+
+  <!-- ============ LOGIN ============ -->
+  <section id="vistaLogin" class="card">
+    <h2 style="margin-top:0;font-size:17px">Accesso</h2>
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username"
+             inputmode="email" placeholder="la tua email">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password"
+             placeholder="password">
+    </div>
+    <button id="btnEntra" class="btn primary">Entra</button>
+  </section>
+
+  <!-- ============ ELENCO ============ -->
+  <section id="vistaElenco" class="hidden">
+    <div class="card">
+      <div class="actions" style="margin-top:0">
+        <button id="btnNuovo" class="btn primary">Nuovo articolo</button>
+        <button id="btnRicarica" class="btn small">Ricarica</button>
+      </div>
+    </div>
+    <div class="card">
+      <div id="elenco"><div class="muted">Caricamento…</div></div>
+    </div>
+    <div class="card">
+      <div class="small muted" style="margin-bottom:10px">
+        <b>Importazione una tantum.</b> Copia su Supabase le notizie che
+        stanno ancora nel vecchio <code>news.json</code> su GitHub,
+        conservando id e date. Si può rilanciare senza creare doppioni.
+      </div>
+      <button id="btnImporta" class="btn small">Importa da news.json</button>
+    </div>
+  </section>
+
+  <!-- ============ EDITOR ============ -->
+  <section id="vistaEditor" class="card hidden">
+    <div class="field">
+      <label for="titolo">Titolo</label>
+      <input id="titolo" type="text" placeholder="Titolo dell'articolo">
+    </div>
+
+    <div class="field">
+      <label>Testo</label>
+      <div class="toolbar">
+        <button class="btn small" data-cmd="bold"><b>B</b></button>
+        <button class="btn small" data-cmd="italic"><i>I</i></button>
+        <button class="btn small" data-cmd="underline"><u>U</u></button>
+        <button class="btn small" data-cmd="h2">Titoletto</button>
+        <button class="btn small" data-cmd="ul">Elenco</button>
+        <button class="btn small" data-cmd="link">Link</button>
+        <button class="btn small" data-cmd="clean">Pulisci</button>
+      </div>
+      <div id="editor" contenteditable="true"></div>
+    </div>
+
+    <div class="field" style="max-width:260px">
+      <label for="dataPub">Data di pubblicazione</label>
+      <input id="dataPub" type="datetime-local">
+    </div>
+
+    <div class="actions">
+      <button id="btnSalvaBozza" class="btn">Salva bozza</button>
+      <button id="btnPubblica" class="btn primary">Pubblica</button>
+      <button id="btnRitira" class="btn small hidden">Riporta a bozza</button>
+      <button id="btnAnnulla" class="btn small">Chiudi</button>
+      <button id="btnElimina" class="btn danger small hidden">Elimina</button>
+    </div>
+    <div id="statoArticolo" class="small muted" style="margin-top:10px"></div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  'use strict';
+
+  /* ============================================================
+     CONFIGURAZIONE
+     Sostituisci la chiave con la tua publishable key
+     (Supabase -> Settings -> API). Non e' un segreto: e' pensata
+     per stare nel codice del sito, ed e' inutile senza login
+     perche' le regole del database bloccano tutto il resto.
+     ============================================================ */
+  const SUPABASE_URL = 'https://nncnhlbaqnfqtjwembii.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_0prYsjRCftybZ7uQ7tTryA_D5N2r9kQ';
+
+  // Il vecchio file da cui importare, una volta sola
+  const NEWS_JSON = 'https://raw.githubusercontent.com/S-grosso/'
+                  + 'Fantasy-Italia-Nuove-Proposte/main/data/news.json';
+
+  const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+
+  let articoloCorrente = null;   // null = nuovo articolo
+
+  /* ---------------- messaggi ---------------- */
+  let timerMsg;
+  function avvisa(testo, tipo){
+    const m = $('#messaggio');
+    m.textContent = testo;
+    m.className = 'msg show ' + (tipo === 'err' ? 'err' : 'ok');
+    clearTimeout(timerMsg);
+    if(tipo !== 'err') timerMsg = setTimeout(()=>m.className='msg', 4000);
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  /* ---------------- viste ---------------- */
+  function mostra(quale){
+    $('#vistaLogin').classList.toggle('hidden', quale !== 'login');
+    $('#vistaElenco').classList.toggle('hidden', quale !== 'elenco');
+    $('#vistaEditor').classList.toggle('hidden', quale !== 'editor');
+  }
+
+  /* ---------------- autenticazione ---------------- */
+  async function aggiornaSessione(){
+    const { data } = await supa.auth.getSession();
+    const utente = data.session ? data.session.user : null;
+
+    $('#chiSono').classList.toggle('hidden', !utente);
+    $('#btnEsci').classList.toggle('hidden', !utente);
+    if(utente) $('#chiSono').textContent = utente.email;
+
+    if(utente){ mostra('elenco'); caricaElenco(); }
+    else       { mostra('login'); }
+  }
+
+  $('#btnEntra').addEventListener('click', async ()=>{
+    const email = $('#email').value.trim();
+    const pwd   = $('#password').value;
+    if(!email || !pwd){ avvisa('Inserisci email e password.', 'err'); return; }
+
+    $('#btnEntra').disabled = true;
+    const { error } = await supa.auth.signInWithPassword({
+      email: email, password: pwd
+    });
+    $('#btnEntra').disabled = false;
+
+    if(error){ avvisa('Accesso non riuscito: ' + error.message, 'err'); return; }
+    $('#password').value = '';
+    aggiornaSessione();
+  });
+
+  // Invio dalla tastiera: comodo da telefono
+  $('#password').addEventListener('keydown', e=>{
+    if(e.key === 'Enter') $('#btnEntra').click();
+  });
+
+  $('#btnEsci').addEventListener('click', async ()=>{
+    await supa.auth.signOut();
+    aggiornaSessione();
+  });
+
+  /* ---------------- elenco articoli ---------------- */
+  function dataLeggibile(iso){
+    if(!iso) return '';
+    return new Date(iso).toLocaleString('it-IT',
+      { day:'2-digit', month:'short', year:'numeric',
+        hour:'2-digit', minute:'2-digit' });
+  }
+
+  async function caricaElenco(){
+    const box = $('#elenco');
+    box.innerHTML = '<div class="muted">Caricamento…</div>';
+
+    const { data, error } = await supa
+      .from('news')
+      .select('id, title, status, published_at, updated_at')
+      .order('published_at', { ascending: false });
+
+    if(error){
+      box.innerHTML = '<div class="muted">Errore nel caricamento.</div>';
+      avvisa('Non riesco a leggere gli articoli: ' + error.message, 'err');
+      return;
+    }
+    if(!data.length){
+      box.innerHTML = '<div class="muted">Nessun articolo. '
+                    + 'Creane uno o importa quelli vecchi.</div>';
+      return;
+    }
+
+    box.innerHTML = '';
+    data.forEach(a=>{
+      const riga = document.createElement('div');
+      riga.className = 'item';
+
+      const info = document.createElement('div');
+      info.className = 'info';
+
+      const h3 = document.createElement('h3');
+      h3.textContent = a.title || '(senza titolo)';
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const stato = document.createElement('span');
+      stato.className = 'tag ' + (a.status === 'published' ? 'pub' : 'draft');
+      stato.textContent = a.status === 'published' ? 'pubblicato' : 'bozza';
+      meta.appendChild(stato);
+      meta.append(' ' + dataLeggibile(a.published_at));
+
+      info.appendChild(h3); info.appendChild(meta);
+
+      const apri = document.createElement('button');
+      apri.className = 'btn small';
+      apri.textContent = 'Apri';
+      apri.addEventListener('click', ()=>apriArticolo(a.id));
+
+      riga.appendChild(info); riga.appendChild(apri);
+      box.appendChild(riga);
+    });
+  }
+
+  $('#btnRicarica').addEventListener('click', caricaElenco);
+
+  /* ---------------- editor ---------------- */
+  function isoPerInput(iso){
+    // <input type="datetime-local"> vuole 'YYYY-MM-DDTHH:MM' in ora locale
+    const d = iso ? new Date(iso) : new Date();
+    const off = d.getTimezoneOffset() * 60000;
+    return new Date(d - off).toISOString().slice(0, 16);
+  }
+
+  function nuovoId(){
+    return 'n' + Date.now().toString(36);
+  }
+
+  function apriEditor(articolo){
+    articoloCorrente = articolo;
+    $('#titolo').value = articolo ? (articolo.title || '') : '';
+    $('#editor').innerHTML = articolo ? (articolo.body_html || '') : '';
+    $('#dataPub').value = isoPerInput(articolo ? articolo.published_at : null);
+
+    const pubblicato = articolo && articolo.status === 'published';
+    $('#btnRitira').classList.toggle('hidden', !pubblicato);
+    $('#btnElimina').classList.toggle('hidden', !articolo);
+    $('#btnPubblica').textContent = pubblicato ? 'Aggiorna' : 'Pubblica';
+
+    $('#statoArticolo').textContent = articolo
+      ? `id: ${articolo.id} · stato: ${articolo.status}`
+      : 'Nuovo articolo, non ancora salvato.';
+
+    mostra('editor');
+    window.scrollTo({top:0});
+  }
+
+  async function apriArticolo(id){
+    const { data, error } = await supa
+      .from('news').select('*').eq('id', id).single();
+    if(error){ avvisa('Non riesco ad aprire l\'articolo.', 'err'); return; }
+    apriEditor(data);
+  }
+
+  $('#btnNuovo').addEventListener('click', ()=>apriEditor(null));
+  $('#btnAnnulla').addEventListener('click', ()=>{
+    mostra('elenco'); caricaElenco();
+  });
+
+  // Barra di formattazione
+  $$('.toolbar [data-cmd]').forEach(b=>{
+    b.addEventListener('click', e=>{
+      e.preventDefault();
+      const ed = $('#editor'); ed.focus();
+      const cmd = b.getAttribute('data-cmd');
+      if(cmd === 'bold')       document.execCommand('bold');
+      else if(cmd === 'italic')    document.execCommand('italic');
+      else if(cmd === 'underline') document.execCommand('underline');
+      else if(cmd === 'ul')        document.execCommand('insertUnorderedList');
+      else if(cmd === 'h2')        document.execCommand('formatBlock', false, 'h2');
+      else if(cmd === 'clean')     document.execCommand('removeFormat');
+      else if(cmd === 'link'){
+        const url = prompt('Indirizzo del link (https://…)');
+        if(url && /^https?:\/\//i.test(url)) document.execCommand('createLink', false, url);
+      }
+    });
+  });
+
+  /* ---------------- salvataggio ---------------- */
+  function ripulisciHtml(html){
+    // L'editor puo' incollare roba dal telefono o da altri siti.
+    // Qui si toglie cio' che non deve mai finire in una pagina:
+    // script, iframe, gestori di eventi inline, link javascript:.
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll('script,iframe,object,embed,style,link,meta')
+       .forEach(el => el.remove());
+    doc.querySelectorAll('*').forEach(el=>{
+      [...el.attributes].forEach(attr=>{
+        const nome = attr.name.toLowerCase();
+        const val  = (attr.value || '').trim().toLowerCase();
+        if(nome.startsWith('on'))                 el.removeAttribute(attr.name);
+        if(nome === 'href' && val.startsWith('javascript:')) el.removeAttribute('href');
+        if(nome === 'src'  && val.startsWith('javascript:')) el.removeAttribute('src');
+      });
+    });
+    return doc.body.innerHTML;
+  }
+
+  async function salva(stato){
+    const titolo = $('#titolo').value.trim();
+    if(!titolo){ avvisa('Il titolo è obbligatorio.', 'err'); return; }
+
+    const corpo = ripulisciHtml($('#editor').innerHTML || '');
+    if(!corpo.replace(/<[^>]*>/g, '').trim()){
+      avvisa('Il testo è vuoto.', 'err'); return;
+    }
+
+    const quando = $('#dataPub').value
+      ? new Date($('#dataPub').value).toISOString()
+      : new Date().toISOString();
+
+    const riga = {
+      id: articoloCorrente ? articoloCorrente.id : nuovoId(),
+      title: titolo,
+      body_html: corpo,
+      published_at: quando,
+      status: stato
+    };
+
+    const bottoni = ['#btnSalvaBozza','#btnPubblica','#btnRitira'];
+    bottoni.forEach(s => $(s).disabled = true);
+
+    const { error } = await supa.from('news').upsert(riga);
+
+    bottoni.forEach(s => $(s).disabled = false);
+
+    if(error){ avvisa('Salvataggio non riuscito: ' + error.message, 'err'); return; }
+
+    avvisa(stato === 'published'
+      ? 'Articolo pubblicato. È già online.'
+      : 'Bozza salvata. Non è visibile al pubblico.');
+
+    articoloCorrente = riga;
+    apriEditor(riga);
+  }
+
+  $('#btnSalvaBozza').addEventListener('click', ()=>salva('draft'));
+  $('#btnPubblica').addEventListener('click', ()=>salva('published'));
+  $('#btnRitira').addEventListener('click', ()=>{
+    if(confirm('Riportare l\'articolo a bozza? Sparirà dal sito pubblico.'))
+      salva('draft');
+  });
+
+  $('#btnElimina').addEventListener('click', async ()=>{
+    if(!articoloCorrente) return;
+    if(!confirm('Eliminare definitivamente questo articolo?')) return;
+    const { error } = await supa.from('news')
+      .delete().eq('id', articoloCorrente.id);
+    if(error){ avvisa('Eliminazione non riuscita: ' + error.message, 'err'); return; }
+    avvisa('Articolo eliminato.');
+    articoloCorrente = null;
+    mostra('elenco'); caricaElenco();
+  });
+
+  /* ---------------- importazione una tantum ---------------- */
+  $('#btnImporta').addEventListener('click', async ()=>{
+    if(!confirm('Importare le notizie dal vecchio news.json su GitHub?')) return;
+    $('#btnImporta').disabled = true;
+
+    try{
+      const res = await fetch(NEWS_JSON + '?v=' + Date.now(), {cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const vecchie = await res.json();
+
+      const righe = (vecchie || [])
+        .filter(n => n && n.id)
+        .map(n => ({
+          id: n.id,
+          title: n.title || '(senza titolo)',
+          body_html: ripulisciHtml(n.bodyHtml || n.body || ''),
+          // il vecchio formato salva la data in millisecondi
+          published_at: new Date(n.ts || Date.now()).toISOString(),
+          status: 'published'
+        }));
+
+      if(!righe.length){ avvisa('Nessuna notizia da importare.', 'err'); return; }
+
+      // upsert: rilanciare l'importazione aggiorna, non duplica
+      const { error } = await supa.from('news').upsert(righe);
+      if(error) throw error;
+
+      avvisa(`Importate ${righe.length} notizie, con id e date originali.`);
+      caricaElenco();
+    }catch(e){
+      avvisa('Importazione non riuscita: ' + e.message, 'err');
+    }finally{
+      $('#btnImporta').disabled = false;
+    }
+  });
+
+  /* ---------------- avvio ---------------- */
+  if(SUPABASE_KEY.startsWith('INCOLLA')){
+    avvisa('Manca la publishable key: aprí questo file e sostituiscila '
+         + 'nella riga SUPABASE_KEY.', 'err');
+  }
+  supa.auth.onAuthStateChange(()=>aggiornaSessione());
+  aggiornaSessione();
+
+})();
+</script>
+</body>
+</html>
