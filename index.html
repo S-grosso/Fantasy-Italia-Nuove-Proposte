@@ -483,7 +483,16 @@
     if($('#moderationFilter')?.value==='approved'){ renderModeration(); }
   }
   function normalizeNews(arr){
-    return (arr||[]).map((x,i)=>({ id:x.id||('n'+i), title:x.title, bodyHtml:x.bodyHtml||x.body||'', ts:x.ts||Date.now() }));
+    // Accetta sia il formato Supabase (body_html, published_at) sia quello
+    // vecchio del JSON (bodyHtml, ts), così il sito funziona anche se un
+    // giorno tornassi al file statico.
+    return (arr||[]).map((x,i)=>({
+      id:       x.id || ('n'+i),
+      title:    x.title,
+      bodyHtml: x.body_html || x.bodyHtml || x.body || '',
+      ts:       x.published_at ? new Date(x.published_at).getTime()
+                               : (x.ts || Date.now())
+    }));
   }
   function placeholderCover(){
     return 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="160" viewBox="0 0 120 160"><rect width="100%" height="100%" fill="#0b0e13"/><rect x="10" y="10" width="100" height="140" rx="8" ry="8" fill="#0f141d" stroke="#1d2230"/><text x="60" y="83" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="14" fill="#5e657a">Copertina</text></svg>');
