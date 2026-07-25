@@ -323,10 +323,24 @@
 
   /* ==== Config Solo GitHub ==== */
   const DEFAULT_GITHUB_BASE = 'https://raw.githubusercontent.com/S-grosso/Fantasy-Italia-Nuove-Proposte/main/data/';
+  // Le notizie ora vivono su Supabase, non più in un file JSON su GitHub:
+  // così puoi pubblicare da qualunque dispositivo senza caricare nulla.
+  // Questa è l'API REST: chiede solo gli articoli in stato 'published',
+  // dal più recente. Le bozze restano invisibili perché è il database a
+  // rifiutarle a chi non è l'admin autenticato.
+  const SUPABASE_URL = 'https://nncnhlbaqnfqtjwembii.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_0prYsjRCftybZ7uQ7tTryA_D5N2r9kQ';
+
+  const NEWS_ENDPOINT = SUPABASE_URL + '/rest/v1/news'
+    + '?select=id,title,body_html,published_at'
+    + '&status=eq.published'
+    + '&order=published_at.desc'
+    + '&apikey=' + SUPABASE_KEY;
+
   const DEFAULTS = {
     adminsUrl:     DEFAULT_GITHUB_BASE + 'admins.json',
     catalogUrl:    DEFAULT_GITHUB_BASE + 'catalogo.json',
-    newsUrl:       DEFAULT_GITHUB_BASE + 'news.json',
+    newsUrl:       NEWS_ENDPOINT,
     candidatesUrl: DEFAULT_GITHUB_BASE + 'candidates.json'
   };
 
