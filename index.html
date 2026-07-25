@@ -307,6 +307,28 @@
 
 </main>
 
+  <!-- Accesso amministratore -->
+<div id="loginBox" style="display:none;position:fixed;inset:0;z-index:20000;
+     background:rgba(8,9,12,.75);align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="max-width:380px;width:100%;background:#171923;
+       border:1px solid #232635;border-radius:14px;padding:20px;flex-direction:column">
+    <h3 style="margin:0 0 14px 0;font-size:17px">Accesso amministratore</h3>
+    <div class="field">
+      <label for="loginEmail">Email</label>
+      <input id="loginEmail" type="email" autocomplete="username" inputmode="email">
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label for="loginPwd">Password</label>
+      <input id="loginPwd" type="password" autocomplete="current-password">
+    </div>
+    <div id="loginErr" class="small" style="color:#ff9aa9;margin-top:10px;display:none"></div>
+    <div class="actions" style="margin-top:16px">
+      <button class="btn primary" id="loginOk">Entra</button>
+      <button class="btn" id="loginAnnulla">Annulla</button>
+    </div>
+  </div>
+</div>
+  
 <footer>
   <div>Fantasy Italia — Nuove proposte è un catalogo collaborativo dedicato alla narrativa fantasy italiana contemporanea.</div>
   <div style="margin-top:6px">
@@ -357,7 +379,7 @@
     autoRejected: load('fi_auto_rejected_v1', []),  // candidati che hai scartato: non li rivedi più
     pendingNews:  load('fi_news_pending_v1', []),  // bozze locali
     approvedEdits: load(APPROVED_EDITS_KEY, {}),
-    remoteAdmins: null
+    user: null            // utente Supabase, null se non autenticato
   };
   // Le impostazioni salvate da versioni precedenti non conoscono candidatesUrl:
   // senza questa migrazione il sito prova a fetchare "undefined" (404) e i
@@ -388,49 +410,92 @@
     return res.json();
   }
 
-  /* ==== Admin sessione ==== */
-  function sessionIsValid(){
-    const u=sessionStorage.getItem('fi_admin_user');
-    const t=+sessionStorage.getItem('fi_admin_time')||0;
-    if(!u || (Date.now()-t>4*60*60*1000)) return false;
-    if(Array.isArray(state.remoteAdmins)) return state.remoteAdmins.some(a=>a.u===u);
-    return true;
-  }
-  function touchSession(){ sessionStorage.setItem('fi_admin_time', String(Date.now())); }
-  function clearSession(){ sessionStorage.removeItem('fi_admin_user'); sessionStorage.removeItem('fi_admin_time'); }
+  /* ==== Admin: autenticazione Supabase ==== */
+  // Un solo account, verificato dal server. Il vecchio PBKDF2 nascondeva
+  // le sezioni ma non impediva nulla: il controllo girava nel browser
+  // del visitatore, che poteva aggirarlo. Qui la sessione è un token
+  // firmato da Supabase, e le regole del database la verificano davvero.
+  const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  async function pbkdf2Hex(pass, saltHex, iters, length=32){
-    const enc=new TextEncoder();
-    const key=await crypto.subtle.importKey('raw', enc.encode(pass), {name:'PBKDF2'}, false, ['deriveBits']);
-    const salt=new Uint8Array((saltHex.match(/.{1,2}/g)||[]).map(b=>parseInt(b,16)));
-    const bits=await crypto.subtle.deriveBits({name:'PBKDF2', hash:'SHA-256', salt, iterations:iters}, key, length*8);
-    return [...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,'0')).join('');
+  // sessionIsValid() è chiamata da molte parti in modo sincrono, quindi
+  // legge una variabile tenuta aggiornata dagli eventi di Supabase
+  // invece di interrogare il server ogni volta.
+  function sessionIsValid(){ return !!state.user; }
+
+  // Supabase rinnova il token da sé: non serve più prolungare la sessione
+  // a mano. La funzione resta per non dover togliere le chiamate sparse.
+  function touchSession(){}
+
+  async function aggiornaSessioneAdmin(){
+    const { data } = await supa.auth.getSession();
+    state.user = data.session ? data.session.user : null;
+    applyAdminUI();
   }
-  async function doLoginFlow(){
-    const u=prompt('Inserisci username admin'); if(u===null||!u.trim()) return false;
-    const p=prompt('Inserisci password'); if(p===null) return false;
-    try{
-      const list = await fetchJson(state.settings.adminsUrl);
-      state.remoteAdmins=list;
-      const rec=list.find(a=>a.u===u.trim());
-      if(!rec){ alert('Utente non trovato.'); return false; }
-      const h=await pbkdf2Hex(p, rec.salt, rec.iter||120000, 32);
-      if(h!==rec.hash){ alert('Password errata.'); return false; }
-      sessionStorage.setItem('fi_admin_user', rec.u); touchSession(); applyAdminUI();
-      alert('Accesso admin eseguito.'); return true;
-    }catch(e){ console.error(e); alert('Errore durante il login.'); return false; }
+
+  function apriLogin(){
+    $('#loginErr').style.display = 'none';
+    $('#loginPwd').value = '';
+    $('#loginBox').style.display = 'flex';
+    setTimeout(()=>$('#loginEmail').focus(), 50);
   }
-  $('#adminToggle')?.addEventListener('click', async ()=>{
-    if(sessionIsValid()){ clearSession(); applyAdminUI(); alert('Sei uscito dalla sessione admin.'); }
-    else await doLoginFlow();
+  function chiudiLogin(){ $('#loginBox').style.display = 'none'; }
+
+  async function eseguiLogin(){
+    const email = ($('#loginEmail').value || '').trim();
+    const pwd   = $('#loginPwd').value;
+    const err   = $('#loginErr');
+
+    if(!email || !pwd){
+      err.textContent = 'Inserisci email e password.';
+      err.style.display = 'block';
+      return;
+    }
+
+    $('#loginOk').disabled = true;
+    const { error } = await supa.auth.signInWithPassword({
+      email: email, password: pwd
+    });
+    $('#loginOk').disabled = false;
+
+    if(error){
+      err.textContent = 'Accesso non riuscito.';
+      err.style.display = 'block';
+      return;
+    }
+    $('#loginPwd').value = '';
+    chiudiLogin();
+    await aggiornaSessioneAdmin();
+  }
+
+  $('#loginOk')?.addEventListener('click', eseguiLogin);
+  $('#loginAnnulla')?.addEventListener('click', chiudiLogin);
+  $('#loginPwd')?.addEventListener('keydown', e=>{
+    if(e.key === 'Enter') eseguiLogin();
   });
-  $('#btnLogout')?.addEventListener('click', ()=>{ clearSession(); applyAdminUI(); alert('Sei uscito dalla sessione admin.'); });
+  // Un tocco fuori dal riquadro chiude la finestrella
+  $('#loginBox')?.addEventListener('click', e=>{
+    if(e.target.id === 'loginBox') chiudiLogin();
+  });
 
+  async function esciAdmin(){
+    await supa.auth.signOut();
+    state.user = null;
+    applyAdminUI();
+    showTab('catalogo');
+    location.hash = '#catalogo';
+  }
+
+  $('#adminToggle')?.addEventListener('click', ()=>{
+    if(sessionIsValid()) esciAdmin();
+    else apriLogin();
+  });
+  $('#btnLogout')?.addEventListener('click', esciAdmin);
+  
   function applyAdminUI(){
     const on=sessionIsValid();
     $('#navAdmin').style.display = on ? 'flex' : 'none';
     $('#adminBadge').style.display = on ? 'inline-block' : 'none';
-    $('#adminBadge').textContent = on ? ('Admin: '+(sessionStorage.getItem('fi_admin_user')||'')) : '';
+    $('#adminBadge').textContent = on ? (state.user.email || 'Admin') : '';
     $('#adminToggle').textContent = on ? 'Esci admin' : 'Accedi admin';
     $('#adminTools').style.display = on ? 'flex' : 'none';
     $('#newsAdminBar').style.display = on ? 'flex' : 'none';
@@ -1097,9 +1162,12 @@
 
   /* ==== Init ==== */
   (async function init(){
-    if(sessionIsValid()) touchSession();
-    applyAdminUI();
     buildYearFilter();
+
+    // La sessione va letta prima di disegnare l'interfaccia, altrimenti
+    // le sezioni admin sfarfallano a ogni ricaricamento della pagina.
+    await aggiornaSessioneAdmin();
+    supa.auth.onAuthStateChange(()=>aggiornaSessioneAdmin());
 
     // Precompila campi Impostazioni con i default o quelli salvati
     $('#adminsUrl').value = state.settings.adminsUrl;
