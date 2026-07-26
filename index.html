@@ -33,7 +33,9 @@
   main{padding:20px 16px}
   section{max-width:1100px;margin:0 auto;background:#171923;border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+  /* 300px invece di 260: sotto quella soglia i due pulsanti negozio non
+     stanno affiancati accanto alla copertina. */
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
   /* In Moderazione le card sono editor completi: servono a larghezza piena */
   #gridModeration.grid{grid-template-columns:1fr}
   #gridModeration .card{max-width:900px}
@@ -52,18 +54,21 @@
   .tag .rem{cursor:pointer;font-weight:700;opacity:.8}
   /* I due pulsanti negozio sommano 208px: su schermo stretto non stanno
      accanto alla copertina. Vanno a capo invece di uscire dalla card. */
-  .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+  .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:nowrap}
   .btn{background:#151826;border:1px solid var(--border);color:var(--ink);padding:8px 10px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
   .btn.primary{outline:2px solid var(--accent)}
   .btn.danger{outline:1px solid #402;color:#ff9aa9}
   .btn.small{font-size:12px;padding:6px 8px}
 
   /* Store buttons: 35x100, nero Amazon */
+  /* Larghezza elastica invece che fissa: i due pulsanti si dividono lo
+     spazio disponibile e restano affiancati dentro la card, sia su
+     schermo largo sia su telefono. */
   .btn-amz, .btn-store{
-    width:100px;height:35px;padding:0;
+    flex:1 1 0;min-width:0;max-width:130px;height:35px;padding:0 6px;
     display:inline-flex;align-items:center;justify-content:center;
     border-radius:10px;font-size:12px;font-weight:600;letter-spacing:.2px;
-    border:1px solid #0c0e14;text-decoration:none;flex:0 1 100px;min-width:86px;
+    border:1px solid #0c0e14;text-decoration:none;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .btn-amz{background:#131a22}
