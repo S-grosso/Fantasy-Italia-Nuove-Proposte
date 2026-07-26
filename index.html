@@ -145,8 +145,9 @@
   <!-- Nuovo titolo -->
   <section id="nuovo" class="tab" style="display:none">
     <div class="toolbar">
-      <div class="small muted">I campi con (*) sono obbligatori.</div>
-      <span class="right small muted">Le bozze restano qui finché non esporti e carichi il JSON su GitHub.</span>
+      <div class="small muted">Questo modulo è stato sostituito dalla
+        <a href="catalogo-admin.html" style="color:#9fc8ff">gestione del catalogo</a>,
+        dove le schede si salvano subito su database.</div>
     </div>
 
     <div class="row">
@@ -187,8 +188,8 @@
     </div>
 
     <div class="actions">
-      <button class="btn primary" id="btnSaveNew">Salva bozza (Moderazione)</button>
-      <span class="hint">Apparirà in Catalogo solo dopo l’upload su GitHub.</span>
+      <a class="btn primary" href="catalogo-admin.html">Apri la gestione del catalogo →</a>
+      <span class="hint">I nuovi titoli si inseriscono da lì: vengono salvati subito e non si perdono.</span>
     </div>
   </section>
 
@@ -1094,6 +1095,14 @@
   }
   function renderModeration(){
     const grid=$('#gridModeration'); grid.innerHTML='';
+    // La moderazione vive ora in catalogo-admin.html, su Supabase.
+    // Questa sezione leggeva candidates.json e salvava nel browser:
+    // due mondi separati che non si parlavano piu'.
+    grid.innerHTML = '<div class="muted">La moderazione si è spostata: '
+      + '<a href="catalogo-admin.html" style="color:#9fc8ff">'
+      + 'apri la gestione del catalogo →</a></div>';
+    return;
+    /* codice superato, lasciato per riferimento:
     const f=$('#moderationFilter').value;
 
     if(f==='approved'){
@@ -1130,6 +1139,7 @@
       grid.appendChild(h);
       mani.forEach(b=>grid.appendChild(modCard(b,'pending')));
     }
+    */
   }
   $('#moderationFilter')?.addEventListener('change', renderModeration);
 
