@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catalogo • Fantasy Italia</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root{ --bg:#0f1013; --panel:#171923; --ink:#e7e9ee; --muted:#a9adbb;
+         --accent:#7aa6ff; --border:#232635; --ok:#8fd9a8; --warn:#ffc46b;
+         --viola:#c9a0ff; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+       background:var(--bg);color:var(--ink);padding-bottom:40px}
+
+  header{position:sticky;top:0;z-index:50;background:rgba(13,14,18,.94);
+         backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
+  .wrap{max-width:860px;margin:0 auto;padding:12px 16px}
+  .topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  h1{font-size:18px;margin:0;flex:1}
+  main{max-width:860px;margin:0 auto;padding:16px}
+
+  .card{background:var(--panel);border:1px solid var(--border);
+        border-radius:14px;padding:16px;margin-bottom:14px}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row .field{flex:1;min-width:150px}
+  label{font-size:13px;color:var(--muted)}
+  input,textarea,select{background:#0f1016;color:var(--ink);
+        border:1px solid var(--border);border-radius:10px;padding:11px;
+        font-size:16px;width:100%}
+  textarea{min-height:120px;resize:vertical;line-height:1.5}
+
+  .btn{background:#151826;border:1px solid var(--border);color:var(--ink);
+       padding:11px 14px;border-radius:10px;cursor:pointer;font-size:15px;
+       display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+  .btn.primary{outline:2px solid var(--accent)}
+  .btn.ok{outline:2px solid #2d6b45}
+  .btn.danger{outline:1px solid #5a2a2a;color:#ff9aa9}
+  .btn.small{font-size:13px;padding:7px 10px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+  .filtri{display:flex;gap:6px;flex-wrap:wrap}
+  .filtri button{background:#151826;border:1px solid var(--border);
+       color:var(--muted);padding:8px 12px;border-radius:999px;
+       cursor:pointer;font-size:14px}
+  .filtri button.on{color:var(--ink);outline:2px solid var(--accent)}
+
+  .tag{display:inline-block;font-size:12px;padding:3px 9px;border-radius:999px;
+       border:1px solid var(--border);color:var(--muted);margin:2px 0}
+  .tag.appr{color:var(--ok);border-color:#2d6b45}
+  .tag.cand{color:var(--warn);border-color:#8a6420}
+  .tag.bozza{color:#9fc8ff;border-color:#2854aa}
+  .tag.scart{color:#ff9aa9;border-color:#5a2a2a}
+  .tag.gen{color:var(--viola);border-color:#5a3d8a}
+  .tag .x{cursor:pointer;font-weight:700;margin-left:6px;opacity:.8}
+
+  .msg{border-radius:10px;padding:11px 13px;font-size:14px;margin-bottom:14px;display:none}
+  .msg.show{display:block}
+  .msg.ok{background:#142a20;border:1px solid #2d6b45;color:#cfe9d8}
+  .msg.err{background:#361a22;border:1px solid #5a2a2a;color:#ffd0d0}
+
+  .item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;
+        border-bottom:1px solid var(--border)}
+  .item:last-child{border-bottom:none}
+  .item img{width:52px;height:74px;object-fit:cover;border-radius:6px;
+        border:1px solid var(--border);background:#080a0f;flex:0 0 52px}
+  .item .info{flex:1;min-width:0}
+  .item h3{margin:0 0 4px;font-size:15px;line-height:1.3}
+  .item .meta{font-size:12px;color:var(--muted)}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+  .hidden{display:none}
+  #anteprima{width:70px;height:100px;object-fit:cover;border-radius:8px;
+        border:1px solid var(--border);background:#080a0f}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap topbar">
+    <a class="btn small" href="index.html">← Sito</a>
+    <h1>Catalogo</h1>
+    <span id="chiSono" class="tag hidden"></span>
+    <button id="btnEsci" class="btn small hidden">Esci</button>
+  </div>
+</header>
+
+<main>
+  <div id="messaggio" class="msg"></div>
+
+  <!-- ============ LOGIN ============ -->
+  <section id="vistaLogin" class="card">
+    <h2 style="margin-top:0;font-size:17px">Accesso</h2>
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" inputmode="email">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password">
+    </div>
+    <button id="btnEntra" class="btn primary">Entra</button>
+  </section>
+
+  <!-- ============ ELENCO ============ -->
+  <section id="vistaElenco" class="hidden">
+    <div class="card">
+      <div class="filtri" id="filtri">
+        <button data-f="candidate" class="on">Da revisionare</button>
+        <button data-f="draft">Bozze</button>
+        <button data-f="approved">In catalogo</button>
+        <button data-f="rejected">Scartati</button>
+      </div>
+      <div class="actions">
+        <button id="btnNuovo" class="btn primary">Nuovo titolo</button>
+        <button id="btnRicarica" class="btn small">Ricarica</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="elenco"><div class="muted">Caricamento…</div></div>
+    </div>
+
+    <div class="card" id="boxImporta">
+      <div class="small muted" style="margin-bottom:10px">
+        <b>Importazione una tantum.</b> Copia su Supabase i libri di
+        <code>catalogo.json</code>, conservando gli id. Si può rilanciare
+        senza creare doppioni.<br><br>
+        <b>Attenzione:</b> se hai correzioni non ancora esportate (etichette
+        o “consigliato” modificati nel vecchio pannello), esporta e carica
+        il JSON <i>prima</i> di importare, altrimenti le perdi.
+      </div>
+      <button id="btnImporta" class="btn small">Importa da catalogo.json</button>
+    </div>
+  </section>
+
+  <!-- ============ EDITOR ============ -->
+  <section id="vistaEditor" class="card hidden">
+    <div style="display:flex;gap:14px;margin-bottom:14px">
+      <img id="anteprima" alt="Copertina">
+      <div style="flex:1;min-width:0">
+        <div id="statoLibro" class="small muted"></div>
+        <div id="provenienza" class="small muted" style="margin-top:6px"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field"><label for="f_title">Titolo *</label>
+        <input id="f_title" type="text"></div>
+      <div class="field"><label for="f_author">Autore *</label>
+        <input id="f_author" type="text"></div>
+    </div>
+
+    <div class="row">
+      <div class="field"><label for="f_publisher">Editore *</label>
+        <input id="f_publisher" type="text"></div>
+      <div class="field" style="max-width:110px"><label for="f_year">Anno</label>
+        <input id="f_year" type="number" inputmode="numeric"></div>
+      <div class="field" style="max-width:170px"><label for="f_series">Collana</label>
+        <input id="f_series" type="text"></div>
+    </div>
+
+    <div class="row">
+      <div class="field" style="max-width:220px"><label for="f_isbn">ISBN</label>
+        <input id="f_isbn" type="text" inputmode="numeric"></div>
+      <div class="field" style="max-width:220px"><label for="f_genre">Genere</label>
+        <input id="f_genre" type="text" placeholder="dark fantasy, romantasy…"></div>
+    </div>
+
+    <div class="field"><label for="f_cover">URL copertina</label>
+      <input id="f_cover" type="url" placeholder="https://…/cover.jpg"></div>
+
+    <div class="row">
+      <div class="field"><label for="f_amz">Store Amazon</label>
+        <input id="f_amz" type="url"></div>
+      <div class="field"><label for="f_store">Store editore</label>
+        <input id="f_store" type="url"></div>
+    </div>
+    <div id="avvisoAmazon" class="small muted hidden" style="margin:-6px 0 12px"></div>
+
+    <div class="field"><label for="f_desc">Sinossi</label>
+      <textarea id="f_desc"></textarea></div>
+
+    <div class="row">
+      <div class="field" style="max-width:210px">
+        <label for="f_debut">Romanzo d'esordio?</label>
+        <select id="f_debut">
+          <option value="">Non specificato</option>
+          <option value="si">Sì</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+      <div class="field" style="max-width:200px;justify-content:flex-end">
+        <label style="display:inline-flex;align-items:center;gap:8px;
+                      color:var(--ink);font-size:15px;padding-bottom:9px">
+          <input id="f_featured" type="checkbox" style="width:auto"> Consigliato
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Etichette (premi, riconoscimenti)</label>
+      <div id="etichette" style="margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px">
+        <input id="nuovaEtichetta" type="text" placeholder="es. Vincitore Premio Italia">
+        <button id="btnAggiungiEtichetta" class="btn small">Aggiungi</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="btnSalva" class="btn">Salva</button>
+      <button id="btnApprova" class="btn ok">Pubblica in catalogo</button>
+      <button id="btnScarta" class="btn small">Scarta</button>
+      <button id="btnChiudi" class="btn small">Chiudi</button>
+      <button id="btnElimina" class="btn danger small hidden">Elimina</button>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  'use strict';
+
+  /* ===== CONFIGURAZIONE =====
+     Incolla qui la tua publishable key (Supabase -> Settings -> API).
+     Non e' un segreto: le regole del database bloccano tutto cio' che
+     non e' pubblico a chi non ha effettuato l'accesso. */
+  const SUPABASE_URL = 'https://nncnhlbaqnfqtjwembii.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_0prYsjRCftybZ7uQ7tTryA_D5N2r9kQ';
+
+  const CATALOGO_JSON = 'https://raw.githubusercontent.com/S-grosso/'
+                      + 'Fantasy-Italia-Nuove-Proposte/main/data/catalogo.json';
+
+  const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const $  = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+
+  let utente = null;
+  let filtro = 'candidate';
+  let libro  = null;      // null = nuovo titolo
+  let etichette = [];
+
+  /* ---------------- messaggi ---------------- */
+  let timerMsg;
+  function avvisa(testo, tipo){
+    const m = $('#messaggio');
+    m.textContent = testo;
+    m.className = 'msg show ' + (tipo === 'err' ? 'err' : 'ok');
+    clearTimeout(timerMsg);
+    if(tipo !== 'err') timerMsg = setTimeout(()=>m.className='msg', 4000);
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  function mostra(quale){
+    $('#vistaLogin').classList.toggle('hidden',  quale !== 'login');
+    $('#vistaElenco').classList.toggle('hidden', quale !== 'elenco');
+    $('#vistaEditor').classList.toggle('hidden', quale !== 'editor');
+  }
+
+  /* ---------------- accesso ---------------- */
+  async function aggiornaSessione(opzioni){
+    opzioni = opzioni || {};
+    const { data } = await supa.auth.getSession();
+    const prima = !!utente;
+    utente = data.session ? data.session.user : null;
+
+    $('#chiSono').classList.toggle('hidden', !utente);
+    $('#btnEsci').classList.toggle('hidden', !utente);
+    if(utente) $('#chiSono').textContent = utente.email;
+
+    if(!utente){ mostra('login'); return; }
+
+    // Il token si rinnova da solo quando la scheda torna in primo piano:
+    // senza questo controllo, ogni rientro riporterebbe all'elenco
+    // cancellando quello che stavi scrivendo.
+    if(prima && !opzioni.forza) return;
+
+    mostra('elenco'); carica();
+  }
+
+  $('#btnEntra').addEventListener('click', async ()=>{
+    const e = $('#email').value.trim(), p = $('#password').value;
+    if(!e || !p){ avvisa('Inserisci email e password.', 'err'); return; }
+    $('#btnEntra').disabled = true;
+    const { error } = await supa.auth.signInWithPassword({email:e, password:p});
+    $('#btnEntra').disabled = false;
+    if(error){ avvisa('Accesso non riuscito.', 'err'); return; }
+    $('#password').value = '';
+    aggiornaSessione({forza:true});
+  });
+  $('#password').addEventListener('keydown', e=>{
+    if(e.key === 'Enter') $('#btnEntra').click();
+  });
+  $('#btnEsci').addEventListener('click', async ()=>{
+    await supa.auth.signOut();
+    aggiornaSessione({forza:true});
+  });
+
+  /* ---------------- elenco ---------------- */
+  const ETICHETTA_STATO = {
+    candidate: ['cand',  'da revisionare'],
+    draft:     ['bozza', 'bozza'],
+    approved:  ['appr',  'in catalogo'],
+    rejected:  ['scart', 'scartato']
+  };
+
+  $$('#filtri button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      $$('#filtri button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      filtro = b.getAttribute('data-f');
+      carica();
+    });
+  });
+  $('#btnRicarica').addEventListener('click', carica);
+
+  async function carica(){
+    const box = $('#elenco');
+    box.innerHTML = '<div class="muted">Caricamento…</div>';
+
+    const { data, error } = await supa
+      .from('books')
+      .select('id,title,author,publisher,year,cover_url,status,genre,featured,confidence')
+      .eq('status', filtro)
+      .order('updated_at', {ascending:false})
+      .limit(300);
+
+    if(error){
+      box.innerHTML = '<div class="muted">Errore nel caricamento.</div>';
+      avvisa('Non riesco a leggere il catalogo: ' + error.message, 'err');
+      return;
+    }
+    if(!data.length){
+      box.innerHTML = '<div class="muted">Niente in questa sezione.</div>';
+      return;
+    }
+
+    box.innerHTML = '';
+    data.forEach(b=>{
+      const riga = document.createElement('div'); riga.className = 'item';
+
+      const img = document.createElement('img');
+      img.alt = ''; img.loading = 'lazy';
+      img.src = b.cover_url || 'data:image/svg+xml;utf8,'
+        + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="52" height="74"/>');
+
+      const info = document.createElement('div'); info.className = 'info';
+      const h3 = document.createElement('h3');
+      h3.textContent = b.title || '(senza titolo)';
+      const meta = document.createElement('div'); meta.className = 'meta';
+      meta.textContent = [b.author, b.publisher, b.year].filter(Boolean).join(' • ');
+
+      const tags = document.createElement('div');
+      if(b.genre){
+        const g = document.createElement('span');
+        g.className = 'tag gen'; g.textContent = b.genre;
+        tags.appendChild(g);
+      }
+      if(b.featured){
+        const f = document.createElement('span');
+        f.className = 'tag appr'; f.textContent = 'consigliato';
+        tags.appendChild(f);
+      }
+      if(b.confidence === 'bassa'){
+        const c = document.createElement('span');
+        c.className = 'tag cand'; c.textContent = 'da verificare';
+        tags.appendChild(c);
+      }
+
+      info.appendChild(h3); info.appendChild(meta); info.appendChild(tags);
+
+      const apri = document.createElement('button');
+      apri.className = 'btn small'; apri.textContent = 'Apri';
+      apri.addEventListener('click', ()=>apriLibro(b.id));
+
+      riga.appendChild(img); riga.appendChild(info); riga.appendChild(apri);
+      box.appendChild(riga);
+    });
+  }
+
+  /* ---------------- editor ---------------- */
+  function disegnaEtichette(){
+    const box = $('#etichette');
+    box.innerHTML = '';
+    if(!etichette.length){
+      box.innerHTML = '<span class="tag">nessuna etichetta</span>';
+      return;
+    }
+    etichette.forEach(t=>{
+      const p = document.createElement('span');
+      p.className = 'tag bozza';
+      p.appendChild(document.createTextNode(t));
+      const x = document.createElement('span');
+      x.className = 'x'; x.textContent = '×';
+      x.addEventListener('click', ()=>{
+        etichette = etichette.filter(v=>v !== t);
+        disegnaEtichette();
+      });
+      p.appendChild(x);
+      box.appendChild(p);
+    });
+  }
+
+  $('#btnAggiungiEtichetta').addEventListener('click', ()=>{
+    const v = $('#nuovaEtichetta').value.trim();
+    if(!v) return;
+    if(!etichette.includes(v)) etichette.push(v);
+    $('#nuovaEtichetta').value = '';
+    disegnaEtichette();
+  });
+  $('#nuovaEtichetta').addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){ e.preventDefault(); $('#btnAggiungiEtichetta').click(); }
+  });
+
+  function apriEditor(b){
+    libro = b;
+    const v = (x, d) => (b && b[x] != null ? b[x] : (d !== undefined ? d : ''));
+
+    $('#f_title').value     = v('title');
+    $('#f_author').value    = v('author');
+    $('#f_publisher').value = v('publisher');
+    $('#f_year').value      = v('year', new Date().getFullYear());
+    $('#f_series').value    = v('series');
+    $('#f_isbn').value      = v('isbn');
+    $('#f_genre').value     = v('genre');
+    $('#f_cover').value     = v('cover_url');
+    $('#f_amz').value       = v('store_amazon_url');
+    $('#f_store').value     = v('store_publisher_url');
+    $('#f_desc').value      = v('description');
+    $('#f_featured').checked = !!(b && b.featured);
+    $('#f_debut').value = b && b.is_debut === true ? 'si'
+                        : b && b.is_debut === false ? 'no' : '';
+
+    etichette = (b && Array.isArray(b.labels)) ? b.labels.slice() : [];
+    disegnaEtichette();
+
+    $('#anteprima').src = v('cover_url');
+    $('#statoLibro').textContent = b
+      ? `${(ETICHETTA_STATO[b.status]||['',''])[1]} · id ${b.id}`
+      : 'Nuovo titolo, non ancora salvato.';
+
+    // Provenienza: valorizzata solo per i candidati dello Scout
+    const prov = $('#provenienza');
+    if(b && b.source){
+      prov.textContent = `Trovato da: ${b.source}`
+        + (b.confidence ? ` · confidenza ${b.confidence}` : '')
+        + (b.reason ? ` · ${b.reason}` : '');
+      prov.classList.remove('hidden');
+    } else { prov.textContent = ''; }
+
+    // Se lo Scout ha messo un link di ricerca invece del prodotto
+    const av = $('#avvisoAmazon');
+    const amz = v('store_amazon_url');
+    if(amz && amz.includes('/s?k=')){
+      av.innerHTML = '';
+      av.append('Questo è un link di ricerca, non del prodotto: ');
+      const a = document.createElement('a');
+      a.href = amz; a.target = '_blank'; a.rel = 'noopener';
+      a.style.color = '#9fc8ff'; a.textContent = 'aprilo su Amazon';
+      av.append(a, ' e incolla qui sopra l\'indirizzo definitivo.');
+      av.classList.remove('hidden');
+    } else { av.classList.add('hidden'); }
+
+    $('#btnElimina').classList.toggle('hidden', !b);
+    $('#btnApprova').textContent = (b && b.status === 'approved')
+      ? 'Aggiorna in catalogo' : 'Pubblica in catalogo';
+
+    mostra('editor');
+    window.scrollTo({top:0});
+  }
+
+  $('#f_cover').addEventListener('input', ()=>{
+    $('#anteprima').src = $('#f_cover').value.trim();
+  });
+
+  async function apriLibro(id){
+    const { data, error } = await supa.from('books')
+      .select('*').eq('id', id).single();
+    if(error){ avvisa('Non riesco ad aprire la scheda.', 'err'); return; }
+    apriEditor(data);
+  }
+
+  $('#btnNuovo').addEventListener('click', ()=>apriEditor(null));
+  $('#btnChiudi').addEventListener('click', ()=>{ mostra('elenco'); carica(); });
+
+  /* ---------------- salvataggio ---------------- */
+  function raccogli(stato){
+    const titolo = $('#f_title').value.trim();
+    const autore = $('#f_author').value.trim();
+    const editore = $('#f_publisher').value.trim();
+    if(!titolo || !autore || !editore){
+      avvisa('Titolo, autore ed editore sono obbligatori.', 'err');
+      return null;
+    }
+    const deb = $('#f_debut').value;
+    return {
+      id: libro ? libro.id : 'b' + Date.now().toString(36),
+      title: titolo,
+      author: autore,
+      publisher: editore,
+      year: parseInt($('#f_year').value, 10) || null,
+      series: $('#f_series').value.trim(),
+      isbn: $('#f_isbn').value.trim(),
+      genre: $('#f_genre').value.trim() || null,
+      cover_url: $('#f_cover').value.trim(),
+      store_amazon_url: $('#f_amz').value.trim(),
+      store_publisher_url: $('#f_store').value.trim(),
+      description: $('#f_desc').value.trim(),
+      is_debut: deb === 'si' ? true : deb === 'no' ? false : null,
+      featured: $('#f_featured').checked,
+      labels: etichette,
+      status: stato
+    };
+  }
+
+  async function salva(stato, messaggio){
+    const riga = raccogli(stato);
+    if(!riga) return;
+
+    const bottoni = ['#btnSalva','#btnApprova','#btnScarta'];
+    bottoni.forEach(s=>$(s).disabled = true);
+    const { error } = await supa.from('books').upsert(riga);
+    bottoni.forEach(s=>$(s).disabled = false);
+
+    if(error){ avvisa('Salvataggio non riuscito: ' + error.message, 'err'); return; }
+
+    avvisa(messaggio);
+    libro = riga;
+    if(stato === 'approved' || stato === 'rejected'){
+      mostra('elenco'); carica();
+    } else {
+      apriEditor(riga);
+    }
+  }
+
+  $('#btnSalva').addEventListener('click', ()=>{
+    // Un candidato che salvi diventa una bozza tua: esce dalla coda
+    // di revisione senza finire ancora in catalogo.
+    const stato = (libro && libro.status === 'approved') ? 'approved' : 'draft';
+    salva(stato, stato === 'approved' ? 'Scheda aggiornata.' : 'Salvato tra le bozze.');
+  });
+
+  $('#btnApprova').addEventListener('click', ()=>{
+    salva('approved', 'Pubblicato: è già visibile nel catalogo.');
+  });
+
+  $('#btnScarta').addEventListener('click', ()=>{
+    if(!confirm('Scartare questo titolo? Resta archiviato e lo Scout non lo riproporrà.')) return;
+    salva('rejected', 'Scartato.');
+  });
+
+  $('#btnElimina').addEventListener('click', async ()=>{
+    if(!libro) return;
+    if(!confirm('Eliminare definitivamente questa scheda?\n\n'
+      + 'Se vuoi solo toglierla dal catalogo, usa "Scarta": '
+      + 'così lo Scout non te la riproporrà.')) return;
+    const { error } = await supa.from('books').delete().eq('id', libro.id);
+    if(error){ avvisa('Eliminazione non riuscita: ' + error.message, 'err'); return; }
+    avvisa('Scheda eliminata.');
+    libro = null;
+    mostra('elenco'); carica();
+  });
+
+  /* ---------------- importazione una tantum ---------------- */
+  $('#btnImporta').addEventListener('click', async ()=>{
+    if(!confirm('Importare i libri da catalogo.json?\n\n'
+      + 'Se hai correzioni non ancora esportate dal vecchio pannello, '
+      + 'annulla ed esportale prima.')) return;
+
+    $('#btnImporta').disabled = true;
+    try{
+      const res = await fetch(CATALOGO_JSON + '?v=' + Date.now(), {cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const vecchi = await res.json();
+
+      const righe = (vecchi || []).filter(b => b && b.title).map(b => ({
+        // Gli id esistenti vanno conservati. Qualche scheda vecchia ne
+        // e' priva: gliene diamo uno stabile derivato dal titolo.
+        id: b.id || ('b' + Math.abs([...(b.title||'')]
+              .reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0, 0)).toString(36)),
+        title: b.title,
+        author: b.author || '',
+        publisher: b.publisher || '',
+        year: parseInt(b.year, 10) || null,
+        series: b.series || '',
+        isbn: b.isbn || '',
+        genre: b.genre || null,
+        cover_url: b.coverUrl || '',
+        // Il campo storeUrl e' la vecchia forma di storeAmazonUrl
+        store_amazon_url: b.storeAmazonUrl || b.storeUrl || '',
+        store_publisher_url: b.storePublisherUrl || '',
+        description: b.description || '',
+        is_debut: typeof b.isDebut === 'boolean' ? b.isDebut : null,
+        featured: !!b.featured,
+        labels: Array.isArray(b.labels) ? b.labels : [],
+        status: 'approved'
+      }));
+
+      if(!righe.length){ avvisa('Nessun libro da importare.', 'err'); return; }
+
+      const { error } = await supa.from('books').upsert(righe);
+      if(error) throw error;
+
+      avvisa(`Importati ${righe.length} libri, con gli id originali.`);
+      $$('#filtri button').forEach(x=>x.classList.remove('on'));
+      $('#filtri button[data-f="approved"]').classList.add('on');
+      filtro = 'approved';
+      carica();
+    }catch(e){
+      avvisa('Importazione non riuscita: ' + e.message, 'err');
+    }finally{
+      $('#btnImporta').disabled = false;
+    }
+  });
+
+  /* ---------------- avvio ---------------- */
+  if(SUPABASE_KEY.startsWith('INCOLLA')){
+    avvisa('Manca la publishable key: aprí questo file e sostituiscila '
+         + 'nella riga SUPABASE_KEY.', 'err');
+  }
+  supa.auth.onAuthStateChange(()=>aggiornaSessione());
+  aggiornaSessione({forza:true});
+
+})();
+</script>
+</body>
+</html>
