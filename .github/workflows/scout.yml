@@ -17,7 +17,7 @@ on:
         default: "120"
         type: string
 
-# Serve per scrivere data/candidates.json e per parlare con GitHub Models
+# Serve per committare il backup del catalogo e per parlare con GitHub Models
 permissions:
   contents: write
   models: read
@@ -45,6 +45,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_BOOKS_KEY: ${{ secrets.GOOGLE_BOOKS_KEY }}
+          # La service_role key ignora le regole di sicurezza del database:
+          # serve allo Scout per leggere anche gli scarti e scrivere i
+          # candidati. Vive solo qui, nei secrets del repository.
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           ARGS=""
           if [ -n "${{ inputs.dal }}" ]; then
@@ -55,25 +60,27 @@ jobs:
           fi
           python scripts/scout.py $ARGS
 
-      - name: Salva i candidati trovati
+      - name: Salva il backup del catalogo
         run: |
-          if [ ! -f data/candidates.json ]; then
-            echo "Nessun file candidati prodotto."
+          # I candidati ora vanno su Supabase: qui si committa solo la copia
+          # di sicurezza del catalogo, che il sito non usa ma che permette di
+          # ricostruire tutto se il database sparisse.
+          if [ ! -f data/catalogo.json ]; then
+            echo "Nessun backup prodotto."
             exit 0
           fi
 
           git config user.name  "Scout"
           git config user.email "actions@github.com"
-          git add data/candidates.json
+          git add data/catalogo.json
 
-          # --cached confronta con l'indice, non con la working tree.
-          # Serve perché 'git diff' nudo IGNORA i file non tracciati: al primo
-          # run il file veniva creato, giudicato "identico", e perso.
+          # --cached confronta con l'indice: funziona anche su file nuovi,
+          # a differenza di 'git diff' nudo che ignora i non tracciati.
           if git diff --cached --quiet; then
-            echo "Nessuna modifica: niente da committare."
+            echo "Catalogo invariato: niente da committare."
             exit 0
           fi
 
-          NUOVI=$(python -c "import json;print(len(json.load(open('data/candidates.json'))))")
-          git commit -m "Scout: $NUOVI candidati in attesa di moderazione"
+          QUANTI=$(python -c "import json;print(len(json.load(open('data/catalogo.json'))))")
+          git commit -m "Backup catalogo: $QUANTI titoli"
           git push
