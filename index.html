@@ -50,7 +50,9 @@
   .tag.auto{color:#8fd9a8;border-color:#2d6b45}
   .tag.warn{color:#ffc46b;border-color:#8a6420}
   .tag .rem{cursor:pointer;font-weight:700;opacity:.8}
-  .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:nowrap}
+  /* I due pulsanti negozio sommano 208px: su schermo stretto non stanno
+     accanto alla copertina. Vanno a capo invece di uscire dalla card. */
+  .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
   .btn{background:#151826;border:1px solid var(--border);color:var(--ink);padding:8px 10px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
   .btn.primary{outline:2px solid var(--accent)}
   .btn.danger{outline:1px solid #402;color:#ff9aa9}
@@ -61,7 +63,7 @@
     width:100px;height:35px;padding:0;
     display:inline-flex;align-items:center;justify-content:center;
     border-radius:10px;font-size:12px;font-weight:600;letter-spacing:.2px;
-    border:1px solid #0c0e14;text-decoration:none;flex:0 0 100px;
+    border:1px solid #0c0e14;text-decoration:none;flex:0 1 100px;min-width:86px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .btn-amz{background:#131a22}
@@ -100,6 +102,18 @@
   footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
   footer a{color:#9fc8ff;text-decoration:none}
   footer .sep{opacity:.4;margin:0 8px}
+
+  /* Su schermo stretto l'email dell'admin rubava spazio al titolo,
+     che finiva spezzato su quattro righe. Qui va sotto, per conto suo. */
+  @media (max-width:640px){
+    .topbar{flex-wrap:wrap;align-items:flex-start}
+    .topbar h1{font-size:17px;min-width:0}
+    .adminBadge{
+      order:3;flex-basis:100%;text-align:right;
+      border:none;padding:2px 0;font-size:11px;opacity:.7;
+    }
+    img.cover{height:130px}
+  }
 </style>
 </head>
 <body>
@@ -251,18 +265,24 @@
 
   <!-- Impostazioni -->
   <section id="impostazioni" class="tab" style="display:none">
-    <h3>Impostazioni (Solo GitHub)</h3>
-    <div class="small muted" style="margin-bottom:10px">Inserisci gli URL <b>Raw</b> dei JSON su GitHub. Il sito mostrerà <b>esclusivamente</b> quei file.</div>
-    <div class="row">
-      <div class="field"><label>admins.json (Raw GitHub)</label><input id="adminsUrl" type="url" placeholder="https://raw.githubusercontent.com/.../data/admins.json"></div>
-      <div class="field"><label>catalogo.json (Raw GitHub)</label><input id="catalogUrl" type="url" placeholder="https://raw.githubusercontent.com/.../data/catalogo.json"></div>
-      <div class="field"><label>news.json (Raw GitHub)</label><input id="newsUrl" type="url" placeholder="https://raw.githubusercontent.com/.../data/news.json"></div>
-      <button class="btn" id="btnSaveUrls">Salva URL</button>
+    <h3 style="margin-top:0">Impostazioni</h3>
+    <div class="small muted" style="margin-bottom:14px">
+      Catalogo e notizie vivono ora su un database: si modificano dalle
+      due pagine qui sotto, e le modifiche vanno online subito, senza
+      passare da GitHub.
     </div>
-    <div class="toolbar" style="margin-top:10px">
-      <button class="btn" id="btnForceReload">Ricarica da GitHub</button>
-      <button class="btn" id="btnClearLocal">Svuota bozze locali</button>
+    <div class="row" style="gap:8px">
+      <a class="btn primary" href="catalogo-admin.html">Gestisci il catalogo</a>
+      <a class="btn primary" href="news-admin.html">Gestisci le notizie</a>
+    </div>
+    <div class="toolbar" style="margin-top:16px">
+      <button class="btn" id="btnForceReload">Ricarica i dati</button>
       <button class="btn danger" id="btnLogout">Esci dalla sessione admin</button>
+    </div>
+    <div class="small muted" style="margin-top:16px;line-height:1.6">
+      Una copia di sicurezza del catalogo viene salvata su GitHub a ogni
+      esecuzione dello Scout, in <code>data/catalogo.json</code>: se il
+      database non fosse raggiungibile, i dati sarebbero comunque lì.
     </div>
   </section>
 
@@ -1249,11 +1269,6 @@
     await aggiornaSessioneAdmin();
     supa.auth.onAuthStateChange(()=>aggiornaSessioneAdmin());
 
-    // Precompila campi Impostazioni con i default o quelli salvati
-    $('#adminsUrl').value = state.settings.adminsUrl;
-    $('#catalogUrl').value = state.settings.catalogUrl;
-    $('#newsUrl').value    = state.settings.newsUrl;
-
     await loadFromGitHub();   // unica fonte per la vista pubblica
     handleRoute();
   })();
@@ -1262,5 +1277,3 @@
 </script>
 </body>
 </html>
-
-
