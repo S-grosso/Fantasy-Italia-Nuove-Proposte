@@ -359,6 +359,15 @@
     + '&status=eq.published'
     + '&order=published_at.desc';
 
+  // Il catalogo pubblico: solo le schede approvate, consigliati in cima.
+  // Le regole del database escludono da sole candidati, bozze e scarti.
+  const BOOKS_ENDPOINT = SUPABASE_URL + '/rest/v1/books'
+    + '?select=id,title,author,publisher,year,series,isbn,cover_url,'
+    + 'description,store_amazon_url,store_publisher_url,is_debut,genre,'
+    + 'labels,featured,status'
+    + '&status=eq.approved'
+    + '&order=featured.desc,year.desc';
+
   const DEFAULTS = {
     adminsUrl:     DEFAULT_GITHUB_BASE + 'admins.json',
     catalogUrl:    DEFAULT_GITHUB_BASE + 'catalogo.json',
@@ -396,6 +405,16 @@
   // pulizia vecchie cache che creavano conflitto
   localStorage.removeItem('fi_books_site_v38');
   localStorage.removeItem('fi_news_site_v38');
+
+  // Dopo la migrazione, bozze e correzioni locali sono superate: adesso
+  // il catalogo vero sta su Supabase. Se restassero, continuerebbero a
+  // sovrascrivere i dati del database senza che tu te ne accorga.
+  localStorage.removeItem('fi_books_pending_v1');
+  localStorage.removeItem('fi_auto_rejected_v1');
+  localStorage.removeItem(APPROVED_EDITS_KEY);
+  state.pendingBooks = [];
+  state.autoRejected = [];
+  state.approvedEdits = {};
 
   /* ==== Helpers ==== */
   function load(key, fb){ try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):fb; }catch(_){return fb;} }
@@ -505,6 +524,13 @@
   /* ==== Normalizzazioni ==== */
   function normalizeBook(x){
     const b={...x};
+    // Supabase usa nomi con underscore, il resto del sito camelCase.
+    // Accettiamo entrambi, così il codice regge anche se un giorno
+    // tornasse a leggere dal vecchio JSON di scorta.
+    if(b.cover_url           !== undefined && b.coverUrl          === undefined) b.coverUrl          = b.cover_url;
+    if(b.store_amazon_url    !== undefined && b.storeAmazonUrl    === undefined) b.storeAmazonUrl    = b.store_amazon_url;
+    if(b.store_publisher_url !== undefined && b.storePublisherUrl === undefined) b.storePublisherUrl = b.store_publisher_url;
+    if(b.is_debut            !== undefined && b.isDebut           === undefined) b.isDebut           = b.is_debut;
     if(b.status==null || b.status==='') b.status='approved';
     if(!Array.isArray(b.labels)) b.labels = b.labels ? [].concat(b.labels) : [];
     b.featured=!!b.featured;
@@ -589,7 +615,15 @@
     // il catalogo deve restare in piedi. Prima erano nella stessa
     // Promise.all e un problema su Supabase buttava giù tutto il sito.
     try{
-      const books = await fetchJson(state.settings.catalogUrl);
+      const res = await fetch(BOOKS_ENDPOINT, {
+        cache: 'no-store',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY
+        }
+      });
+      if(!res.ok) throw new Error('HTTP ' + res.status + ' — ' + await res.text());
+      const books = await res.json();
       state.remoteBooksBase = (books||[]).map(x=>cloneBook(normalizeBook(x)));
       applyApprovedEdits();
     }catch(e){
