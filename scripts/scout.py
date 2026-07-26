@@ -204,6 +204,163 @@ def titolo_gia_noto(titolo_candidato, prefissi_noti):
 
 GOOGLE_BOOKS_KEY = os.environ.get("GOOGLE_BOOKS_KEY", "")
 
+# --------------------------------------------------------------------------
+# Supabase
+#
+# Lo Scout usa la service_role key, che ignora le regole di sicurezza del
+# database. E' voluto: e' un processo automatico che deve poter leggere anche
+# gli scarti (per non riproporli) e scrivere i candidati. Proprio per questo
+# la chiave sta solo nei secrets di GitHub e non deve finire altrove.
+# --------------------------------------------------------------------------
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+
+
+def supa_headers(extra=None):
+    h = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+    }
+    if extra:
+        h.update(extra)
+    return h
+
+
+def supa_attivo():
+    return bool(SUPABASE_URL and SUPABASE_KEY)
+
+
+def supa_leggi_libri():
+    """
+    Scarica TUTTI i libri, in qualunque stato.
+
+    Gli scarti servono quanto i libri in catalogo: un titolo che hai gia'
+    rifiutato non deve ricomparire settimana dopo settimana. Prima il dedup
+    guardava solo catalogo.json e questo non poteva saperlo.
+    """
+    libri, pagina, per_pagina = [], 0, 1000
+    while True:
+        try:
+            r = requests.get(
+                f"{SUPABASE_URL}/rest/v1/books",
+                headers=supa_headers({
+                    "Range": f"{pagina*per_pagina}-{(pagina+1)*per_pagina-1}"
+                }),
+                params={"select": "id,title,author,publisher,isbn,status"},
+                timeout=TIMEOUT,
+            )
+            if r.status_code not in (200, 206):
+                log(f"  ! Supabase ha risposto {r.status_code}: {r.text[:200]}")
+                break
+            blocco = r.json()
+            libri.extend(blocco)
+            if len(blocco) < per_pagina:
+                break
+            pagina += 1
+        except (requests.RequestException, ValueError) as e:
+            log(f"  ! Non riesco a leggere il catalogo da Supabase: {e}")
+            break
+    return libri
+
+
+def supa_scrivi_candidati(righe):
+    """
+    Inserisce i candidati. 'merge-duplicates' fa sì che un id gia' presente
+    venga aggiornato invece di provocare un errore: cosi' rilanciare lo Scout
+    non crea doppioni.
+    """
+    if not righe:
+        return True
+    try:
+        r = requests.post(
+            f"{SUPABASE_URL}/rest/v1/books",
+            headers=supa_headers({
+                "Prefer": "resolution=merge-duplicates,return=minimal"
+            }),
+            json=righe,
+            timeout=60,
+        )
+        if r.status_code not in (200, 201, 204):
+            log(f"  ! Scrittura fallita ({r.status_code}): {r.text[:300]}")
+            return False
+        return True
+    except requests.RequestException as e:
+        log(f"  ! Scrittura fallita: {e}")
+        return False
+
+
+def supa_registra_esecuzione(dati):
+    """Lascia traccia dell'esecuzione: storico utile, e tiene vivo il progetto."""
+    try:
+        requests.post(
+            f"{SUPABASE_URL}/rest/v1/scout_runs",
+            headers=supa_headers({"Prefer": "return=minimal"}),
+            json=dati,
+            timeout=30,
+        )
+    except requests.RequestException:
+        pass  # lo storico e' un di piu': se fallisce, non blocca nulla
+
+
+def supa_esporta_backup():
+    """
+    Riscrive data/catalogo.json con i libri approvati.
+
+    Non serve piu' al sito, che ormai legge da Supabase. Serve come copia di
+    sicurezza versionata: se il progetto Supabase venisse sospeso o cancellato,
+    il catalogo sarebbe comunque qui, e basterebbe cambiare un indirizzo nel
+    sito per tornare a leggerlo da GitHub.
+    """
+    try:
+        r = requests.get(
+            f"{SUPABASE_URL}/rest/v1/books",
+            headers=supa_headers(),
+            params={
+                "select": "id,title,author,publisher,year,series,isbn,cover_url,"
+                          "description,store_amazon_url,store_publisher_url,"
+                          "is_debut,genre,labels,featured",
+                "status": "eq.approved",
+                "order": "year.desc",
+            },
+            timeout=TIMEOUT,
+        )
+        if r.status_code != 200:
+            log(f"  ! Backup non riuscito ({r.status_code})")
+            return 0
+
+        # Riscritto nel formato storico del sito (camelCase), così il file
+        # resta utilizzabile senza conversioni in caso di emergenza.
+        libri = []
+        for b in r.json():
+            libri.append({
+                "id": b.get("id"),
+                "title": b.get("title"),
+                "author": b.get("author"),
+                "publisher": b.get("publisher"),
+                "year": b.get("year"),
+                "series": b.get("series") or "",
+                "isbn": b.get("isbn") or "",
+                "coverUrl": b.get("cover_url") or "",
+                "description": b.get("description") or "",
+                "storeAmazonUrl": b.get("store_amazon_url") or "",
+                "storePublisherUrl": b.get("store_publisher_url") or "",
+                "isDebut": b.get("is_debut"),
+                "genre": b.get("genre"),
+                "labels": b.get("labels") or [],
+                "featured": bool(b.get("featured")),
+                "status": "approved",
+            })
+
+        CATALOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        CATALOG_FILE.write_text(
+            json.dumps(libri, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        return len(libri)
+    except (requests.RequestException, ValueError) as e:
+        log(f"  ! Backup non riuscito: {e}")
+        return 0
+
 
 def get_json(url, params=None):
     # Aggancia la API key a ogni chiamata Google Books. Senza chiave la quota
@@ -1151,10 +1308,27 @@ def main():
 
     log(f"Scout — finestra dal {dal.date()}\n" + "=" * 60)
 
-    # --- Catalogo esistente: serve per il dedup e per il segnale esordio ---
-    catalogo = []
-    if CATALOG_FILE.exists():
-        catalogo = json.loads(CATALOG_FILE.read_text(encoding="utf-8"))
+    # --- Catalogo: serve per il dedup e per il segnale esordio ---
+    # Da Supabase, non piu' dal file: cosi' lo Scout vede anche i titoli che
+    # hai scartato dalla moderazione, e non te li ripropone all'infinito.
+    if supa_attivo():
+        libri = supa_leggi_libri()
+        catalogo = [{
+            "id": b.get("id"),
+            "title": b.get("title") or "",
+            "author": b.get("author") or "",
+            "publisher": b.get("publisher") or "",
+            "isbn": b.get("isbn") or "",
+            "status": b.get("status") or "",
+        } for b in libri]
+        scartati_noti = sum(1 for b in catalogo if b["status"] == "rejected")
+        log(f"Supabase: {len(catalogo)} schede note "
+            f"({scartati_noti} già scartate, non verranno riproposte)")
+    else:
+        log("  ! SUPABASE_URL/SUPABASE_SERVICE_KEY assenti: uso il file locale.")
+        catalogo = []
+        if CATALOG_FILE.exists():
+            catalogo = json.loads(CATALOG_FILE.read_text(encoding="utf-8"))
 
     isbn_noti = {normalizza_isbn(b.get("isbn")) for b in catalogo}
     isbn_noti.discard(None)
@@ -1175,22 +1349,26 @@ def main():
 
     log(f"Catalogo: {len(catalogo)} titoli, {len(isbn_noti)} ISBN validi\n")
 
-    # --- Candidati gia' in attesa: non li riproponiamo ---
+    # I candidati gia' in attesa non vanno piu' cercati a parte: su Supabase
+    # sono righe della stessa tabella (status='candidate'), quindi la lettura
+    # qui sopra li ha gia' inclusi nel dedup.
     esistenti = []
-    if CANDIDATES_FILE.exists():
+    if not supa_attivo() and CANDIDATES_FILE.exists():
         try:
             esistenti = json.loads(CANDIDATES_FILE.read_text(encoding="utf-8"))
         except ValueError:
             esistenti = []
-    for c in esistenti:
-        i = normalizza_isbn(c.get("isbn"))
-        if i:
-            isbn_noti.add(i)
-        titoli_noti.add(chiave_titolo(c.get("title", ""), c.get("author", "")))
+        for c in esistenti:
+            i = normalizza_isbn(c.get("isbn"))
+            if i:
+                isbn_noti.add(i)
+            titoli_noti.add(chiave_titolo(c.get("title", ""), c.get("author", "")))
 
     # --- Raccolta ---
     config = json.loads(SOURCES_FILE.read_text(encoding="utf-8"))
     grezzi = []
+    avvio = time.time()
+    resa_fonti = {}   # editore -> quanti elementi ha prodotto
 
     for src in config["sources"]:
         if not src.get("attivo", True):
@@ -1216,6 +1394,7 @@ def main():
         for t in trovati:
             t["_prefiltro_obbligatorio"] = src.get("prefiltro_obbligatorio", False)
         grezzi.extend(trovati)
+        resa_fonti[nome] = len(trovati)
         log(f"      {len(trovati)} elementi")
         time.sleep(PAUSA)
 
@@ -1352,20 +1531,18 @@ def main():
             "year": anno,
             "series": "",
             "isbn": c.get("isbn", ""),
-            "coverUrl": c.get("copertina", ""),
+            "cover_url": c.get("copertina", ""),
             "description": (c.get("sinossi") or "")[:2000],
-            "storeAmazonUrl": cerca_amazon(c),
-            "storePublisherUrl": c.get("url", ""),
-            "isDebut": esito.get("esordio"),
+            "store_amazon_url": cerca_amazon(c),
+            "store_publisher_url": c.get("url", ""),
+            "is_debut": esito.get("esordio"),
             "genre": esito.get("genere"),
             "labels": [],
-            "status": "pending",
             "featured": False,
-            "_auto": True,
-            "_source": c.get("_fonte", ""),
-            "_confidence": esito.get("confidenza", "bassa"),
-            "_reason": esito.get("motivo", ""),
-            "ts": int(time.time() * 1000),
+            "status": "candidate",
+            "source": c.get("_fonte", ""),
+            "confidence": esito.get("confidenza", "bassa"),
+            "reason": (esito.get("motivo") or "")[:300],
         })
         log(f"        ✓ {esito.get('genere') or 'fantasy'} · "
             f"esordio={esito.get('esordio')} · conf={esito.get('confidenza')}")
@@ -1382,20 +1559,53 @@ def main():
         print(json.dumps(nuovi, ensure_ascii=False, indent=2)[:3000])
         return
 
-    if not nuovi:
-        log("Niente da aggiungere.")
-        return
+    durata_totale = int(time.time() - avvio)
 
-    tutti = esistenti + nuovi
-    CANDIDATES_FILE.write_text(
-        json.dumps(tutti, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    log(f"Scritto {CANDIDATES_FILE.relative_to(ROOT)} — {len(tutti)} candidati in attesa.")
+    if supa_attivo():
+        if nuovi:
+            if supa_scrivi_candidati(nuovi):
+                log(f"Scritti su Supabase: {len(nuovi)} candidati in attesa "
+                    f"di revisione.")
+                incerti = sum(1 for n in nuovi if n["confidence"] == "bassa")
+                if incerti:
+                    log(f"  {incerti} con confidenza bassa: guardali con attenzione.")
+            else:
+                log("  ! I candidati NON sono stati salvati. Il log qui sopra "
+                    "dice perché.")
+        else:
+            log("Niente da aggiungere.")
 
-    # Riepilogo per il messaggio di commit
-    da_verificare = sum(1 for n in nuovi if n["_confidence"] == "bassa")
-    if da_verificare:
-        log(f"  {da_verificare} con confidenza bassa: guardali con attenzione.")
+        # Storico dell'esecuzione. Ha due utilita': vedere nel tempo quali
+        # fonti rendono, e tenere attivo il progetto Supabase (i piani
+        # gratuiti vengono sospesi dopo un periodo di inattivita').
+        supa_registra_esecuzione({
+            "dal": dal.date().isoformat(),
+            "fonti_ok": sum(1 for v in resa_fonti.values() if v > 0),
+            "fonti_vuote": sum(1 for v in resa_fonti.values() if v == 0),
+            "grezzi": len(grezzi),
+            "candidati": len(nuovi),
+            "durata_sec": durata_totale,
+            "dettaglio": resa_fonti,
+        })
+
+        # Copia di sicurezza versionata su GitHub. Il sito non la usa piu',
+        # ma se Supabase sparisse il catalogo sarebbe comunque qui.
+        quanti = supa_esporta_backup()
+        if quanti:
+            log(f"Backup aggiornato: {CATALOG_FILE.relative_to(ROOT)} "
+                f"({quanti} titoli in catalogo).")
+
+    else:
+        # Modalita' di ripiego, senza Supabase: si scrive il vecchio file.
+        if not nuovi:
+            log("Niente da aggiungere.")
+            return
+        tutti = esistenti + nuovi
+        CANDIDATES_FILE.write_text(
+            json.dumps(tutti, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        log(f"Scritto {CANDIDATES_FILE.relative_to(ROOT)} — "
+            f"{len(tutti)} candidati in attesa.")
 
 
 if __name__ == "__main__":
