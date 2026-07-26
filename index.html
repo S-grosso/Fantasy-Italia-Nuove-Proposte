@@ -1221,7 +1221,11 @@
     if(hash.startsWith('news/')){ const id=decodeURIComponent(hash.slice(5)); if(!openNewsById(id)){ alert('Articolo non trovato.'); showTab('notizie'); } return; }
     if(hash==='notizie'){ showTab('notizie'); return; }
     if(hash==='nuovo'){ showTab('nuovo'); return; }
-    if(hash==='moderazione'){ if(sessionIsValid()){ renderModeration(); showTab('moderazione'); } else { alert('Area riservata: accedi come admin.'); showTab('catalogo'); } return; }
+    if(hash==='moderazione'){
+      if(sessionIsValid()){ location.href = 'catalogo-admin.html'; }
+      else { alert('Area riservata: accedi come admin.'); showTab('catalogo'); }
+      return;
+    }
     if(hash==='impostazioni'){ if(sessionIsValid()){ showTab('impostazioni'); } else { alert('Area riservata: accedi come admin.'); showTab('catalogo'); } return; }
     showTab('catalogo');
   }
@@ -1230,7 +1234,7 @@
     btn.addEventListener('click', ()=>{
       const tab=btn.getAttribute('data-tab');
       if(tab==='moderazione'||tab==='impostazioni'){ if(!sessionIsValid()){ alert('Area riservata: accedi come admin.'); return; } touchSession(); }
-      if(tab==='moderazione') renderModeration();
+      if(tab==='moderazione'){ location.href = 'catalogo-admin.html'; return; }
       if(tab==='notizie') renderNews();
       location.hash='#'+tab;
     });
