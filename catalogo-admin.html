@@ -373,11 +373,33 @@
 
       info.appendChild(h3); info.appendChild(meta); info.appendChild(tags);
 
+      const azioni = document.createElement('div');
+      azioni.style.display = 'flex';
+      azioni.style.flexDirection = 'column';
+      azioni.style.gap = '6px';
+
       const apri = document.createElement('button');
       apri.className = 'btn small'; apri.textContent = 'Apri';
       apri.addEventListener('click', ()=>apriLibro(b.id));
+      azioni.appendChild(apri);
 
-      riga.appendChild(img); riga.appendChild(info); riga.appendChild(apri);
+      // Scarto rapido: revisionare decine di candidati aprendoli uno per uno
+      // è la parte più noiosa. Da qui bastano due tocchi.
+      if(b.status === 'candidate' || b.status === 'draft'){
+        const via = document.createElement('button');
+        via.className = 'btn small danger'; via.textContent = 'Scarta';
+        via.addEventListener('click', async ()=>{
+          if(!confirm(`Scartare «${b.title}»?`)) return;
+          via.disabled = true;
+          const { error } = await supa.from('books')
+            .update({status:'rejected'}).eq('id', b.id);
+          if(error){ avvisa('Non riesco a scartare.', 'err'); via.disabled = false; return; }
+          riga.remove();
+        });
+        azioni.appendChild(via);
+      }
+
+      riga.appendChild(img); riga.appendChild(info); riga.appendChild(azioni);
       box.appendChild(riga);
     });
   }
@@ -548,8 +570,20 @@
     salva('approved', 'Pubblicato: è già visibile nel catalogo.');
   });
 
-  $('#btnScarta').addEventListener('click', ()=>{
+  $('#btnScarta').addEventListener('click', async ()=>{
     if(!confirm('Scartare questo titolo? Resta archiviato e lo Scout non lo riproporrà.')) return;
+
+    // Scartare non richiede una scheda completa: chiedere autore ed editore
+    // per buttare via un titolo è tempo perso. Se la riga esiste già,
+    // si cambia solo lo stato e si lascia il resto com'è.
+    if(libro && libro.id){
+      const { error } = await supa.from('books')
+        .update({status:'rejected'}).eq('id', libro.id);
+      if(error){ avvisa('Non riesco a scartare: ' + error.message, 'err'); return; }
+      avvisa('Scartato.');
+      mostra('elenco'); carica();
+      return;
+    }
     salva('rejected', 'Scartato.');
   });
 
