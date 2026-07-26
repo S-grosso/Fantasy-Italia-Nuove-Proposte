@@ -133,6 +133,7 @@
         il JSON <i>prima</i> di importare, altrimenti le perdi.
       </div>
       <button id="btnImporta" class="btn small">Importa da catalogo.json</button>
+      <button id="btnImportaCand" class="btn small">Importa candidati Scout</button>
     </div>
   </section>
 
@@ -616,6 +617,56 @@
     }
   });
 
+/* --- recupero dei candidati rimasti in candidates.json --- */
+  const CANDIDATI_JSON = 'https://raw.githubusercontent.com/S-grosso/'
+                       + 'Fantasy-Italia-Nuove-Proposte/main/data/candidates.json';
+
+  $('#btnImportaCand').addEventListener('click', async ()=>{
+    if(!confirm('Importare i candidati trovati dallo Scout?')) return;
+    $('#btnImportaCand').disabled = true;
+    try{
+      const res = await fetch(CANDIDATI_JSON + '?v=' + Date.now(), {cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const cand = await res.json();
+
+      const righe = (cand || []).filter(c => c && c.title).map(c => ({
+        id: c.id || ('c' + Date.now().toString(36) + Math.random().toString(36).slice(2,6)),
+        title: c.title,
+        author: c.author || '',
+        publisher: c.publisher || '',
+        year: parseInt(c.year, 10) || null,
+        series: c.series || '',
+        isbn: c.isbn || '',
+        genre: c.genre || null,
+        cover_url: c.coverUrl || '',
+        store_amazon_url: c.storeAmazonUrl || '',
+        store_publisher_url: c.storePublisherUrl || '',
+        description: c.description || '',
+        is_debut: typeof c.isDebut === 'boolean' ? c.isDebut : null,
+        featured: false,
+        labels: Array.isArray(c.labels) ? c.labels : [],
+        status: 'candidate',
+        source: c._source || null,
+        confidence: c._confidence || null,
+        reason: c._reason || null
+      }));
+
+      if(!righe.length){ avvisa('Nessun candidato da importare.', 'err'); return; }
+      const { error } = await supa.from('books').upsert(righe);
+      if(error) throw error;
+
+      avvisa(`Importati ${righe.length} candidati.`);
+      $$('#filtri button').forEach(x=>x.classList.remove('on'));
+      $('#filtri button[data-f="candidate"]').classList.add('on');
+      filtro = 'candidate';
+      carica();
+    }catch(e){
+      avvisa('Importazione non riuscita: ' + e.message, 'err');
+    }finally{
+      $('#btnImportaCand').disabled = false;
+    }
+  });
+  
   /* ---------------- avvio ---------------- */
   if(SUPABASE_KEY.startsWith('INCOLLA')){
     avvisa('Manca la publishable key: aprí questo file e sostituiscila '
