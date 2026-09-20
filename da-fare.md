@@ -51,8 +51,19 @@ In ordine di priorità.
 
 Intervento preventivo: alla data il campo era vuoto su tutte le schede (53 copertine migrate, zero errori). Serve perché il giorno in cui una copertina fallirà, il motivo non resti solo in `data/copertine-report.json`, che dal telefono non apre nessuno.
 
-### 4.2 Pagine statiche per gli articoli
-Le notizie vivono su indirizzi con `#` (`?n=<id>#news/<id>`), quindi hanno lo stesso limite che avevano i libri: nessuna anteprima nelle chat, nessuna indicizzazione. Serve lo stesso trattamento: colonna `slug` su `news` con trigger analogo, generazione di `/articoli/<slug>/` dentro `genera_pagine.py`, `schema.org/Article`, voci in sitemap. È il prerequisito perché le interviste circolino.
+### 4.2 Pagine statiche per gli articoli — fatto
+Le notizie vivevano su indirizzi con `#` (`?n=<id>#news/<id>`), con lo stesso limite che avevano i libri: nessuna anteprima nelle chat, nessuna indicizzazione.
+
+- [x] **Fatto** (20 settembre 2026). Ogni articolo pubblicato ha il suo indirizzo, `/articoli/<slug>/`, con title, description, canonical, Open Graph, `article:published_time` e JSON-LD `schema.org/Article`. Più l'indice `/articoli/` e le voci in sitemap.
+
+Come è fatto, con le differenze rispetto ai libri:
+- **Slug.** Colonna su `news` con indice univoco parziale e trigger `news_assign_slug()`, gemello di quello dei libri: assegnato alla pubblicazione, mai più cambiato nemmeno correggendo il titolo, perché un link già condiviso deve continuare a rispondere. Due differenze: i titoli degli articoli sono lunghi, quindi lo slug si taglia a 80 caratteri sull'ultimo trattino per non spezzare una parola; e la prima disambiguazione è l'anno invece dell'autore, più parlante per una rubrica che torna ogni anno. Backfill: 3 articoli, 3 slug.
+- **Indirizzi vecchi.** `?n=<id>#news/<id>` continua a funzionare: l'articolo si apre e la barra si riscrive da sola con l'indirizzo nuovo.
+- **Ripiego.** `404.html` intercetta anche `/articoli/<slug>/` non ancora generati e rimanda a `/?articolo=<slug>`.
+- **Corpo dell'articolo.** Il generatore toglie script, iframe e gestori inline prima di scriverli nella pagina. Non è un sanificatore — il testo è già ripulito quando lo salvi — ma una rete per quello che potrebbe essere arrivato dall'importazione del vecchio `news.json`.
+- **Workflow.** `pagine.yml` ora committa anche `articoli/`, e aggiunge i percorsi solo se esistono: un `git add` su una cartella mai creata avrebbe fermato tutto il passaggio.
+- **Rete di sicurezza nuova anche per i libri.** Se la lettura da Supabase torna vuota per un errore, il generatore non tocca più niente: prima avrebbe potuto cancellare 53 pagine buone.
+- **Pannello notizie.** Mostra l'indirizzo pubblico dell'articolo quando c'è, con l'avvertenza che la pagina statica compare entro sei ore.
 
 ### 4.3 Modulo Contatti: chiuso e collegato — fatto
 Il modulo che esiste in `index.html` non è "Segnala un titolo" ma un Contatti generico (nome, email, motivo, messaggio). Fino al 20 settembre 2026 non aveva né `action` né un gestore JavaScript: un invio faceva un GET sulla stessa pagina, con nome, email e testo scritti nell'indirizzo e quindi nella cronologia di chi ci scriveva. La falla però non era raggiungibile — nessun pulsante, nessun link e nessun hash portavano a quella sezione, che di fatto era markup morto — quindi era un rischio in attesa, non una perdita di dati in corso.
@@ -79,7 +90,7 @@ Iscrizione sul sito e invio mensile (Brevo, fornitore europeo con piano gratuito
 Eredità della migrazione a Supabase, tutte in `index.html` salvo dove indicato. Da fare in una sessione a sé, separata dalle modifiche funzionali.
 - Testi e nomi che raccontano un'architettura che non esiste più: "Caricamento catalogo da GitHub…", la funzione `loadFromGitHub()`, e soprattutto il messaggio d'errore "Non riesco a caricare i JSON da GitHub. Controlla gli URL Raw in **Impostazioni**" — che compare quando è Supabase a non rispondere e rimanda a campi che in Impostazioni non ci sono più.
 - Codice morto: il download di `data/candidates.json` da raw.githubusercontent (fermo a 16 candidati di un flusso superato), l'editor notizie locale con "esporta e carica su GitHub", il pulsante "Esporta catalogo".
-- File residui in radice: `Index.txt` (vecchia copia di `index.html`) e `fantasy-italia-nuove-proposte.json` (10 titoli in formato pre-Supabase).
+- File residui in radice: `Index.txt` (vecchia copia di `index.html`), `fantasy-italia-nuove-proposte.json` (10 titoli in formato pre-Supabase) e `post.html`, pagina che mostrava un articolo da sola e che dal 4.2 è superata dalle pagine statiche: non è collegata da nessuna parte.
 
 ### 4.10 Aggiornamenti di manutenzione
 `actions/checkout@v4` → `@v5` e `actions/setup-python@v5` → `@v6` in entrambi i workflow, per chiudere l'avviso su Node 20. Da tenere d'occhio: `ubuntu-latest` passa a Ubuntu 26 dal 19 ottobre 2026.
@@ -118,6 +129,9 @@ Il controllo automatico di Supabase segnala quattro punti, nessuno urgente e nes
 ---
 
 ## 5. Da fare — editoriale e strategico
+
+### 5.0 Da rileggere subito: la guida per chi propone
+L'articolo "Guida pratica: come proporre un romanzo" descrive una procedura precedente al modulo, che dal 20 settembre 2026 scrive davvero in moderazione. Va riletto e allineato: è il testo a cui rimandare chi chiede come si entra in catalogo, e ora può semplicemente puntare a "Proponi un titolo".
 
 ### 5.1 Formati ricorrenti (capacità: circa 2 pezzi al mese)
 - Pagina mensile delle uscite con cappello redazionale, semiautomatica.
