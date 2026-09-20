@@ -54,11 +54,11 @@ Intervento preventivo: alla data il campo era vuoto su tutte le schede (53 coper
 ### 4.2 Pagine statiche per gli articoli
 Le notizie vivono su indirizzi con `#` (`?n=<id>#news/<id>`), quindi hanno lo stesso limite che avevano i libri: nessuna anteprima nelle chat, nessuna indicizzazione. Serve lo stesso trattamento: colonna `slug` su `news` con trigger analogo, generazione di `/articoli/<slug>/` dentro `genera_pagine.py`, `schema.org/Article`, voci in sitemap. È il prerequisito perché le interviste circolino.
 
-### 4.3 Modulo pubblico: chiuso e collegato, backend ancora da fare
+### 4.3 Modulo Contatti: chiuso e collegato — fatto
 Il modulo che esiste in `index.html` non è "Segnala un titolo" ma un Contatti generico (nome, email, motivo, messaggio). Fino al 20 settembre 2026 non aveva né `action` né un gestore JavaScript: un invio faceva un GET sulla stessa pagina, con nome, email e testo scritti nell'indirizzo e quindi nella cronologia di chi ci scriveva. La falla però non era raggiungibile — nessun pulsante, nessun link e nessun hash portavano a quella sezione, che di fatto era markup morto — quindi era un rischio in attesa, non una perdita di dati in corso.
 
 - [x] **Chiuso e collegato** (20 settembre 2026). L'invio viene intercettato e trasformato in un messaggio di posta già compilato, con `onsubmit="return false"` come rete di sicurezza per il caso in cui lo script non parta. Il modulo non si svuota, così se il programma di posta non si apre il testo non va perso. La sezione ora si raggiunge dal pulsante "Contatti" nella barra, dall'hash `#contatti` e dal link nel footer, che prima apriva una mail vuota.
-- [ ] **Il "Segnala un titolo" vero.** Scrittura in `books` con stato `candidate`, protezione anti-spam con Cloudflare Turnstile (gratuito), campo contatto per chi segnala. È lo stesso lavoro del punto 4.13: conviene farne uno solo.
+- [x] **Il "Segnala un titolo" vero** (20 settembre 2026), fatto insieme al 4.13: il modulo delle proposte scrive su `books` in stato `candidate` passando da una Edge Function. Turnstile non è stato usato, vedi 4.13 per il perché.
 
 ### 4.4 Kit autore
 Alla prima approvazione di un titolo, avvisare autore o editore con: link alla scheda, immagine pronta per i social, badge da incorporare sul proprio sito. Richiede un campo contatto su `books` e un canale di invio email. È la leva di traffico a costo più basso: ogni approvazione genera una condivisione e un collegamento in entrata.
@@ -90,14 +90,30 @@ Eredità della migrazione a Supabase, tutte in `index.html` salvo dove indicato.
 ### 4.12 Il backup del catalogo segue solo lo Scout
 `data/catalogo.json` lo riscrive `scout.py`, quindi si aggiorna una volta a settimana: fra un lunedì e l'altro è indietro rispetto alle approvazioni fatte in moderazione (il 20 settembre aveva 52 titoli con le copertine vecchie contro 53 schede già migrate). Non è un guasto — si allinea da solo al giro dopo — ma se serve davvero come copia di sicurezza vale la pena riscriverlo anche da `pagine.yml`, che gira ogni sei ore e i dati approvati li legge già.
 
-### 4.13 Ripristinare "Nuovo titolo": la proposta d'autore
-Il pulsante è nella barra pubblica e il modulo si compila, ma **non ha mai spedito niente**. Salvava in `state.pendingBooks`, cioè nel `localStorage` del browser di chi stava compilando: la proposta restava sul dispositivo di chi la scriveva e arrivava in moderazione solo quando a compilarla era il moderatore, che poi esportava il JSON e lo caricava su GitHub a mano. Con la migrazione a Supabase, `index.html` cancella quella chiave a ogni caricamento — scelta voluta e commentata nel codice — quindi oggi la bozza sparisce al primo reload; e "Moderazione" rimanda comunque a `catalogo-admin.html`, dove le bozze locali non compaiono.
+### 4.13 "Proponi un titolo": ripristinato — fatto
+Il modulo esisteva ma **non aveva mai spedito niente**: salvava in `state.pendingBooks`, cioè nel `localStorage` del browser di chi compilava, quindi la proposta restava sul dispositivo di chi la scriveva. Arrivava in moderazione solo quando a compilarla era il moderatore, che poi esportava il JSON e lo caricava su GitHub a mano. Dopo la migrazione a Supabase quella chiave viene cancellata a ogni caricamento, e il pulsante in barra mandava un visitatore alla pagina di accesso dell'amministrazione.
 
-Ripristinarlo significa farlo scrivere davvero su Supabase, ed è esattamente il lavoro di 4.3.2. Da decidere prima di toccare il codice:
-- **Come si scrive.** Una policy RLS che permetta il solo `insert` anonimo con `status = 'candidate'`, oppure una Edge Function che riceve la proposta e scrive con la service key. La seconda costa un pezzo in più ma non apre nessuna scrittura diretta al pubblico.
-- **Anti-spam.** Senza, un modulo che scrive sul database è un invito. Cloudflare Turnstile è gratuito e non profila.
-- **Campi.** Oggi il modulo ne chiede undici: per una proposta d'autore titolo, autore, editore, anno, ISBN e un contatto bastano, il resto lo completi tu in moderazione.
-- **Cosa vede chi propone.** Serve una conferma esplicita e l'avvertenza che la pubblicazione non è automatica.
+- [x] **Fatto** (20 settembre 2026). Il modulo ora scrive davvero, passando dalla Edge Function `proponi` (sorgente in `supabase/functions/proponi/`).
+
+Come è fatto:
+- **Scrittura.** Nessuna policy allentata: il catalogo resta leggibile da chiunque e scrivibile da nessuno. La funzione scrive con la service key, che vive solo lato server. `verify_jwt` è disattivato per necessità — chi propone non ha un account e la chiave pubblica del sito, in formato `sb_publishable_…`, non è un JWT.
+- **Anti-spam senza terzi.** Campo-esca fuori dallo schermo più doppio limite di frequenza (dieci proposte l'ora in tutto, tre al giorno dallo stesso indirizzo). Turnstile è stato scartato: avrebbe messo uno script di Cloudflare su ogni visita e un cookie di sfida, contro due principi dichiarati in questo documento, e le proposte finiscono comunque in una coda approvata a mano. Se un giorno arriva spazzatura vera, si aggiunge sopra senza rifare niente.
+- **Doppioni.** Confronto su titolo+autore e su `isbn_norm`, la colonna calcolata aggiunta al database (vedi sotto), in tutti gli stati: un titolo già scartato non torna in coda.
+- **Contatto.** Colonna `proposer_contact` su `books`, visibile in moderazione come indirizzo su cui scrivere. È un dato personale: il permesso di lettura di `anon` era sull'intera tabella ed è stato tolto e riconcesso colonna per colonna, saltando quella. Verificato da visitatore anonimo: il contatto dà 401, e anche `select=*` è negato. Effetto collaterale voluto: una colonna aggiunta in futuro nasce non leggibile dal pubblico.
+- **Cosa vede chi propone.** Conferma esplicita, avvertenza che l'approvazione è manuale, e il modulo che non si svuota quando la proposta è rifiutata.
+
+Due modifiche al database, registrate come migrazioni: `proposer_contact` con i permessi ristrutturati, e `isbn_norm` (colonna calcolata con le sole cifre, più indice) perché gli ISBN in tabella convivono in formati diversi e un confronto esatto si perdeva i doppioni.
+
+### 4.14 Un ISBN sbagliato su cinque schede
+`978-8858054857` compare su cinque schede approvate diverse: *Arhos. L'acqua e l'ombra* e *Arhos. La sabbia e il vento* di Cecilia Randall, *Sussurrami, o dea* di Davide Del Popolo Riolo, *L'accademia di Lyonesse* e *Le vite di Narses*. Uno solo può averlo davvero, forse nessuno. Il dato finisce nel JSON-LD delle cinque pagine pubbliche, quindi lo legge anche Google, e falsa il controllo dei doppioni delle proposte. Da sistemare a mano dalla moderazione, verificando i libri veri uno per uno.
+
+(Trovato grazie a `isbn_norm`: prima il formato misto lo nascondeva. L'altro ISBN ripetuto, quello di *Surikila*, è legittimo — stessa scheda approvata e scartata.)
+
+### 4.15 Avvisi di sicurezza Supabase, preesistenti
+Il controllo automatico di Supabase segnala quattro punti, nessuno urgente e nessuno introdotto dai lavori di settembre:
+- `books_assign_slug()` e `e_admin()` sono `SECURITY DEFINER` e richiamabili via RPC anche da anonimo. `e_admin()` restituisce `false` a chi non è amministratore, quindi il rischio è basso, ma il permesso di esecuzione andrebbe revocato ad `anon`.
+- `tocca_updated_at` non ha `search_path` fissato.
+- La protezione contro le password compromesse (HaveIBeenPwned) è disattivata in Auth.
 
 ---
 
