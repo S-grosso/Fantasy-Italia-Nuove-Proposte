@@ -6,12 +6,16 @@
 <title>Pagina non trovata — Fantasy Italia</title>
 <meta name="robots" content="noindex">
 <script>
-  // Le pagine dei libri vengono rigenerate a intervalli: un titolo approvato
-  // da poco può non avere ancora la sua pagina. Invece di mostrare un errore
-  // si apre la scheda sul catalogo, che i dati li legge da Supabase.
+  // Le pagine di libri e articoli vengono rigenerate a intervalli: una
+  // scheda approvata o un articolo pubblicato da poco possono non avere
+  // ancora la loro pagina. Invece di mostrare un errore si apre il contenuto
+  // sul sito, che i dati li legge da Supabase.
   (function(){
-    var m = /^\/libri\/([^\/]+)\/?$/.exec(location.pathname || '');
-    if(m) location.replace('/?libro=' + m[1]);
+    var percorso = location.pathname || '';
+    var libro = /^\/libri\/([^\/]+)\/?$/.exec(percorso);
+    if(libro){ location.replace('/?libro=' + libro[1]); return; }
+    var articolo = /^\/articoli\/([^\/]+)\/?$/.exec(percorso);
+    if(articolo){ location.replace('/?articolo=' + articolo[1]); }
   })();
 </script>
 <style>

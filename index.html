@@ -452,7 +452,7 @@
   const SUPABASE_KEY = 'sb_publishable_0prYsjRCftybZ7uQ7tTryA_D5N2r9kQ';
 
   const NEWS_ENDPOINT = SUPABASE_URL + '/rest/v1/news'
-    + '?select=id,title,body_html,published_at'
+    + '?select=id,slug,title,body_html,published_at'
     + '&status=eq.published'
     + '&order=published_at.desc';
 
@@ -696,6 +696,7 @@
       id:       x.id || ('n'+i),
       title:    x.title,
       bodyHtml: x.body_html || x.bodyHtml || x.body || '',
+      slug:     x.slug || '',
       ts:       x.published_at ? new Date(x.published_at).getTime()
                                : (x.ts || Date.now())
     }));
@@ -1297,8 +1298,18 @@
     const list=state.remoteNews.slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
     if(!list.length){ grid.innerHTML='<div class="muted">Ancora nessuna notizia.</div>'; return; }
     for(const n of list){
-      const card=document.createElement('div'); card.className='news-card'; card.tabIndex=0;
-      card.addEventListener('click', ()=>{ location.hash='#news/'+(n.id||''); });
+      // La scheda e' un collegamento vero a /articoli/<slug>/: "apri in una
+      // nuova scheda" funziona da solo e i motori di ricerca trovano
+      // l'articolo. Il clic normale resta intercettato, cosi' la pagina non
+      // si ricarica e l'elenco non perde la posizione.
+      const card=document.createElement('a'); card.className='news-card';
+      const dove = urlArticolo(n);
+      if(dove) card.href = dove;
+      card.addEventListener('click', ev=>{
+        if(ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+        ev.preventDefault();
+        apriArticolo(n, 'push');
+      });
       const h3=document.createElement('h3'); h3.textContent=n.title||'(Senza titolo)';
       const prev=document.createElement('div'); prev.className='muted line-clamp';
       const plain=(n.bodyHtml||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
@@ -1307,18 +1318,68 @@
       grid.appendChild(card);
     }
   }
-  function openNewsById(id){
-    const n=state.remoteNews.find(x=>String(x.id)===String(id));
+  // Gli articoli hanno un indirizzo proprio, /articoli/<slug>/, come le
+  // schede libro: prima vivevano dopo un cancelletto, che le anteprime dei
+  // messaggi non leggono e i motori di ricerca non indicizzano.
+  function urlArticolo(n){
+    return (n && n.slug) ? '/articoli/' + encodeURIComponent(n.slug) + '/' : '';
+  }
+  function slugArticoloDaIndirizzo(){
+    const m = /^\/articoli\/([^\/]+)\/?$/.exec(location.pathname || '');
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function articoloDaSlug(slug){
+    return state.remoteNews.find(n => n.slug === slug) || null;
+  }
+
+  // modo: 'push' (clic dall'elenco), 'replace' (arrivo diretto o indirizzo
+  // vecchio da riscrivere), 'nessuno' (tasto indietro: l'indirizzo e' gia'
+  // quello giusto).
+  function apriArticolo(n, modo){
     if(!n) return false;
-    $('#articleTitle').textContent = n.title||'';
-    $('#articleMeta').textContent  = new Date(n.ts||Date.now()).toLocaleString('it-IT');
-    $('#articleBody').innerHTML    = n.bodyHtml||'';
+    $('#articleTitle').textContent = n.title || '';
+    $('#articleMeta').textContent  = new Date(n.ts || Date.now())
+      .toLocaleDateString('it-IT', {day:'numeric', month:'long', year:'numeric'});
+    $('#articleBody').innerHTML    = n.bodyHtml || '';
     showTab('newsview');
-    const safe=encodeURIComponent(String(id));
-    history.replaceState(null,'',location.pathname+'?n='+safe+'#news/'+safe);
+    window.scrollTo({top:0});
+    const dove = urlArticolo(n);
+    if(dove && modo === 'push')         history.pushState({articolo:n.slug}, '', dove);
+    else if(dove && modo === 'replace') history.replaceState({articolo:n.slug}, '', dove);
     return true;
   }
-  function backToNews(e){ e?.preventDefault(); history.pushState(null,'',location.pathname+'#notizie'); showTab('notizie'); }
+
+  // Indirizzi vecchi (?n=<id>#news/<id>): restano validi, si aprono lo stesso
+  // e la barra si riscrive con quello nuovo, cosi' chi lo salva salva il buono.
+  function openNewsById(id){
+    const n = state.remoteNews.find(x => String(x.id) === String(id));
+    if(!n) return false;
+    return apriArticolo(n, 'replace');
+  }
+
+  // Tasto indietro e avanti fra elenco e articolo. Gli articoli non stanno in
+  // un dialogo come le schede libro, quindi hanno un gestore loro.
+  window.addEventListener('popstate', () => {
+    const slug = slugArticoloDaIndirizzo();
+    if(slug){
+      const n = articoloDaSlug(slug);
+      if(n){ apriArticolo(n, 'nessuno'); return; }
+    }
+    const vista = $('#newsview');
+    if(vista && vista.style.display !== 'none') showTab('notizie');
+  });
+
+  // All'avvio: /articoli/<slug>/ servito dal 404, oppure ?articolo=<slug>.
+  function apriArticoloDaIndirizzo(){
+    const slug = slugArticoloDaIndirizzo()
+      || new URLSearchParams(location.search || '').get('articolo') || '';
+    if(!slug) return;
+    const n = articoloDaSlug(slug);
+    if(n) apriArticolo(n, 'replace');
+    else history.replaceState(null, '', '/');
+  }
+
+  function backToNews(e){ e?.preventDefault(); history.pushState(null,'','/#notizie'); showTab('notizie'); }
   $('#btnBackTop')?.addEventListener('click', backToNews);
   $('#btnBackBottom')?.addEventListener('click', backToNews);
 
@@ -1607,6 +1668,7 @@ ${testo}`;
     await loadFromGitHub();   // unica fonte per la vista pubblica
     handleRoute();
     apriSchedaDaIndirizzo();
+    apriArticoloDaIndirizzo();
   })();
 
 })();
