@@ -154,6 +154,7 @@
       <div style="flex:1;min-width:0">
         <div id="statoLibro" class="small muted"></div>
         <div id="provenienza" class="small muted" style="margin-top:6px"></div>
+        <div id="contattoProponente" class="small muted hidden" style="margin-top:6px"></div>
         <div id="erroreCopertina" class="motivo hidden"></div>
       </div>
     </div>
@@ -517,6 +518,24 @@
         + (b.reason ? ` · ${b.reason}` : '');
       prov.classList.remove('hidden');
     } else { prov.textContent = ''; }
+
+    // Chi propone dal modulo pubblico lascia un'email: senza mostrarla qui
+    // non si potrebbe rispondere, e la proposta resterebbe una segnalazione
+    // anonima. E' un dato personale, quindi non esce mai dal pannello: il
+    // ruolo anonimo non puo' nemmeno leggerlo dal database.
+    const cont = $('#contattoProponente');
+    if(b && b.proposer_contact){
+      cont.textContent = 'Proposto da ';
+      const a = document.createElement('a');
+      a.href = 'mailto:' + b.proposer_contact;
+      a.textContent = b.proposer_contact;
+      a.style.color = '#9fc8ff';
+      cont.appendChild(a);
+      cont.classList.remove('hidden');
+    } else {
+      cont.textContent = '';
+      cont.classList.add('hidden');
+    }
 
     const errCop = $('#erroreCopertina');
     if(b && b.cover_error){
