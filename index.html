@@ -164,7 +164,7 @@
        <nav id="navPublic">
         <button data-tab="catalogo" class="active">Catalogo</button>
         <button data-tab="nuovo">Proponi un titolo</button>
-        <button data-tab="notizie">Notizie</button>
+        <button data-tab="notizie">Articoli</button>
         <button data-tab="contatti">Contatti</button>
       </nav>
       <nav id="navAdmin" style="display:none">
@@ -296,17 +296,21 @@
       </div>
     </div>
 
-    <div id="gridNews" class="grid"><div class="muted">Caricamento notizie da GitHub…</div></div>
+    <div class="small muted" style="margin-bottom:10px">
+      Ogni articolo ha anche una pagina propria, condivisibile e indicizzata:
+      <a href="/articoli/" style="color:#9fc8ff">elenco completo degli articoli</a>.
+    </div>
+    <div id="gridNews" class="grid"><div class="muted">Caricamento articoli…</div></div>
   </section>
 
   <!-- Notizia (articolo) -->
   <section id="newsview" class="tab" style="display:none">
     <div class="news-article">
-      <button class="btn" id="btnBackTop">Torna all’app</button>
+      <button class="btn" id="btnBackTop">← Torna agli articoli</button>
       <h2 id="articleTitle" style="margin:6px 0 4px 0"></h2>
       <div id="articleMeta" class="news-meta"></div>
       <div id="articleBody"></div>
-      <div class="backRow"><button class="btn" id="btnBackBottom">Torna all’app</button></div>
+      <div class="backRow"><button class="btn" id="btnBackBottom">← Torna agli articoli</button></div>
     </div>
   </section>
 
@@ -1379,7 +1383,7 @@
     else history.replaceState(null, '', '/');
   }
 
-  function backToNews(e){ e?.preventDefault(); history.pushState(null,'','/#notizie'); showTab('notizie'); }
+  function backToNews(e){ e?.preventDefault(); history.pushState(null,'','/#articoli'); showTab('notizie'); }
   $('#btnBackTop')?.addEventListener('click', backToNews);
   $('#btnBackBottom')?.addEventListener('click', backToNews);
 
@@ -1634,7 +1638,7 @@ ${testo}`;
   function handleRoute(){
     const hash=(location.hash||'').replace(/^#/, '');
     if(hash.startsWith('news/')){ const id=decodeURIComponent(hash.slice(5)); if(!openNewsById(id)){ alert('Articolo non trovato.'); showTab('notizie'); } return; }
-    if(hash==='notizie'){ showTab('notizie'); return; }
+    if(hash==='articoli' || hash==='notizie'){ showTab('notizie'); return; }
     if(hash==='contatti'){ showTab('contatti'); return; }
     if(hash==='nuovo'){ showTab('nuovo'); return; }
     if(hash==='moderazione'){
@@ -1652,7 +1656,22 @@ ${testo}`;
       if(tab==='moderazione'||tab==='impostazioni'){ if(!sessionIsValid()){ alert('Area riservata: accedi come admin.'); return; } touchSession(); }
       if(tab==='moderazione'){ location.href = 'catalogo-admin.html'; return; }
       if(tab==='notizie') renderNews();
-      location.hash='#'+tab;
+
+      // La sezione si chiama Articoli: l'indirizzo lo dice, ma #notizie
+      // continua a funzionare per chi l'ha salvato.
+      const ancora = (tab === 'notizie') ? 'articoli' : tab;
+
+      // Partendo da una pagina con percorso proprio (/articoli/<slug>/ o
+      // /libri/<slug>/) cambiare il solo hash lascerebbe nella barra
+      // l'indirizzo della scheda che stavi guardando. Qui si riscrive tutto
+      // l'indirizzo, e si chiama handleRoute a mano perche' pushState non
+      // fa scattare l'evento hashchange.
+      if(location.pathname !== '/'){
+        history.pushState(null, '', '/#' + ancora);
+        handleRoute();
+        return;
+      }
+      location.hash = '#' + ancora;
     });
   });
 
