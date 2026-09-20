@@ -53,8 +53,17 @@
   .tag.cand{color:var(--warn);border-color:#8a6420}
   .tag.bozza{color:#9fc8ff;border-color:#2854aa}
   .tag.scart{color:#ff9aa9;border-color:#5a2a2a}
+  .tag.errcop{color:#ff9aa9;border-color:#5a2a2a}
   .tag.gen{color:var(--viola);border-color:#5a3d8a}
   .tag .x{cursor:pointer;font-weight:700;margin-left:6px;opacity:.8}
+  /* Motivo dell'errore copertina: testo, non pastiglia */
+  .motivo{font-size:12px;color:#ff9aa9;margin-top:4px;line-height:1.4;
+        word-break:break-word}
+  /* Nell'elenco il motivo si ferma a tre righe: un indirizzo lungo su
+     schermo stretto ne occupa quattro da solo e le schede diventano
+     illeggibili. Il testo intero resta nell'editor. */
+  .item .motivo{display:-webkit-box;-webkit-line-clamp:3;
+        -webkit-box-orient:vertical;overflow:hidden}
 
   .msg{border-radius:10px;padding:11px 13px;font-size:14px;margin-bottom:14px;display:none}
   .msg.show{display:block}
@@ -112,6 +121,7 @@
         <button data-f="draft">Bozze</button>
         <button data-f="approved">In catalogo</button>
         <button data-f="rejected">Scartati</button>
+        <button data-f="cover_error">Copertine KO</button>
       </div>
       <div class="actions">
         <button id="btnNuovo" class="btn primary">Nuovo titolo</button>
@@ -144,6 +154,7 @@
       <div style="flex:1;min-width:0">
         <div id="statoLibro" class="small muted"></div>
         <div id="provenienza" class="small muted" style="margin-top:6px"></div>
+        <div id="erroreCopertina" class="motivo hidden"></div>
       </div>
     </div>
 
@@ -322,10 +333,17 @@
     const box = $('#elenco');
     box.innerHTML = '<div class="muted">Caricamento…</div>';
 
-    const { data, error } = await supa
+    // "Copertine KO" non e' uno stato ma un guasto: le schede che lo hanno
+    // possono essere in catalogo come fra le bozze, quindi si filtra sulla
+    // colonna dell'errore invece che su status.
+    let q = supa
       .from('books')
-      .select('id,title,author,publisher,year,cover_url,status,genre,featured,confidence')
-      .eq('status', filtro)
+      .select('id,title,author,publisher,year,cover_url,cover_error,status,genre,featured,confidence');
+    q = (filtro === 'cover_error')
+      ? q.not('cover_error', 'is', null)
+      : q.eq('status', filtro);
+
+    const { data, error } = await q
       .order('updated_at', {ascending:false})
       .limit(300);
 
@@ -335,7 +353,9 @@
       return;
     }
     if(!data.length){
-      box.innerHTML = '<div class="muted">Niente in questa sezione.</div>';
+      box.innerHTML = (filtro === 'cover_error')
+        ? '<div class="muted">Nessuna copertina con errori.</div>'
+        : '<div class="muted">Niente in questa sezione.</div>';
       return;
     }
 
@@ -370,8 +390,32 @@
         c.className = 'tag cand'; c.textContent = 'da verificare';
         tags.appendChild(c);
       }
+      // Una copertina non migrata e' l'unico guasto che i visitatori vedono
+      // prima di te: deve saltare all'occhio scorrendo l'elenco, non restare
+      // sepolto in data/copertine-report.json.
+      if(b.cover_error){
+        const k = document.createElement('span');
+        k.className = 'tag errcop'; k.textContent = 'copertina KO';
+        tags.appendChild(k);
+      }
+      // Sotto il filtro delle copertine le schede arrivano da stati diversi:
+      // senza etichetta non si capisce se il titolo e' gia' in catalogo.
+      if(filtro === 'cover_error' && b.status){
+        const s = document.createElement('span');
+        const voce = ETICHETTA_STATO[b.status] || ['', b.status];
+        s.className = 'tag ' + voce[0]; s.textContent = voce[1];
+        tags.appendChild(s);
+      }
 
       info.appendChild(h3); info.appendChild(meta); info.appendChild(tags);
+
+      // Il motivo per esteso: lo script lo tronca a 300 caratteri, quindi
+      // sta nella riga senza bisogno di aprire la scheda.
+      if(b.cover_error){
+        const m = document.createElement('div');
+        m.className = 'motivo'; m.textContent = b.cover_error;
+        info.appendChild(m);
+      }
 
       const azioni = document.createElement('div');
       azioni.style.display = 'flex';
@@ -474,6 +518,15 @@
       prov.classList.remove('hidden');
     } else { prov.textContent = ''; }
 
+    const errCop = $('#erroreCopertina');
+    if(b && b.cover_error){
+      errCop.textContent = 'Copertina non migrata — ' + b.cover_error;
+      errCop.classList.remove('hidden');
+    } else {
+      errCop.textContent = '';
+      errCop.classList.add('hidden');
+    }
+
     // Se lo Scout ha messo un link di ricerca invece del prodotto
     const av = $('#avvisoAmazon');
     const amz = v('store_amazon_url');
@@ -539,9 +592,23 @@
     };
   }
 
+  function azzeraErroreCopertina(riga){
+    // L'errore registrato dallo script riguarda l'indirizzo di prima: se lo
+    // hai cambiato, tenerlo lascerebbe il contrassegno rosso su una scheda
+    // appena sistemata. Il campo entra nel salvataggio solo in questo caso,
+    // cosi' un salvataggio qualunque scrive esattamente quello che scriveva
+    // prima. Se anche il nuovo indirizzo non va, lo script riscrive l'errore
+    // al primo giro utile.
+    if(libro && libro.cover_error && libro.cover_url !== riga.cover_url){
+      riga.cover_error = null;
+    }
+    return riga;
+  }
+
   async function salva(stato, messaggio){
     const riga = raccogli(stato);
     if(!riga) return;
+    azzeraErroreCopertina(riga);
 
     const bottoni = ['#btnSalva','#btnApprova','#btnScarta'];
     bottoni.forEach(s=>$(s).disabled = true);
