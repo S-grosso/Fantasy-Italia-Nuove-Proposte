@@ -37,6 +37,7 @@ import requests
 
 ROOT = Path(__file__).resolve().parent.parent
 DIR_LIBRI = ROOT / "libri"
+DIR_ARTICOLI = ROOT / "articoli"
 SITEMAP = ROOT / "sitemap.xml"
 ROBOTS = ROOT / "robots.txt"
 
@@ -57,6 +58,8 @@ CAMPI = (
     "slug,title,author,publisher,year,series,isbn,cover_url,description,"
     "store_amazon_url,store_publisher_url,is_debut,genre,labels,updated_at"
 )
+
+CAMPI_NEWS = "slug,title,body_html,published_at,updated_at"
 
 TIMEOUT = 30
 
@@ -83,6 +86,46 @@ def riassunto(testo, limite=160):
     return taglio + "…"
 
 
+def testo_semplice(html_grezzo):
+    """Testo senza tag, per description e anteprima dell'indice."""
+    senza_tag = re.sub(r"<[^>]+>", " ", str(html_grezzo or ""))
+    return re.sub(r"\s+", " ", html.unescape(senza_tag)).strip()
+
+
+def corpo_sicuro(html_grezzo):
+    """
+    Toglie dal corpo dell'articolo i tag che non devono finire in una pagina
+    statica. Non e' un sanificatore: il testo e' gia' ripulito quando lo salvi
+    da news-admin, e viene da te, non da estranei. Serve come rete, perche' un
+    <script> arrivato per altre strade (per esempio con l'importazione del
+    vecchio news.json) qui dentro sarebbe eseguibile.
+    """
+    pulito = re.sub(
+        r"<\s*(script|iframe|object|embed|style|link|meta)\b[^>]*>.*?<\s*/\s*\1\s*>",
+        "", str(html_grezzo or ""), flags=re.I | re.S,
+    )
+    pulito = re.sub(
+        r"<\s*(script|iframe|object|embed|style|link|meta)\b[^>]*/?>",
+        "", pulito, flags=re.I,
+    )
+    # Gestori scritti nell'attributo: onclick, onerror e simili.
+    pulito = re.sub(r'\son\w+\s*=\s*"[^"]*"', "", pulito, flags=re.I)
+    pulito = re.sub(r"\son\w+\s*=\s*'[^']*'", "", pulito, flags=re.I)
+    return pulito
+
+
+def data_leggibile(valore):
+    """AAAA-MM-GG -> '14 settembre 2026': per il lettore, non per la macchina."""
+    mesi = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
+            "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"]
+    iso = data_iso(valore)
+    try:
+        anno, mese, giorno = iso.split("-")
+        return f"{int(giorno)} {mesi[int(mese) - 1]} {anno}"
+    except (ValueError, IndexError):
+        return iso
+
+
 def data_iso(valore):
     """updated_at di Supabase -> AAAA-MM-GG per la sitemap."""
     testo = str(valore or "")[:10]
@@ -91,6 +134,10 @@ def data_iso(valore):
 
 def url_libro(slug):
     return SITO + "/libri/" + slug + "/"
+
+
+def url_articolo(slug):
+    return SITO + "/articoli/" + slug + "/"
 
 
 # --------------------------------------------------------------------------
@@ -104,6 +151,25 @@ def scarica_libri():
         "status": "eq.approved",
         "slug": "not.is.null",
         "order": "year.desc,title.asc",
+    }
+    testate = {"apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY}
+    r = requests.get(url, params=parametri, headers=testate, timeout=TIMEOUT)
+    r.raise_for_status()
+    return r.json()
+
+
+def scarica_articoli():
+    """
+    Articoli pubblicati che hanno uno slug. Le bozze non ce l'hanno, quindi
+    non possono finire online per sbaglio: a decidere e' il trigger sul
+    database, non questo script.
+    """
+    url = SUPABASE_URL.rstrip("/") + "/rest/v1/news"
+    parametri = {
+        "select": CAMPI_NEWS,
+        "status": "eq.published",
+        "slug": "not.is.null",
+        "order": "published_at.desc",
     }
     testate = {"apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY}
     r = requests.get(url, params=parametri, headers=testate, timeout=TIMEOUT)
@@ -145,6 +211,24 @@ STILE = """
     .head{flex-direction:column}
     img.cover{height:240px;align-self:center}
   }
+"""
+
+
+# Il corpo dell'articolo e' HTML scritto con l'editor delle notizie: qui si
+# danno le misure a quello che puo' contenere, senza toccare il resto.
+STILE_ARTICOLO = """
+  article.articolo{max-width:720px}
+  .articolo h1{margin:0 0 4px 0}
+  .articolo .data{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .corpo{line-height:1.75;font-size:16.5px}
+  .corpo h2{font-size:20px;margin:28px 0 10px}
+  .corpo h3{font-size:17px;margin:22px 0 8px}
+  .corpo p{margin:0 0 16px}
+  .corpo ul,.corpo ol{margin:0 0 16px;padding-left:22px}
+  .corpo li{margin-bottom:6px}
+  .corpo a{color:#9fc8ff}
+  .corpo img{max-width:100%;height:auto;border-radius:8px}
+  .corpo blockquote{margin:0 0 16px;padding-left:14px;border-left:2px solid var(--border);color:var(--muted)}
 """
 
 
@@ -329,10 +413,138 @@ def pagina_indice(libri):
 
 
 # --------------------------------------------------------------------------
+# Pagina del singolo articolo
+# --------------------------------------------------------------------------
+
+def schema_articolo(a, descrizione):
+    """schema.org/Article: e' quello che Google legge per datare l'articolo."""
+    dati = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": riassunto(a.get("title") or "", 110),
+        "url": url_articolo(a["slug"]),
+        "inLanguage": "it",
+        "datePublished": data_iso(a.get("published_at")),
+        "dateModified": data_iso(a.get("updated_at") or a.get("published_at")),
+        "author": {"@type": "Organization", "name": NOME_SITO, "url": SITO},
+        "publisher": {"@type": "Organization", "name": NOME_SITO, "url": SITO},
+        "mainEntityOfPage": {"@type": "WebPage", "@id": url_articolo(a["slug"])},
+    }
+    if descrizione:
+        dati["description"] = descrizione
+    return json.dumps(dati, ensure_ascii=False, indent=2).replace("<", "\\u003C")
+
+
+def pagina_articolo(a):
+    slug = a["slug"]
+    titolo = a.get("title") or "(Senza titolo)"
+    corpo = corpo_sicuro(a.get("body_html"))
+    descrizione = riassunto(testo_semplice(corpo)) or f"{titolo} — {NOME_SITO}"
+
+    return f"""<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{e(titolo)} | {e(NOME_SITO)}</title>
+<meta name="description" content="{e(descrizione)}">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#7aa6ff">
+<link rel="canonical" href="{e(url_articolo(slug))}">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="{e(NOME_SITO)}">
+<meta property="og:locale" content="it_IT">
+<meta property="og:title" content="{e(titolo)}">
+<meta property="og:description" content="{e(descrizione)}">
+<meta property="og:url" content="{e(url_articolo(slug))}">
+<meta property="article:published_time" content="{e(data_iso(a.get("published_at")))}">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{schema_articolo(a, descrizione)}
+</script>
+<style>{STILE}{STILE_ARTICOLO}</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap"><a class="home" href="/">{e(NOME_SITO)}</a></div>
+</header>
+
+<main>
+  <article class="articolo">
+    <h1>{e(titolo)}</h1>
+    <div class="data">{e(data_leggibile(a.get("published_at")))}</div>
+    <div class="corpo">{corpo}</div>
+    <div class="azioni">
+      <a class="btn" href="/articoli/">Tutti gli articoli</a>
+      <a class="btn" href="/">Vai al catalogo</a>
+    </div>
+  </article>
+</main>
+
+<footer>
+  <div>Articolo di {e(NOME_SITO)}, dedicato alla narrativa fantasy italiana contemporanea.</div>
+  <div style="margin-top:6px"><a href="/">Catalogo</a> &middot; <a href="/articoli/">Articoli</a> &middot; <a href="/legal.html">Note legali &amp; privacy</a></div>
+</footer>
+
+</body>
+</html>
+"""
+
+
+def pagina_indice_articoli(articoli):
+    voci = []
+    for a in articoli:
+        anteprima = riassunto(testo_semplice(a.get("body_html")), 180)
+        voci.append(
+            f'<li><a href="/articoli/{e(a["slug"])}/">{e(a.get("title") or "(Senza titolo)")}</a>'
+            f'<span class="muted">{e(data_leggibile(a.get("published_at")))}</span>'
+            f'<span class="muted">{e(anteprima)}</span></li>'
+        )
+
+    return f"""<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Articoli | {e(NOME_SITO)}</title>
+<meta name="description" content="Articoli, guide e approfondimenti sulla narrativa fantasy italiana contemporanea.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="{e(SITO)}/articoli/">
+<style>{STILE}
+  ul{{list-style:none;padding:0;margin:0;display:grid;gap:10px}}
+  li{{background:#10121a;border:1px solid var(--border);border-radius:10px;padding:12px 14px}}
+  li a{{color:var(--ink);text-decoration:none;font-weight:600}}
+  li a:hover{{text-decoration:underline}}
+  .muted{{color:var(--muted);font-size:13px;display:block;margin-top:4px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap"><a class="home" href="/">{e(NOME_SITO)}</a></div>
+</header>
+
+<main>
+  <h1>Articoli</h1>
+  <p class="muted">{len(articoli)} pubblicati. Il catalogo dei libri sta in <a href="/">homepage</a>.</p>
+  <ul>
+    {chr(10).join(voci)}
+  </ul>
+</main>
+
+<footer><div><a href="/">Catalogo</a> &middot; <a href="/legal.html">Note legali &amp; privacy</a></div></footer>
+
+</body>
+</html>
+"""
+
+
+# --------------------------------------------------------------------------
 # Sitemap e robots
 # --------------------------------------------------------------------------
 
-def sitemap(libri):
+def sitemap(libri, articoli):
     oggi = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     righe = [
         '<?xml version="1.0" encoding="UTF-8"?>',
@@ -340,11 +552,24 @@ def sitemap(libri):
         f"  <url><loc>{SITO}/</loc><lastmod>{oggi}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>",
         f"  <url><loc>{SITO}/libri/</loc><lastmod>{oggi}</lastmod><changefreq>weekly</changefreq></url>",
     ]
+    if articoli:
+        righe.append(
+            f"  <url><loc>{SITO}/articoli/</loc><lastmod>{oggi}</lastmod>"
+            f"<changefreq>weekly</changefreq></url>"
+        )
     for b in libri:
         righe.append(
             f"  <url><loc>{url_libro(b['slug'])}</loc>"
             f"<lastmod>{data_iso(b.get('updated_at'))}</lastmod>"
             f"<changefreq>monthly</changefreq></url>"
+        )
+    # Un articolo cambia molto meno di una scheda: dichiararlo yearly evita
+    # che i motori tornino a controllarlo senza motivo.
+    for a in articoli:
+        righe.append(
+            f"  <url><loc>{url_articolo(a['slug'])}</loc>"
+            f"<lastmod>{data_iso(a.get('updated_at') or a.get('published_at'))}</lastmod>"
+            f"<changefreq>yearly</changefreq></url>"
         )
     righe.append("</urlset>")
     return "\n".join(righe) + "\n"
@@ -374,12 +599,12 @@ def scrivi(percorso, contenuto, scritti):
     return True
 
 
-def rimuovi_orfane(slug_validi):
-    """Schede tolte dal catalogo o con slug cambiato: via le cartelle vecchie."""
+def rimuovi_orfane(radice, slug_validi):
+    """Pagine tolte o con slug cambiato: via le cartelle che non servono piu'."""
     rimosse = []
-    if not DIR_LIBRI.exists():
+    if not radice.exists():
         return rimosse
-    for cartella in DIR_LIBRI.iterdir():
+    for cartella in radice.iterdir():
         if cartella.is_dir() and cartella.name not in slug_validi:
             shutil.rmtree(cartella)
             rimosse.append(cartella.name)
@@ -387,15 +612,28 @@ def rimuovi_orfane(slug_validi):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Genera le pagine statiche dei libri.")
+    ap = argparse.ArgumentParser(description="Genera le pagine statiche di libri e articoli.")
     ap.add_argument("--dry-run", action="store_true", help="non scrive niente, riepiloga e basta")
     ap.add_argument("--da-file", help="legge i libri da un JSON locale invece che da Supabase")
+    ap.add_argument("--solo", choices=["libri", "articoli"],
+                    help="genera solo una delle due famiglie di pagine")
     args = ap.parse_args()
 
-    if args.da_file:
-        libri = json.loads(Path(args.da_file).read_text(encoding="utf-8"))
-    else:
-        libri = scarica_libri()
+    fai_libri = args.solo != "articoli"
+    fai_articoli = args.solo != "libri"
+
+    libri = []
+    if fai_libri:
+        if args.da_file:
+            libri = json.loads(Path(args.da_file).read_text(encoding="utf-8"))
+        else:
+            libri = scarica_libri()
+
+    # Gli articoli stanno su Supabase: con --da-file si sta provando offline
+    # il solo catalogo, quindi si lasciano stare.
+    articoli = []
+    if fai_articoli and not args.da_file:
+        articoli = scarica_articoli()
 
     validi, scartati = [], []
     for b in libri:
@@ -405,29 +643,63 @@ def main():
         else:
             scartati.append(b.get("title") or b.get("slug") or "?")
 
+    articoli_validi = []
+    for a in articoli:
+        slug = (a.get("slug") or "").strip()
+        if SLUG_VALIDO.match(slug):
+            articoli_validi.append(a)
+        else:
+            scartati.append(a.get("title") or a.get("slug") or "?")
+
     if scartati:
         print(f"Slug non validi, saltati: {len(scartati)} -> {', '.join(scartati[:5])}")
 
-    if not validi:
-        print("Nessuna scheda approvata con slug: non tocco niente.")
+    if not validi and not articoli_validi:
+        print("Niente da pubblicare: non tocco niente.")
         return 0
 
-    print(f"Schede approvate: {len(validi)}")
+    # Una lettura a vuoto non deve cancellare quello che c'e': se il catalogo
+    # torna vuoto per un errore di rete si fermano anche le rimozioni, che
+    # altrimenti spazzerebbero via 53 pagine buone.
+    if fai_libri and not validi:
+        print("Nessuna scheda approvata con slug: lascio stare le pagine libro.")
+        fai_libri = False
+    if fai_articoli and not articoli_validi:
+        print("Nessun articolo pubblicato con slug: lascio stare le pagine articolo.")
+        fai_articoli = False
+
+    print(f"Schede approvate: {len(validi)} — articoli pubblicati: {len(articoli_validi)}")
 
     if args.dry_run:
-        for b in validi[:5]:
+        for b in validi[:3]:
             print("  ", url_libro(b["slug"]))
+        for a in articoli_validi[:3]:
+            print("  ", url_articolo(a["slug"]))
         print("   (dry-run: nessun file scritto)")
         return 0
 
     scritti = []
-    for b in validi:
-        scrivi(DIR_LIBRI / b["slug"] / "index.html", pagina_libro(b), scritti)
-    scrivi(DIR_LIBRI / "index.html", pagina_indice(validi), scritti)
-    scrivi(SITEMAP, sitemap(validi), scritti)
-    scrivi(ROBOTS, robots(), scritti)
+    if fai_libri:
+        for b in validi:
+            scrivi(DIR_LIBRI / b["slug"] / "index.html", pagina_libro(b), scritti)
+        scrivi(DIR_LIBRI / "index.html", pagina_indice(validi), scritti)
 
-    rimosse = rimuovi_orfane({b["slug"] for b in validi} | {"index.html"})
+    if fai_articoli:
+        for a in articoli_validi:
+            scrivi(DIR_ARTICOLI / a["slug"] / "index.html", pagina_articolo(a), scritti)
+        scrivi(DIR_ARTICOLI / "index.html", pagina_indice_articoli(articoli_validi), scritti)
+
+    # La sitemap si riscrive solo se si e' guardato tutto: con --solo
+    # resterebbe fuori meta' del sito.
+    if fai_libri and fai_articoli:
+        scrivi(SITEMAP, sitemap(validi, articoli_validi), scritti)
+        scrivi(ROBOTS, robots(), scritti)
+
+    rimosse = []
+    if fai_libri:
+        rimosse += rimuovi_orfane(DIR_LIBRI, {b["slug"] for b in validi} | {"index.html"})
+    if fai_articoli:
+        rimosse += rimuovi_orfane(DIR_ARTICOLI, {a["slug"] for a in articoli_validi} | {"index.html"})
 
     print(f"File scritti o aggiornati: {len(scritti)}")
     for p in scritti[:10]:
