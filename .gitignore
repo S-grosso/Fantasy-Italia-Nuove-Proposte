@@ -1,0 +1,19 @@
+# Ambiente Python locale: gli script girano nelle Actions con un venv usa
+# e getta, qui serve solo a me. Non deve finire nel repository.
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Chiavi di servizio: stanno nei secrets di GitHub e nell'ambiente locale,
+# mai in un file versionato.
+.env
+.env.*
+
+# Scarti di lavorazione e sincronizzazione
+*.log
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+desktop.ini
