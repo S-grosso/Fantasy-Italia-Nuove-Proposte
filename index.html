@@ -162,6 +162,7 @@
         <button data-tab="catalogo" class="active">Catalogo</button>
         <button data-tab="nuovo">Nuovo titolo</button>
         <button data-tab="notizie">Notizie</button>
+        <button data-tab="contatti">Contatti</button>
       </nav>
       <nav id="navAdmin" style="display:none">
         <button data-tab="moderazione">Moderazione</button>
@@ -321,7 +322,11 @@
   <!-- Contatti -->
   <section id="contatti" class="tab" style="display:none">
     <div class="muted" style="margin-bottom:12px">Compila il modulo per inviarci richieste, segnalazioni o proposte legate a Fantasy Italia — Nuove proposte.</div>
-    <form id="contactForm" class="contact-form" autocomplete="on">
+    <!-- onsubmit="return false" e' la rete di sicurezza: se lo script in fondo
+         alla pagina non parte, il modulo non deve comunque inviarsi da solo.
+         Un invio nativo finirebbe nell'indirizzo, e nome, email e messaggio
+         resterebbero scritti nella cronologia di chi ci ha scritto. -->
+    <form id="contactForm" class="contact-form" autocomplete="on" onsubmit="return false">
       <div class="row">
         <div class="field">
           <label for="contactName">Nome *</label>
@@ -386,7 +391,10 @@
   <div>Fantasy Italia — Nuove proposte è un catalogo collaborativo dedicato alla narrativa fantasy italiana contemporanea.</div>
   <div style="margin-top:6px">
     <a href="legal.html">Note legali & privacy</a><span class="sep">•</span>
-    <a href="mailto:simonegrosso.writer@gmail.com">Contatti</a>
+    <!-- Portava a una mail vuota: ora apre il modulo, che chiede anche il
+         motivo del contatto e quindi arriva gia' smistato. L'indirizzo in
+         chiaro resta nell'avviso del modulo e nelle note legali. -->
+    <a href="#contatti">Contatti</a>
   </div>
 </footer>
 
@@ -1411,6 +1419,73 @@
     else history.replaceState(null, '', '/');
   }
 
+  /* ==== Contatti ==== */
+  // Il sito e' statico: dietro questo modulo non c'e' niente che possa
+  // ricevere un invio. Finche' non ci sara' (punto 4.3 del documento di
+  // lavoro), l'invio viene intercettato e trasformato in un messaggio di
+  // posta gia' compilato. Prima il browser faceva un GET sulla stessa
+  // pagina: nome, email e testo finivano nell'indirizzo e quindi nella
+  // cronologia del visitatore, e la segnalazione non arrivava a nessuno.
+  const EMAIL_CONTATTI = 'simonegrosso.writer@gmail.com';
+
+  function avvisoContatti(tipo, costruisci){
+    const box = $('#contactStatus');
+    if(!box) return;
+    box.className = 'notice show ' + tipo;
+    box.textContent = '';
+    costruisci(box);
+  }
+
+  $('#contactForm')?.addEventListener('submit', ev => {
+    ev.preventDefault();
+
+    const nome   = ($('#contactName').value || '').trim();
+    const email  = ($('#contactEmail').value || '').trim();
+    const motivo = $('#contactTopic').value || 'Richiesta generale';
+    const testo  = ($('#contactMessage').value || '').trim();
+
+    // I campi hanno gia' 'required', ma quello non ferma chi scrive solo spazi
+    if(!nome || !email || !testo){
+      avvisoContatti('error', box => box.append('Servono nome, email e messaggio.'));
+      return;
+    }
+
+    const oggetto = '[Fantasy Italia] ' + motivo;
+    const corpo = `Nome: ${nome}
+Email: ${email}
+Motivo: ${motivo}
+
+${testo}`;
+
+    // L'avviso si scrive prima di cambiare indirizzo: se il programma di
+    // posta si apre in primo piano, chi ha scritto deve ritrovare qui la
+    // spiegazione quando torna sulla pagina.
+    avvisoContatti('success', box => {
+      box.append('Apro il tuo programma di posta con il messaggio già pronto: '
+               + 'controlla che parta davvero. Se non si apre nulla, scrivi a ');
+      const a = document.createElement('a');
+      a.href = 'mailto:' + EMAIL_CONTATTI;
+      a.textContent = EMAIL_CONTATTI;
+      a.style.color = '#9fc8ff';
+      box.append(a, ' — quello che hai scritto resta qui sopra.');
+    });
+
+    // Il modulo non si svuota: se il programma di posta non si apre, o si
+    // apre vuoto, il testo deve restare sotto gli occhi di chi l'ha scritto.
+    location.href = 'mailto:' + EMAIL_CONTATTI
+      + '?subject=' + encodeURIComponent(oggetto)
+      + '&body=' + encodeURIComponent(corpo);
+  });
+
+  // "Svuota" azzera anche l'avviso: lasciarlo sarebbe un messaggio riferito
+  // a un modulo che non c'e' piu'.
+  $('#contactForm')?.addEventListener('reset', () => {
+    const box = $('#contactStatus');
+    if(!box) return;
+    box.className = 'notice';
+    box.textContent = '';
+  });
+
   /* ==== Router ==== */
   function showTab(tab){
     $$('.tab').forEach(s=>s.style.display='none');
@@ -1421,6 +1496,7 @@
     const hash=(location.hash||'').replace(/^#/, '');
     if(hash.startsWith('news/')){ const id=decodeURIComponent(hash.slice(5)); if(!openNewsById(id)){ alert('Articolo non trovato.'); showTab('notizie'); } return; }
     if(hash==='notizie'){ showTab('notizie'); return; }
+    if(hash==='contatti'){ showTab('contatti'); return; }
     if(hash==='nuovo'){ showTab('nuovo'); return; }
     if(hash==='moderazione'){
       if(sessionIsValid()){ location.href = 'catalogo-admin.html'; }
