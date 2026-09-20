@@ -94,6 +94,9 @@
   .notice.success{background:#142036;border:1px solid #223a66;color:#cfe}
   .notice.error{background:#361a22;border:1px solid #5a2a2a;color:#ffd0d0}
   .contact-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  /* Campo-esca del modulo proposte: fuori dallo schermo, non nascosto. Un
+     programma automatico che legge il documento lo compila, una persona no. */
+  .esca{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
 
   /* Scheda del libro in rilievo (dialogo modale sopra il catalogo) */
   dialog#bookDialog{
@@ -160,7 +163,7 @@
     <div class="subnav">
        <nav id="navPublic">
         <button data-tab="catalogo" class="active">Catalogo</button>
-        <button data-tab="nuovo">Nuovo titolo</button>
+        <button data-tab="nuovo">Proponi un titolo</button>
         <button data-tab="notizie">Notizie</button>
         <button data-tab="contatti">Contatti</button>
       </nav>
@@ -189,55 +192,81 @@
     <div id="gridCatalogo" class="grid"><div class="muted">Caricamento catalogo da GitHub…</div></div>
   </section>
 
-  <!-- Nuovo titolo -->
+  <!-- Proponi un titolo -->
   <section id="nuovo" class="tab" style="display:none">
-    <div class="toolbar">
-      <div class="small muted">Questo modulo è stato sostituito dalla
-        <a href="catalogo-admin.html" style="color:#9fc8ff">gestione del catalogo</a>,
-        dove le schede si salvano subito su database.</div>
+    <div class="muted" style="margin-bottom:12px">
+      Hai scritto un romanzo fantasy italiano che non trovi in catalogo, o ne conosci uno?
+      Segnalalo qui. Le proposte le leggo una per una: non compaiono da sole nel catalogo,
+      e se qualcosa non torna ti scrivo all'indirizzo che lasci.
     </div>
 
-    <div class="row">
-      <div class="field"><label>Titolo *</label><input id="f_title" type="text" placeholder="Titolo del libro"></div>
-      <div class="field"><label>Autore *</label><input id="f_author" type="text" placeholder="Nome Cognome"></div>
-      <div class="field"><label>Editore *</label><input id="f_publisher" type="text" placeholder="Casa editrice"></div>
-      <div class="field" style="max-width:120px"><label>Anno *</label><input id="f_year" type="number" min="1900" max="2100" value="2025"></div>
-      <div class="field" style="max-width:160px"><label>Collana</label><input id="f_series" type="text" placeholder="Collana"></div>
-    </div>
-
-    <div class="row">
-      <div class="field" style="max-width:220px"><label>ISBN</label><input id="f_isbn" type="text" placeholder="978-..."></div>
-      <div class="field"><label>Store Amazon</label><input id="f_amz" type="url" placeholder="https://amazon.it/..."></div>
-      <div class="field"><label>Store editore</label><input id="f_store" type="url" placeholder="https://shop.editore.it/..."></div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label>URL copertina (JPG/PNG)</label>
-        <input id="f_cover" type="url" placeholder="https://.../cover.jpg">
-        <div class="hint">Se omesso, verrà mostrato un segnaposto.</div>
+    <!-- Come per i Contatti, onsubmit="return false" e' la rete di sicurezza
+         se lo script non parte: senza, un invio nativo metterebbe i dati
+         nell'indirizzo della pagina. -->
+    <form id="propostaForm" class="contact-form" autocomplete="on" onsubmit="return false">
+      <div class="row">
+        <div class="field">
+          <label for="p_titolo">Titolo *</label>
+          <input id="p_titolo" type="text" maxlength="200" placeholder="Titolo del romanzo" required>
+        </div>
+        <div class="field">
+          <label for="p_autore">Autore *</label>
+          <input id="p_autore" type="text" maxlength="120" placeholder="Nome Cognome" required>
+        </div>
       </div>
-      <div class="field" style="max-width:200px">
-        <label>Romanzo d'esordio?</label>
-        <select id="f_debut">
-          <option value="unknown" selected>Non specificato</option>
-          <option value="yes">Sì</option>
-          <option value="no">No</option>
-        </select>
-      </div>
-    </div>
 
-    <div class="row">
-      <div class="field" style="flex:1">
-        <label>Sinossi</label>
-        <textarea id="f_desc" placeholder="Breve sinossi del libro (facoltativa)"></textarea>
+      <div class="row">
+        <div class="field">
+          <label for="p_editore">Editore *</label>
+          <input id="p_editore" type="text" maxlength="120" placeholder="Casa editrice" required>
+        </div>
+        <div class="field" style="max-width:130px">
+          <label for="p_anno">Anno</label>
+          <input id="p_anno" type="number" min="1900" max="2100" placeholder="2026">
+        </div>
+        <div class="field" style="max-width:220px">
+          <label for="p_isbn">ISBN</label>
+          <input id="p_isbn" type="text" maxlength="20" placeholder="978-...">
+        </div>
       </div>
-    </div>
 
-    <div class="actions">
-      <a class="btn primary" href="catalogo-admin.html">Apri la gestione del catalogo →</a>
-      <span class="hint">I nuovi titoli si inseriscono da lì: vengono salvati subito e non si perdono.</span>
-    </div>
+      <div class="row">
+        <div class="field">
+          <label for="p_link">Pagina dell'editore o del negozio</label>
+          <input id="p_link" type="url" maxlength="500" placeholder="https://...">
+        </div>
+        <div class="field">
+          <label for="p_contatto">La tua email *</label>
+          <input id="p_contatto" type="email" maxlength="160" placeholder="nome@email.it"
+                 autocomplete="email" required>
+          <div class="hint">Serve solo per risponderti. Non finisce nel catalogo e non è pubblica.</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="p_note">Qualcosa che dovrei sapere</label>
+          <textarea id="p_note" maxlength="1000"
+                    placeholder="Per esempio: è un esordio, fa parte di una serie, esce il mese prossimo..."></textarea>
+        </div>
+      </div>
+
+      <!-- Campo-esca: sta fuori dallo schermo, non a display:none, perche'
+           i programmi automatici saltano quello che e' dichiarato nascosto
+           ma compilano quello che non vedono. Chi naviga non lo incontra;
+           se arriva pieno, la proposta viene scartata in silenzio. -->
+      <div class="esca" aria-hidden="true">
+        <label for="p_sito">Lascia vuoto questo campo</label>
+        <input id="p_sito" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div id="propostaStato" class="notice" role="status" aria-live="polite"></div>
+
+      <div class="contact-actions">
+        <button type="submit" class="btn primary" id="btnProponi">Invia la proposta</button>
+        <button type="reset" class="btn">Svuota</button>
+      </div>
+    </form>
   </section>
 
   <!-- Notizie (lista) -->
@@ -760,28 +789,77 @@
     alert('Bozze locali rimosse.');
   });
 
-  /* ==== Nuovo titolo (bozza locale) ==== */
-  function collectForm(){
-    const title=($('#f_title').value||'').trim();
-    const author=($('#f_author').value||'').trim();
-    const publisher=($('#f_publisher').value||'').trim();
-    const year=parseInt($('#f_year').value,10);
-    if(!title||!author||!publisher||!year){ alert('Compila titolo, autore, editore e anno.'); return null; }
-    const series=$('#f_series').value.trim();
-    const coverUrl=$('#f_cover').value.trim();
-    const description=$('#f_desc').value.trim();
-    const storeAmazonUrl=$('#f_amz').value.trim();
-    const storePublisherUrl=$('#f_store').value.trim();
-    const isbn=$('#f_isbn').value.trim();
-    const sel=$('#f_debut').value; const isDebut=(sel==='yes')?true:(sel==='no')?false:null;
-    return { id:'b'+Date.now().toString(36), title, author, publisher, year, series, isbn, coverUrl, description, storeAmazonUrl, storePublisherUrl, isDebut, labels:[], status:'pending', featured:false, _local:true, ts:Date.now() };
+  /* ==== Proponi un titolo ==== */
+  // Il modulo scrive davvero, ma non sulla tabella: passa dalla Edge
+  // Function 'proponi', che valida, scarta i programmi automatici, limita
+  // la frequenza e inserisce in stato 'candidate' con la service key. Il
+  // catalogo resta leggibile da chiunque e scrivibile da nessuno.
+  //
+  // Prima di questa versione il modulo salvava in localStorage: la proposta
+  // restava sul dispositivo di chi la scriveva e non arrivava a nessuno.
+  const FUNZIONE_PROPONI = SUPABASE_URL + '/functions/v1/proponi';
+
+  function avvisoProposta(tipo, testo){
+    const box = $('#propostaStato');
+    if(!box) return;
+    box.className = 'notice show ' + tipo;
+    box.textContent = testo;
   }
-  function clearForm(){ ['f_title','f_author','f_publisher','f_series','f_cover','f_desc','f_amz','f_store','f_isbn'].forEach(id=>{$('#'+id).value='';}); $('#f_year').value=new Date().getFullYear(); $('#f_debut').value='unknown'; }
-  $('#btnSaveNew')?.addEventListener('click', ()=>{
-    const b=collectForm(); if(!b) return;
-    state.pendingBooks.push(b); save('fi_books_pending_v1', state.pendingBooks);
-    clearForm(); renderModeration();
-    alert('Bozza salvata in Moderazione. Ricorda: apparirà online solo dopo export + upload su GitHub.');
+
+  $('#propostaForm')?.addEventListener('submit', async ev => {
+    ev.preventDefault();
+
+    const dati = {
+      titolo:   ($('#p_titolo').value   || '').trim(),
+      autore:   ($('#p_autore').value   || '').trim(),
+      editore:  ($('#p_editore').value  || '').trim(),
+      anno:     ($('#p_anno').value     || '').trim(),
+      isbn:     ($('#p_isbn').value     || '').trim(),
+      link:     ($('#p_link').value     || '').trim(),
+      contatto: ($('#p_contatto').value || '').trim(),
+      note:     ($('#p_note').value     || '').trim(),
+      sito:     ($('#p_sito').value     || '').trim()
+    };
+
+    if(!dati.titolo || !dati.autore || !dati.editore || !dati.contatto){
+      avvisoProposta('error', 'Servono titolo, autore, editore e la tua email.');
+      return;
+    }
+
+    const btn = $('#btnProponi');
+    const etichetta = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Invio…';
+
+    try{
+      const res = await fetch(FUNZIONE_PROPONI, {
+        method: 'POST',
+        // Nessuna apikey: la funzione non la chiede, e mandarla in piu'
+        // allungherebbe soltanto il controllo preliminare del browser.
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dati)
+      });
+      const esito = await res.json().catch(() => ({}));
+      const messaggio = esito.messaggio || 'Risposta inattesa: riprova fra poco.';
+
+      // Il modulo si svuota solo se la proposta e' entrata. Se e' stata
+      // rifiutata o e' un doppione, chi ha scritto deve poter correggere
+      // senza ribattere tutto da capo. Lo svuotamento viene prima
+      // dell'avviso perche' reset() cancella anche quello.
+      if(esito.ok) $('#propostaForm').reset();
+      avvisoProposta(esito.ok ? 'success' : 'error', messaggio);
+    }catch(e){
+      console.error('Proposta:', e);
+      avvisoProposta('error', 'Non sono riuscito a inviare la proposta. Controlla la connessione e riprova.');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = etichetta;
+    }
+  });
+
+  $('#propostaForm')?.addEventListener('reset', () => {
+    const box = $('#propostaStato');
+    if(box){ box.className = 'notice'; box.textContent = ''; }
   });
 
   /* ==== Catalogo (SOLO GitHub) ==== */
