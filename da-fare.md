@@ -46,20 +46,19 @@ Vincolo di fondo: un solo moderatore, tempo da hobby. Ogni scelta va valutata pe
 
 In ordine di priorità.
 
-### 4.1 Errori copertina visibili in moderazione
-`catalogo-admin.html` legge `id,title,author,publisher,year,cover_url,status,genre,featured,confidence`: `cover_error` non compare da nessuna parte. Serve un contrassegno sulle schede che hanno un errore, il testo del motivo in chiaro e un filtro per isolarle. Fonte alternativa già disponibile: `data/copertine-report.json`, committato a ogni run.
+### 4.1 Errori copertina visibili in moderazione — fatto
+- [x] **Fatto** (20 settembre 2026). `catalogo-admin.html` ora legge anche `cover_error`: le schede con un errore hanno un contrassegno rosso, il motivo in chiaro sotto il titolo (tre righe al massimo, per non rendere illeggibile l'elenco su schermo stretto) e un filtro "Copertine KO" che le isola a prescindere dallo stato, con l'etichetta di stato visibile in quella vista. L'editor mostra il motivo per esteso. Correggendo l'indirizzo della copertina e salvando, l'errore viene azzerato, altrimenti il contrassegno resterebbe rosso su una scheda appena sistemata.
 
-Oggi il campo è vuoto su tutte le schede (l'ultima migrazione ha fatto 53 copertine e zero errori), quindi l'intervento è preventivo: serve perché il giorno in cui una copertina fallirà, il motivo non resti solo in un file JSON che nessuno apre dal telefono.
+Intervento preventivo: alla data il campo era vuoto su tutte le schede (53 copertine migrate, zero errori). Serve perché il giorno in cui una copertina fallirà, il motivo non resti solo in `data/copertine-report.json`, che dal telefono non apre nessuno.
 
 ### 4.2 Pagine statiche per gli articoli
 Le notizie vivono su indirizzi con `#` (`?n=<id>#news/<id>`), quindi hanno lo stesso limite che avevano i libri: nessuna anteprima nelle chat, nessuna indicizzazione. Serve lo stesso trattamento: colonna `slug` su `news` con trigger analogo, generazione di `/articoli/<slug>/` dentro `genera_pagine.py`, `schema.org/Article`, voci in sitemap. È il prerequisito perché le interviste circolino.
 
-### 4.3 Modulo pubblico: prima chiuderlo, poi collegarlo
-Il modulo che esiste in `index.html` non è "Segnala un titolo" ma un Contatti generico (nome, email, motivo, messaggio), e non ha né `action` né un gestore JavaScript. Premendo "Invia il messaggio" il browser fa un GET sulla stessa pagina: **nome, email e testo finiscono nella barra degli indirizzi e nella cronologia del visitatore**, chi scrive non riceve conferma e la segnalazione non arriva a nessuno. È il primo pezzo da sistemare, prima ancora di aggiungere funzioni: oggi il modulo promette qualcosa che non fa e sparge dati personali in un indirizzo.
+### 4.3 Modulo pubblico: chiuso e collegato, backend ancora da fare
+Il modulo che esiste in `index.html` non è "Segnala un titolo" ma un Contatti generico (nome, email, motivo, messaggio). Fino al 20 settembre 2026 non aveva né `action` né un gestore JavaScript: un invio faceva un GET sulla stessa pagina, con nome, email e testo scritti nell'indirizzo e quindi nella cronologia di chi ci scriveva. La falla però non era raggiungibile — nessun pulsante, nessun link e nessun hash portavano a quella sezione, che di fatto era markup morto — quindi era un rischio in attesa, non una perdita di dati in corso.
 
-Due passaggi distinti:
-1. **Chiudere la falla.** O si intercetta l'invio e si spiega che il canale è l'email, o si toglie il modulo finché non c'è un backend. Costo: minuti.
-2. **Il "Segnala un titolo" vero.** Scrittura in `books` con stato `candidate`, protezione anti-spam con Cloudflare Turnstile (gratuito), campo contatto per chi segnala.
+- [x] **Chiuso e collegato** (20 settembre 2026). L'invio viene intercettato e trasformato in un messaggio di posta già compilato, con `onsubmit="return false"` come rete di sicurezza per il caso in cui lo script non parta. Il modulo non si svuota, così se il programma di posta non si apre il testo non va perso. La sezione ora si raggiunge dal pulsante "Contatti" nella barra, dall'hash `#contatti` e dal link nel footer, che prima apriva una mail vuota.
+- [ ] **Il "Segnala un titolo" vero.** Scrittura in `books` con stato `candidate`, protezione anti-spam con Cloudflare Turnstile (gratuito), campo contatto per chi segnala. È lo stesso lavoro del punto 4.13: conviene farne uno solo.
 
 ### 4.4 Kit autore
 Alla prima approvazione di un titolo, avvisare autore o editore con: link alla scheda, immagine pronta per i social, badge da incorporare sul proprio sito. Richiede un campo contatto su `books` e un canale di invio email. È la leva di traffico a costo più basso: ogni approvazione genera una condivisione e un collegamento in entrata.
@@ -90,6 +89,15 @@ Eredità della migrazione a Supabase, tutte in `index.html` salvo dove indicato.
 
 ### 4.12 Il backup del catalogo segue solo lo Scout
 `data/catalogo.json` lo riscrive `scout.py`, quindi si aggiorna una volta a settimana: fra un lunedì e l'altro è indietro rispetto alle approvazioni fatte in moderazione (il 20 settembre aveva 52 titoli con le copertine vecchie contro 53 schede già migrate). Non è un guasto — si allinea da solo al giro dopo — ma se serve davvero come copia di sicurezza vale la pena riscriverlo anche da `pagine.yml`, che gira ogni sei ore e i dati approvati li legge già.
+
+### 4.13 Ripristinare "Nuovo titolo": la proposta d'autore
+Il pulsante è nella barra pubblica e il modulo si compila, ma **non ha mai spedito niente**. Salvava in `state.pendingBooks`, cioè nel `localStorage` del browser di chi stava compilando: la proposta restava sul dispositivo di chi la scriveva e arrivava in moderazione solo quando a compilarla era il moderatore, che poi esportava il JSON e lo caricava su GitHub a mano. Con la migrazione a Supabase, `index.html` cancella quella chiave a ogni caricamento — scelta voluta e commentata nel codice — quindi oggi la bozza sparisce al primo reload; e "Moderazione" rimanda comunque a `catalogo-admin.html`, dove le bozze locali non compaiono.
+
+Ripristinarlo significa farlo scrivere davvero su Supabase, ed è esattamente il lavoro di 4.3.2. Da decidere prima di toccare il codice:
+- **Come si scrive.** Una policy RLS che permetta il solo `insert` anonimo con `status = 'candidate'`, oppure una Edge Function che riceve la proposta e scrive con la service key. La seconda costa un pezzo in più ma non apre nessuna scrittura diretta al pubblico.
+- **Anti-spam.** Senza, un modulo che scrive sul database è un invito. Cloudflare Turnstile è gratuito e non profila.
+- **Campi.** Oggi il modulo ne chiede undici: per una proposta d'autore titolo, autore, editore, anno, ISBN e un contatto bastano, il resto lo completi tu in moderazione.
+- **Cosa vede chi propone.** Serve una conferma esplicita e l'avvertenza che la pubblicazione non è automatica.
 
 ---
 
