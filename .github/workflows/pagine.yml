@@ -1,0 +1,64 @@
+name: Pagine libro
+
+on:
+  # Ogni sei ore: una scheda approvata ha la sua pagina entro il giro dopo.
+  # Nel frattempo il link funziona lo stesso, grazie al ripiego di 404.html.
+  schedule:
+    - cron: "0 */6 * * *"
+  # Avviabile a mano dalla tab Actions, subito dopo un'approvazione
+  workflow_dispatch:
+
+# Serve per committare le pagine generate
+permissions:
+  contents: write
+
+jobs:
+  pagine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Scarica il repository
+        uses: actions/checkout@v4
+
+      - name: Prepara Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installa le dipendenze
+        run: pip install requests
+
+      - name: Genera le pagine
+        env:
+          # Facoltativi: senza secrets lo script usa la chiave pubblica, che
+          # legge le schede approvate esattamente come fa il sito.
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python scripts/genera_pagine.py
+
+      - name: Committa quello che è cambiato
+        run: |
+          if [ ! -d libri ]; then
+            echo "Nessuna pagina prodotta."
+            exit 0
+          fi
+
+          git config user.name  "Pagine libro"
+          git config user.email "actions@github.com"
+          git add -A libri sitemap.xml robots.txt
+
+          # --cached confronta con l'indice: vede anche i file nuovi e le
+          # cartelle rimosse, che 'git diff' nudo si perderebbe.
+          if git diff --cached --quiet; then
+            echo "Pagine invariate: niente da committare."
+            exit 0
+          fi
+
+          QUANTE=$(find libri -mindepth 1 -maxdepth 1 -type d | wc -l)
+          git commit -m "Pagine libro: $QUANTE schede"
+
+          # Lo Scout committa sullo stesso ramo: se è passato nel frattempo,
+          # si riparte da capo invece di litigare sul push.
+          git pull --rebase origin main
+          git push
