@@ -388,7 +388,7 @@
   // Il catalogo pubblico: solo le schede approvate, consigliati in cima.
   // Le regole del database escludono da sole candidati, bozze e scarti.
   const BOOKS_ENDPOINT = SUPABASE_URL + '/rest/v1/books'
-    + '?select=id,title,author,publisher,year,series,isbn,cover_url,'
+    + '?select=id,slug,title,author,publisher,year,series,isbn,cover_url,'
     + 'description,store_amazon_url,store_publisher_url,is_debut,genre,'
     + 'labels,featured,status'
     + '&status=eq.approved'
