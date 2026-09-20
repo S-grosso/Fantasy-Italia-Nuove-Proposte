@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /catalogo-admin.html
+Disallow: /news-admin.html
+Sitemap: https://www.fantasyitalianuoveproposte.it/sitemap.xml
