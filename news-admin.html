@@ -265,7 +265,7 @@
 
     const { data, error } = await supa
       .from('news')
-      .select('id, title, status, published_at, updated_at')
+      .select('id, title, status, slug, published_at, updated_at')
       .order('published_at', { ascending: false });
 
     if(error){
@@ -335,9 +335,27 @@
     $('#btnElimina').classList.toggle('hidden', !articolo);
     $('#btnPubblica').textContent = pubblicato ? 'Aggiorna' : 'Pubblica';
 
-    $('#statoArticolo').textContent = articolo
-      ? `id: ${articolo.id} · stato: ${articolo.status}`
-      : 'Nuovo articolo, non ancora salvato.';
+    const stato = $('#statoArticolo');
+    stato.textContent = '';
+    if(!articolo){
+      stato.textContent = 'Nuovo articolo, non ancora salvato.';
+    } else {
+      stato.append(`id: ${articolo.id} · stato: ${articolo.status}`);
+      // Lo slug lo assegna il database alla pubblicazione, quindi una bozza
+      // non ce l'ha. Quando c'e', l'indirizzo pubblico va mostrato: e' quello
+      // che si incolla nei messaggi, e serve per controllare com'e' venuto.
+      if(articolo.slug){
+        stato.append(' · ');
+        const a = document.createElement('a');
+        a.href = '/articoli/' + encodeURIComponent(articolo.slug) + '/';
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.style.color = '#9fc8ff';
+        a.textContent = '/articoli/' + articolo.slug + '/';
+        stato.append(a);
+        stato.append(' (la pagina statica compare entro sei ore)');
+      }
+    }
 
     mostra('editor');
     window.scrollTo({top:0});

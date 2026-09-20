@@ -49,14 +49,20 @@ jobs:
 
       - name: Committa quello che è cambiato
         run: |
-          if [ ! -d libri ]; then
+          if [ ! -d libri ] && [ ! -d articoli ]; then
             echo "Nessuna pagina prodotta."
             exit 0
           fi
 
           git config user.name  "Pagine libro"
           git config user.email "actions@github.com"
-          git add -A libri sitemap.xml robots.txt data/copertine-report.json
+
+          # Si aggiungono solo i percorsi che esistono davvero: 'git add' su
+          # una cartella mai creata fallisce e fermerebbe tutto il passaggio.
+          PERCORSI="sitemap.xml robots.txt data/copertine-report.json"
+          [ -d libri ]    && PERCORSI="$PERCORSI libri"
+          [ -d articoli ] && PERCORSI="$PERCORSI articoli"
+          git add -A $PERCORSI
 
           # --cached confronta con l'indice: vede anche i file nuovi e le
           # cartelle rimosse, che 'git diff' nudo si perderebbe.
@@ -65,8 +71,9 @@ jobs:
             exit 0
           fi
 
-          QUANTE=$(find libri -mindepth 1 -maxdepth 1 -type d | wc -l)
-          git commit -m "Pagine libro: $QUANTE schede"
+          SCHEDE=$(find libri -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+          ARTICOLI=$(find articoli -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+          git commit -m "Pagine: $SCHEDE schede, $ARTICOLI articoli"
 
           # Lo Scout committa sullo stesso ramo: se è passato nel frattempo,
           # si riparte da capo invece di litigare sul push.
