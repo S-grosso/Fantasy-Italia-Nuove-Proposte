@@ -128,7 +128,22 @@ Nessuno di questi è stato introdotto dai lavori di settembre.
 - [x] **`books_assign_slug()`** (20 settembre 2026): permesso di esecuzione revocato a `public`, `anon` e `authenticated`. È una funzione di trigger, il trigger la esegue per conto suo. Verificato simulando il pannello — ruolo `authenticated` con l'email dell'amministratore nel token: inserimento e aggiornamento funzionano e lo slug viene assegnato.
 - [x] **`tocca_updated_at`** (20 settembre 2026): `search_path` fissato a `public`.
 - [ ] **`e_admin()`** resta richiamabile via RPC. **Non è stata toccata di proposito**: è usata dentro le policy RLS, che PostgreSQL valuta con i permessi di chi fa la query, quindi revocare l'esecuzione ad `authenticated` rischia di far fallire le policy e di chiudere l'amministratore fuori dal proprio catalogo. Il rischio attuale è basso — chiamata da un anonimo restituisce `false` e non rivela niente — ma va affrontata con una prova vera dell'accesso, non a fine sessione. Strada alternativa da valutare: spostarla in uno schema non esposto dall'API.
-- [ ] **Protezione password compromesse** (HaveIBeenPwned): è un interruttore in Supabase → Authentication → Policies, da attivare a mano. Un minuto, e vale la pena: l'account amministratore è l'unico modo per entrare nel catalogo.
+- [ ] **Protezione password compromesse** (HaveIBeenPwned): **non disponibile sul piano gratuito**, su cui sta il progetto — Supabase la riserva al piano Pro. Il rilievo resterà quindi visibile nel controllo di sicurezza. La protezione che conta si ottiene lo stesso: password dell'amministratore lunga, unica e custodita in un gestore di password. Un passo ulteriore, gratuito, sarebbe l'autenticazione a due fattori (TOTP), che però richiede di modificare l'accesso dei due pannelli.
+
+### 4.16 Search Console: primi rilievi — fatto
+Dal 20 settembre 2026 Google raccoglie impressioni sul sito. Due rilievi alla prima lettura, sistemati il 24 settembre:
+- [x] **"Pagina duplicata senza URL canonico"** su `/index.html`: la home rispondeva su `/` e su `/index.html` senza dichiarare quale fosse quella buona. Aggiunto `<link rel="canonical">` verso `/`, e i due "← Sito" dei pannelli, da cui Google aveva scoperto il doppione, puntano ora a `/`.
+- [x] **"Rilevata, ma attualmente non indicizzata"** su 5 schede libro: normale per un sito nuovo, Google le conosce ma non le ha ancora visitate. Si aiuta dando loro una strada: la home disegna le schede con JavaScript, quindi nell'HTML iniziale non c'era nessun collegamento verso `/libri/`. Ora c'è. Il resto è tempo.
+- [x] **Commit a vuoto dei workflow**: 13 in quattro giorni, ognuno con un nuovo deploy del sito. `copertine.py` riscriveva il report a ogni giro con il solo orario aggiornato, e la sitemap dichiarava come `lastmod` delle pagine indice la data del giorno. Ora il report si riscrive solo se cambia la sostanza, e il `lastmod` è la data del contenuto più recente.
+
+Da tenere d'occhio: gli articoli scritti con l'editor di `news-admin.html` possono uscire con ogni riga trasformata in intestazione `<h2>` (è successo alla guida per chi propone). Vedi 4.17.
+
+### 4.17 L'editor degli articoli trasforma tutto in intestazioni
+Nella guida per chi propone, salvata il 20 settembre da `news-admin.html`, **ogni riga è diventata un `<h2>`**: 40 intestazioni e nessun paragrafo. A schermo è un muro di testo grande; per Google una pagina fatta solo di titoli. Causa probabile: il testo incollato resta un unico blocco con gli a capo interni, e il pulsante "Titoletto" (`formatBlock h2`) lo converte tutto.
+
+Due interventi:
+1. **Il contenuto**: ricostruire la struttura della guida — sei intestazioni, paragrafi, elenchi puntati — lasciando il testo esattamente com'è stato scritto.
+2. **L'editor**: all'incolla, spezzare il testo in paragrafi veri e le righe che iniziano con un trattino in elenchi, così il pulsante "Titoletto" agisce solo sulla riga in cui si trova il cursore.
 
 ---
 
