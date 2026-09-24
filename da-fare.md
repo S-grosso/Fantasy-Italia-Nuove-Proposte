@@ -1,6 +1,6 @@
 # Fantasy Italia — Nuove Proposte · Stato e da fare
 
-Documento di lavoro. Aggiornato: 20 settembre 2026, dopo una verifica riga per riga di codice, sito pubblicato e database.
+Documento di lavoro. Aggiornato: 24 settembre 2026, a chiusura della prima sessione di lavoro in locale (20–24 settembre).
 Repository: `S-grosso/Fantasy-Italia-Nuove-Proposte` — ramo `main` — sito pubblicato su GitHub Pages al dominio `www.fantasyitalianuoveproposte.it`.
 
 ---
@@ -15,6 +15,18 @@ Due, dichiarati a settembre 2026:
 Il vantaggio competitivo del sito è il dato: un elenco strutturato e aggiornato degli esordi fantasy italiani, con editore, anno, sottogenere. I dati AIE sul fantasy esistono solo aggregati e non distinguono autori italiani da traduzioni né isolano gli esordi. Il modello di riferimento è Locus negli Stati Uniti: registra tutto quello che esce, lo misura, ogni anno lo premia.
 
 Vincolo di fondo: un solo moderatore, tempo da hobby. Ogni scelta va valutata per quanto lavoro ricorrente genera.
+
+---
+
+## Priorità — da dove ripartire
+
+In ordine. Ogni voce rimanda al suo paragrafo nella sezione 4.
+
+1. **Le 7 fonti mute dello Scout** (4.18). Lumien, Zona 42, Angolazioni, PresentARTsi, Astro, Parallelo45 e La nuova carne restituiscono zero titoli a ogni giro, eppure Lumien e Zona 42 hanno libri in catalogo. Ora che il classificatore funziona, più titoli buoni in ingresso sono il modo più diretto di far crescere il catalogo. Da indagare fonte per fonte: endpoint raggiungibile, adattatore giusto, filtro per data, risposta vuota o in errore. Obiettivo collegato: dare al classificatore più contesto (categorie, paratesto) dove le fonti lo offrono.
+2. **Il primo giro vero dello Scout con Gemini**, lunedì 28 settembre (4.18): quanti candidati arrivano, con che motivazioni, e se il piano gratuito ha risposto.
+3. **Pagine editore e autore** (4.5), solo per chi ha almeno due titoli.
+4. **Il mese di uscita** (4.19), che serve alla pagina mensile e alla newsletter.
+5. Poi, in sessioni brevi: backup del catalogo anche da `pagine.yml` (4.12), feed RSS (4.7), la pulizia di `index.html` in una sessione a sé (4.9), la PWA da decidere (4.11), `e_admin()` (4.15), il campo genere (4.6).
 
 ---
 
@@ -86,8 +98,12 @@ Il modulo che esiste in `index.html` non è "Segnala un titolo" ma un Contatti g
   - Prima generazione il 24 settembre 2026: 53 immagini, nessun errore; il giro successivo le ha saltate tutte, come deve.
   - Effetto collaterale trovato e corretto: scrivendo `social_url`, lo script aveva fatto risultare "modificate oggi" tutte e 53 le schede, e la sitemap l'aveva dichiarato a Google. Il trigger `tocca_updated_at` ora ignora le colonne tecniche (`social_url`, `social_firma`, `cover_error` e la generata `isbn_norm`, che nei trigger BEFORE vale sempre NULL e faceva sembrare diversa ogni riga): `updated_at` si muove solo per modifiche vere, anche un salvataggio dal pannello senza cambiamenti la lascia com'è. Le date del 24 settembre sono rimaste: quelle precedenti erano a loro volta artificiali, lasciate dalla migrazione delle copertine.
 
-### 4.5 Pagine autore, editore e mese
-Stesso generatore, tre nuovi tipi di pagina: `/autori/<slug>/`, `/editori/<slug>/`, `/uscite/<anno>-<mese>/`. La pagina mensile intercetta chi cerca novità senza un titolo in mente ed è la base della newsletter.
+### 4.5 Pagine autore ed editore
+Stesso generatore delle schede e degli articoli, due nuovi tipi di pagina: `/editori/<slug>/` e `/autori/<slug>/`, con voci in sitemap e collegamenti dalle schede.
+
+Dati misurati il 24 settembre 2026, sulle 53 schede approvate: **18 editori**, nomi puliti e senza doppioni, di cui 9 con un solo titolo e 6 con tre o più; **39 autori**, di cui solo 9 con due o più titoli, e 2 schede con più autori nello stesso campo ("Fiore Manni, Michele Monteleone"). Una pagina con un libro solo ripete la scheda ed è contenuto quasi duplicato: si generano solo le pagine di **editori e autori con almeno due titoli**. Gli autori multipli vanno separati prima di contarli.
+
+La pagina mensile delle uscite, prevista qui in origine, non si può fare: il catalogo registra solo l'anno. Vedi 4.19.
 
 ### 4.6 Qualità del campo genere
 `genre` è testo libero e contiene voci composte separate da virgola. Serve normalizzazione e, a regime, una lista chiusa con possibilità di aggiunta controllata dalla moderazione.
@@ -171,7 +187,11 @@ Facoltativo: *Nasce Fantasy Italia* non ha il problema, ma è scritto con a capo
 - [x] **Chiave e prova** (24 settembre 2026): `GEMINI_API_KEY` nei secrets, prova da Actions superata con **3 verdetti giusti su 3**, e motivazioni sensate ("traduzione dall'inglese", "libro di divulgazione per bambini"). Risponde l'API `interactions`.
 - **Il piano gratuito è congestionato.** Alla prima prova il modello più nuovo rispondeva 503 ("high demand"); alla seconda erano sovraccarichi tutti e quattro, e dopo l'attesa ha risposto `gemini-3.5-flash`. Per questo lo Scout prova i modelli uno dopo l'altro e tiene quello che risponde. Se un lunedì fossero tutti irraggiungibili, i candidati restano fuori e arriva l'email: basta rilanciare lo Scout da Actions più tardi.
 - Da guardare al primo giro vero, lunedì 28 settembre: quanti candidati arrivano e con che motivazioni.
+- Le 4 proposte rimaste del 21 settembre, arrivate a classificatore spento (Cobalto, The Ordeals, La madre rossa, Profili d'ambra), sono state scartate: titoli non pertinenti o autori non italiani. La coda di moderazione è vuota.
 - [ ] **Fonti mute**: 7 fonti su 14 restituiscono zero titoli a ogni giro (Lumien, Zona 42, Angolazioni, PresentARTsi, Astro, Parallelo45, La nuova carne), eppure Lumien e Zona 42 hanno libri in catalogo. Può essere che non pubblichino nulla in 30 giorni, ma sette su quattordici, sempre, fa pensare ad adattatori rotti. Da indagare fonte per fonte.
+
+### 4.19 Il mese di uscita
+Il catalogo registra solo l'anno (`year`). Senza il mese non si possono fare la pagina mensile delle uscite (5.1), la base della newsletter (4.8) né statistiche per mese nel rapporto annuale (5.3). Serve una colonna nuova (per esempio `published_month`, `AAAA-MM`), compilata dallo Scout quando la fonte lo indica (Google Books dà spesso la data completa, i feed degli editori la data di pubblicazione del prodotto) e in moderazione quando manca. Conviene farla presto: ogni scheda approvata senza mese è un dato da ricostruire a mano più avanti. Per le 53 schede esistenti si può tentare un recupero da Google Books tramite ISBN.
 
 ---
 
@@ -234,5 +254,10 @@ Regola: non vendere spazi prima di avere numeri misurabili da mostrare.
 
 - Virtualenv in `.venv/`, con `requests` e `pillow`. Ignorato da git, come `.env` e i file temporanei.
 - **Avast intercetta il traffico HTTPS con una CA propria**, quindi `pip` e `requests` rifiutano i certificati (`CERTIFICATE_VERIFY_FAILED`) mentre `git` funziona: non è un errore del codice, si vede solo in locale. Rimedio: `.venv/ca-bundle.pem` (certifi più la radice Avast) esportato in `REQUESTS_CA_BUNDLE`.
-- `genera_pagine.py` gira senza variabili d'ambiente: usa la chiave pubblica e legge le schede approvate come farebbe un visitatore. `copertine.py` e `scout.py` vogliono la service key; `scout.py` in locale conviene solo con `--dry-run`, perché la classificazione usa il `GITHUB_TOKEN` che esiste solo dentro le Actions.
+- Il certificato di Avast **ruota** (è successo il 23 settembre 2026): se `requests` torna a dare `CERTIFICATE_VERIFY_FAILED`, prima di cercare il guasto nel codice si rigenera il bundle da certifi più il `wscert.pem` attuale.
+- `genera_pagine.py` gira senza variabili d'ambiente: usa la chiave pubblica e legge le schede approvate come farebbe un visitatore. `immagini_social.py` in locale lavora solo con `--dry-run --cartella <fuori dal repository>`. `copertine.py` vuole la service key. `scout.py` in locale conviene solo con `--dry-run`: la chiave di Gemini sta nei secrets di GitHub, e il classificatore si prova da Actions con l'interruttore `prova_classificatore`.
+- GitHub CLI è installato (`C:\Program Files\GitHub CLI\gh.exe`) e autenticato: serve per lanciare i workflow a mano, leggere i registri e controllare i secrets. In PowerShell un percorso fra virgolette va preceduto da `&`.
+- Supabase è raggiungibile anche dall'assistente (migrazioni, query, funzioni): ogni modifica allo schema passa da una migrazione con nome, e le prove sui dati si fanno dentro una transazione annullata.
+- La copia di lavoro ha i fine riga CRLF (`core.autocrlf=true`) mentre il repository li salva LF: le modifiche fatte con script vanno riscritte in CRLF, altrimenti il diff mostra l'intero file come cambiato.
+- Prima di `git pull --rebase` si committa: i workflow committano sul ramo più volte al giorno, e con modifiche in sospeso il riallineamento si rifiuta.
 - La service key va passata dall'ambiente della sessione, mai scritta in un file della cartella.
