@@ -39,6 +39,25 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: python scripts/copertine.py
 
+      # I caratteri per le immagini di Instagram. Sulle macchine delle Actions
+      # di solito ci sono gia': si installano solo se mancano, per non
+      # allungare ogni giro di mezzo minuto.
+      - name: Caratteri per le immagini
+        run: |
+          if [ ! -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf ]; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq fonts-dejavu-core
+          fi
+
+      # Dopo le copertine: l'immagine si fa solo da una copertina gia' sul
+      # nostro Storage. Non scrive niente nel repository, quindi non genera
+      # commit; e se va storto, le pagine si fanno lo stesso.
+      - name: Immagini per Instagram
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python scripts/immagini_social.py
+
       - name: Genera le pagine
         env:
           # Facoltativi: senza secrets lo script usa la chiave pubblica, che
