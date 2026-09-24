@@ -162,6 +162,7 @@
         <div id="kitAutore" class="kit hidden">
           <button id="btnKitScrivi" class="btn small ok">Scrivi all'autore</button>
           <button id="btnKitCopia" class="btn small">Copia il messaggio</button>
+          <a id="kitImmagine" class="btn small hidden" target="_blank" rel="noopener">Immagine per Instagram</a>
           <div id="kitAvviso" class="avviso hidden"></div>
         </div>
         <div id="erroreCopertina" class="motivo hidden"></div>
@@ -329,7 +330,8 @@
      entrata, che e' la leva di traffico piu' economica che il sito ha.
 
      IL TESTO E' TUO: cambialo liberamente qui sotto. Le parole fra graffe
-     vengono sostituite; la riga {intervista} compare solo per gli esordi. */
+     vengono sostituite; la riga {intervista} compare solo per gli esordi,
+     il paragrafo {instagram} solo quando l'immagine e' gia' pronta. */
   const SITO = 'https://www.fantasyitalianuoveproposte.it';
   const KIT_OGGETTO = '«{titolo}» è su Fantasy Italia — Nuove proposte';
   const KIT_TESTO = `Ciao,
@@ -342,7 +344,7 @@ Il link si può condividere ovunque: su WhatsApp, Telegram e sui social mostra d
 
 Se ti serve un testo pronto:
 «{titolo}» di {autore} è nel catalogo di Fantasy Italia — Nuove proposte, dedicato alla narrativa fantasy italiana contemporanea: {link}
-
+{instagram}
 Se hai un sito o un blog, puoi aggiungere il badge «Presente su Fantasy Italia» incollando questo codice:
 {codiceBadge}
 {intervista}
@@ -351,6 +353,11 @@ Per qualunque correzione alla scheda (copertina, date, link) rispondi pure qui.
 A presto,
 Fantasy Italia — Nuove proposte
 ${SITO}`;
+  const KIT_INSTAGRAM = `
+Per Instagram, dove i link non mostrano anteprime, c'è un'immagine pronta da pubblicare:
+{immagine}
+Lì i link nelle didascalie non si possono cliccare: conviene metterlo nella bio, o in una storia con l'adesivo «Link».
+`;
   const KIT_INTERVISTA = `
 Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da pubblicare fra gli articoli del sito: basta rispondere a questa email.
 `;
@@ -364,9 +371,13 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
       autore: b.author || '',
       link,
       codiceBadge,
-      intervista: b.is_debut === true ? KIT_INTERVISTA : ''
+      immagine: b.social_url || ''
     };
     const riempi = modello => modello.replace(/\{(\w+)\}/g, (tutto, k) => (k in valori) ? valori[k] : tutto);
+    // I due paragrafi facoltativi hanno segnaposto propri: si riempiono
+    // prima, poi entrano nel testo gia' completi.
+    valori.intervista = b.is_debut === true ? KIT_INTERVISTA : '';
+    valori.instagram = b.social_url ? riempi(KIT_INSTAGRAM) : '';
     return { a: b.proposer_contact, oggetto: riempi(KIT_OGGETTO), testo: riempi(KIT_TESTO), link };
   }
 
@@ -382,6 +393,13 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
     // scrivere: le proposte dello Scout un contatto non ce l'hanno.
     const pronto = !!(b && b.status === 'approved' && b.slug && b.proposer_contact);
     $('#kitAutore').classList.toggle('hidden', !pronto);
+    aggiornaPulsanteImmagine(b);
+  }
+
+  function aggiornaPulsanteImmagine(b){
+    const a = $('#kitImmagine');
+    if(b && b.social_url){ a.href = b.social_url; a.classList.remove('hidden'); }
+    else { a.removeAttribute('href'); a.classList.add('hidden'); }
   }
 
   function avvisoKit(testo){
@@ -392,6 +410,15 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
 
   $('#btnKitScrivi').addEventListener('click', async ()=>{
     if(!kitLibro) return;
+
+    // Pagina statica e immagine per Instagram nascono nello stesso giro del
+    // workflow, dopo l'approvazione: se la scheda e' aperta da prima, i dati
+    // in memoria non sanno ancora dell'immagine. Si rilegge solo quella.
+    try{
+      const { data } = await supa.from('books').select('social_url').eq('id', kitLibro.id).single();
+      if(data){ kitLibro.social_url = data.social_url; aggiornaPulsanteImmagine(kitLibro); }
+    }catch(_){ /* senza, il messaggio parte senza il paragrafo Instagram */ }
+
     const m = messaggioKit(kitLibro);
 
     // La pagina statica del libro arriva entro sei ore dall'approvazione.
@@ -408,16 +435,32 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
       if(!esiste){
         kitPaginaVerificata = true;
         $('#btnKitScrivi').textContent = 'Scrivi comunque';
-        avvisoKit('La pagina statica del libro non è ancora pronta: si genera entro sei ore, '
+        avvisoKit('La pagina statica del libro non è ancora pronta, e con lei l\u2019immagine per Instagram: si generano entro sei ore, '
           + 'oppure subito lanciando «Pagine libro e copertine» da GitHub Actions. '
           + 'Il link funziona già, ma nelle chat l\u2019anteprima uscirebbe senza copertina.');
         return;
       }
     }
 
-    location.href = 'mailto:' + encodeURIComponent(m.a)
+    const indirizzo = 'mailto:' + encodeURIComponent(m.a)
       + '?subject=' + encodeURIComponent(m.oggetto)
       + '&body=' + encodeURIComponent(m.testo);
+
+    // Oltre i 1.900 caratteri alcuni programmi di posta (Outlook sul
+    // computer, soprattutto) tagliano il messaggio senza dirlo. Succede con
+    // esordio e immagine per Instagram insieme, cioe' spesso: in quel caso il
+    // testo intero va anche negli appunti, e se arriva tagliato si incolla.
+    if(indirizzo.length > 1900){
+      try{
+        await navigator.clipboard.writeText('Oggetto: ' + m.oggetto + '\n\n' + m.testo);
+        avvisoKit('Il messaggio è lungo, e l\u2019ho messo anche negli appunti: '
+          + 'se il programma di posta lo mostra tagliato, cancella e incolla.');
+      }catch(_){
+        avvisoKit('Il messaggio è lungo: se il programma di posta lo mostra tagliato, '
+          + 'usa «Copia il messaggio».');
+      }
+    }
+    location.href = indirizzo;
   });
 
   // Rete per i programmi di posta che tagliano i messaggi lunghi aperti da
