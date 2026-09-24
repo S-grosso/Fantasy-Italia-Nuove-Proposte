@@ -7,6 +7,10 @@
 <meta name="theme-color" content="#7aa6ff">
 <meta name="description" content="Catalogo gratuito della narrativa fantasy italiana: autori esordienti, collane, dati bibliografici e segnalazioni. Nessun cookie né affiliazioni.">
 <meta name="robots" content="index, follow, max-image-preview:large">
+<!-- La home risponde sia su / sia su /index.html: senza canonical Google le
+     tratta come due pagine uguali e ne scarta una, segnalandola in Search
+     Console come "duplicata senza URL canonico selezionato dall'utente". -->
+<link rel="canonical" href="https://www.fantasyitalianuoveproposte.it/">
 <meta name="referrer" content="no-referrer">
 <meta property="og:title" content="Fantasy Italia — Nuove proposte">
 <meta property="og:description" content="Catalogo gratuito della narrativa fantasy italiana: autori esordienti, collane, dati bibliografici e segnalazioni. Nessun cookie né affiliazioni.">
@@ -189,7 +193,15 @@
         <button class="btn right" id="btnExport">Esporta catalogo</button>
       </span>
     </div>
-    <div id="gridCatalogo" class="grid"><div class="muted">Caricamento catalogo da GitHub…</div></div>
+    <div id="gridCatalogo" class="grid"><div class="muted">Caricamento catalogo…</div></div>
+    <!-- Le schede qui sopra le disegna JavaScript: questo collegamento e'
+         l'unica strada, nell'HTML iniziale della home, verso le pagine
+         statiche dei libri. Senza, Google le conosce solo dalla sitemap e
+         tarda a visitarle ("Rilevata, ma attualmente non indicizzata"). -->
+    <div class="small muted" style="margin-top:14px">
+      Ogni titolo ha anche una pagina propria:
+      <a href="/libri/" style="color:#9fc8ff">elenco completo delle schede</a>.
+    </div>
   </section>
 
   <!-- Proponi un titolo -->
