@@ -92,8 +92,10 @@ Eredità della migrazione a Supabase, tutte in `index.html` salvo dove indicato.
 - Codice morto: il download di `data/candidates.json` da raw.githubusercontent (fermo a 16 candidati di un flusso superato), l'editor notizie locale con "esporta e carica su GitHub", il pulsante "Esporta catalogo".
 - File residui in radice: `Index.txt` (vecchia copia di `index.html`), `fantasy-italia-nuove-proposte.json` (10 titoli in formato pre-Supabase) e `post.html`, pagina che mostrava un articolo da sola e che dal 4.2 è superata dalle pagine statiche: non è collegata da nessuna parte.
 
-### 4.10 Aggiornamenti di manutenzione
-`actions/checkout@v4` → `@v5` e `actions/setup-python@v5` → `@v6` in entrambi i workflow, per chiudere l'avviso su Node 20. Da tenere d'occhio: `ubuntu-latest` passa a Ubuntu 26 dal 19 ottobre 2026.
+### 4.10 Aggiornamenti di manutenzione — fatto
+- [x] **Fatto** (20 settembre 2026). `actions/checkout@v5` e `actions/setup-python@v6` in entrambi i workflow: chiude l'avviso su Node 20.
+
+Da tenere d'occhio: `ubuntu-latest` passa a Ubuntu 26 dal 19 ottobre 2026. La prima esecuzione dopo questo aggiornamento va guardata, perché è la prima con le action nuove.
 
 ### 4.11 PWA lasciata a metà
 `manifest.webmanifest`, `offline.html` e le quattro icone maskable sono nel repository, ma **nessuna pagina collega il manifest** e non esiste un service worker. Oggi sono peso morto: o si completa l'installazione su telefono (che per un catalogo consultato di rado rende poco), o si tolgono. Decidere, non lasciare a metà.
@@ -120,11 +122,13 @@ Due modifiche al database, registrate come migrazioni: `proposer_contact` con i 
 
 (Trovato grazie a `isbn_norm`: prima il formato misto lo nascondeva. L'altro ISBN ripetuto, quello di *Surikila*, è legittimo — stessa scheda approvata e scartata.)
 
-### 4.15 Avvisi di sicurezza Supabase, preesistenti
-Il controllo automatico di Supabase segnala quattro punti, nessuno urgente e nessuno introdotto dai lavori di settembre:
-- `books_assign_slug()` e `e_admin()` sono `SECURITY DEFINER` e richiamabili via RPC anche da anonimo. `e_admin()` restituisce `false` a chi non è amministratore, quindi il rischio è basso, ma il permesso di esecuzione andrebbe revocato ad `anon`.
-- `tocca_updated_at` non ha `search_path` fissato.
-- La protezione contro le password compromesse (HaveIBeenPwned) è disattivata in Auth.
+### 4.15 Avvisi di sicurezza Supabase — due chiusi su quattro
+Nessuno di questi è stato introdotto dai lavori di settembre.
+
+- [x] **`books_assign_slug()`** (20 settembre 2026): permesso di esecuzione revocato a `public`, `anon` e `authenticated`. È una funzione di trigger, il trigger la esegue per conto suo. Verificato simulando il pannello — ruolo `authenticated` con l'email dell'amministratore nel token: inserimento e aggiornamento funzionano e lo slug viene assegnato.
+- [x] **`tocca_updated_at`** (20 settembre 2026): `search_path` fissato a `public`.
+- [ ] **`e_admin()`** resta richiamabile via RPC. **Non è stata toccata di proposito**: è usata dentro le policy RLS, che PostgreSQL valuta con i permessi di chi fa la query, quindi revocare l'esecuzione ad `authenticated` rischia di far fallire le policy e di chiudere l'amministratore fuori dal proprio catalogo. Il rischio attuale è basso — chiamata da un anonimo restituisce `false` e non rivela niente — ma va affrontata con una prova vera dell'accesso, non a fine sessione. Strada alternativa da valutare: spostarla in uno schema non esposto dall'API.
+- [ ] **Protezione password compromesse** (HaveIBeenPwned): è un interruttore in Supabase → Authentication → Policies, da attivare a mano. Un minuto, e vale la pena: l'account amministratore è l'unico modo per entrare nel catalogo.
 
 ---
 
