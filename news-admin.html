@@ -400,13 +400,89 @@
       else if(cmd === 'italic')    document.execCommand('italic');
       else if(cmd === 'underline') document.execCommand('underline');
       else if(cmd === 'ul')        document.execCommand('insertUnorderedList');
-      else if(cmd === 'h2')        document.execCommand('formatBlock', false, 'h2');
+      else if(cmd === 'h2'){
+        // Titoletto fa da interruttore: premuto su un titolo lo riporta a
+        // paragrafo. Prima un titolo, una volta messo, non si toglieva piu'.
+        const attuale = (document.queryCommandValue('formatBlock') || '').toLowerCase();
+        document.execCommand('formatBlock', false, attuale === 'h2' ? 'p' : 'h2');
+      }
       else if(cmd === 'clean')     document.execCommand('removeFormat');
       else if(cmd === 'link'){
         const url = prompt('Indirizzo del link (https://…)');
         if(url && /^https?:\/\//i.test(url)) document.execCommand('createLink', false, url);
       }
     });
+  });
+
+  // Invio crea un paragrafo vero invece di un <div>, e grassetto e corsivo
+  // diventano tag invece di stili in linea, che il salvataggio toglierebbe.
+  try{
+    document.execCommand('defaultParagraphSeparator', false, 'p');
+    document.execCommand('styleWithCSS', false, false);
+  }catch(_){}
+
+  /* ---------------- incolla ---------------- */
+  // Dall'appunti entra solo il testo, rimontato in paragrafi ed elenchi.
+  // Chrome, incollando in un elemento modificabile, clona per ogni riga il
+  // blocco in cui si trova il cursore, attributi compresi, e ci aggiunge gli
+  // stili calcolati della pagina. E' cosi' che la guida per chi propone era
+  // stata salvata come quaranta <h2 id="articleTitle">, uno per riga.
+  function testoInHtml(testo){
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const pezzi = [];
+    let elenco = [];
+    const chiudiElenco = () => {
+      if(elenco.length){
+        pezzi.push('<ul>' + elenco.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>');
+        elenco = [];
+      }
+    };
+    for(const grezza of testo.replace(/\r\n?/g, '\n').split('\n')){
+      const riga = grezza.trim();
+      if(!riga){ chiudiElenco(); continue; }
+      // Un trattino, un pallino o un asterisco a inizio riga sono un elenco
+      // scritto a mano: diventano un elenco vero.
+      const punto = /^[-•*]\s+/.exec(riga);
+      if(punto){ elenco.push(riga.slice(punto[0].length)); continue; }
+      chiudiElenco();
+      pezzi.push('<p>' + esc(riga) + '</p>');
+    }
+    chiudiElenco();
+    return pezzi.join('');
+  }
+
+  $('#editor').addEventListener('paste', ev => {
+    const dati = ev.clipboardData || window.clipboardData;
+    const testo = dati ? dati.getData('text/plain') : '';
+    if(!testo) return;   // un'immagine o altro: decide il browser
+    ev.preventDefault();
+
+    const ed = $('#editor');
+    const sel = window.getSelection();
+
+    // Una riga sola si inserisce dove sta il cursore, senza creare blocchi:
+    // e' il caso normale di chi incolla un nome o una frase nel testo.
+    // Agli estremi si tolgono solo gli a capo, non gli spazi: chi incolla
+    // "parola " a meta' frase vuole anche lo spazio.
+    if(!/\n/.test(testo.trim())){
+      document.execCommand('insertText', false, testo.replace(/^[\r\n]+|[\r\n]+$/g, ''));
+      return;
+    }
+
+    // Editor vuoto, oppure tutto selezionato: il testo sostituisce il
+    // contenuto per intero. E' il caso della guida, e l'unico modo sicuro di
+    // non ereditare niente dal blocco in cui stava il cursore.
+    const tutto = sel && sel.rangeCount && ed.contains(sel.anchorNode)
+      && sel.toString().trim() === ed.innerText.trim();
+    if(tutto || !ed.innerText.trim()){
+      ed.innerHTML = testoInHtml(testo);
+      const r = document.createRange();
+      r.selectNodeContents(ed); r.collapse(false);
+      sel.removeAllRanges(); sel.addRange(r);
+      ed.dispatchEvent(new Event('input', {bubbles:true}));
+      return;
+    }
+    document.execCommand('insertHTML', false, testoInHtml(testo));
   });
 
   /* ---------------- salvataggio ---------------- */
@@ -426,6 +502,24 @@
         if(nome === 'src'  && val.startsWith('javascript:')) el.removeAttribute('src');
       });
     });
+
+    // Stili, id e classi arrivano solo per sbaglio, da un incolla o dal
+    // browser: l'aspetto degli articoli lo decide il foglio di stile del
+    // sito. Tenerli voleva dire, per esempio, quaranta id identici nella
+    // stessa pagina e il testo in una dimensione diversa dal resto.
+    doc.querySelectorAll('[style],[id],[class]').forEach(el => {
+      el.removeAttribute('style'); el.removeAttribute('id'); el.removeAttribute('class');
+    });
+    // Spogliati degli attributi, <span> e <font> non portano piu' niente:
+    // al loro posto resta il contenuto.
+    doc.querySelectorAll('span,font').forEach(el => el.replaceWith(...el.childNodes));
+    // Blocchi vuoti, cioe' righe fatte solo di un a capo: nella pagina
+    // diventano buchi. La distanza fra i paragrafi la da' il foglio di stile.
+    doc.querySelectorAll('p,h2,h3,li').forEach(el => {
+      if(!el.textContent.trim() && !el.querySelector('img')) el.remove();
+    });
+    doc.querySelectorAll('ul,ol').forEach(el => { if(!el.children.length) el.remove(); });
+
     return doc.body.innerHTML;
   }
 
