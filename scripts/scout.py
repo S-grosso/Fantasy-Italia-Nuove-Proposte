@@ -52,9 +52,26 @@ UA = {"User-Agent": "FantasyItaliaBot/1.0 (+https://www.fantasyitalianuovepropos
 
 GOOGLE_BOOKS = "https://www.googleapis.com/books/v1/volumes"
 
-# GitHub Models: gratuito dentro le Actions, si autentica col GITHUB_TOKEN.
-GH_MODELS_URL = "https://models.github.ai/inference/chat/completions"
-GH_MODEL = "openai/gpt-4o-mini"
+# Classificatore: Google Gemini, piano gratuito, chiave in GEMINI_API_KEY.
+# Fino a luglio 2026 era GitHub Models, che GitHub ha chiuso il 30 luglio:
+# da quel giorno ogni chiamata rispondeva 410.
+GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
+
+# Modelli in ordine di preferenza. All'avvio si chiede a Google quali sono
+# disponibili per questa chiave e si usa il primo: se uno viene ritirato si
+# passa al successivo senza toccare il codice. Tutti del piano gratuito.
+# GEMINI_MODEL, se impostata, scavalca la lista.
+GEMINI_PREFERITI = [
+    "gemini-3.8-flash",
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+]
+
+# Il modello "pensa" prima di rispondere, e quei pensieri contano nel limite
+# di lunghezza della risposta: con un limite stretto il JSON arriverebbe
+# troncato o vuoto. Il piano e' gratuito, quindi si lascia spazio.
+GEMINI_MAX_USCITA = 4096
 
 # Parole che qualificano il genere in modo ESPLICITO. Sono il segnale forte:
 # quando l'editore si autodichiara, non serve inferire dalla trama.
@@ -1196,13 +1213,150 @@ class Quota:
         # Cinque 429 di fila: la quota giornaliera e' finita, inutile insistere.
         if self.consecutivi_429 >= 5:
             self.esaurita = True
-            log("\n  ! Quota del modello esaurita. I candidati restanti passano")
-            log("    in moderazione senza classificazione: li rivedi a mano,")
-            log("    oppure rilanci lo Scout domani e li riprende.\n")
+            log("\n  ! Quota del modello esaurita. I candidati restanti NON")
+            log("    vengono proposti: rilancia lo Scout domani e li riprende.\n")
             return 0
 
         pausa = attesa_suggerita if attesa_suggerita else self.pausa
         return min(pausa, 30)  # mai oltre mezzo minuto per un singolo retry
+
+
+def gemini_scegli_modello(chiave):
+    """
+    Il primo modello preferito che Google dichiara disponibile per la chiave.
+
+    Se l'elenco non e' leggibile si tenta comunque il primo della lista: sara'
+    la chiamata vera a dire se c'e'. Se l'elenco e' leggibile ma nessun
+    preferito compare, si restituisce None e non si classifica niente.
+    """
+    imposto = os.environ.get("GEMINI_MODEL", "").strip()
+    preferiti = [imposto] if imposto else list(GEMINI_PREFERITI)
+    try:
+        disponibili, pagina = set(), None
+        for _ in range(10):
+            params = {"pageSize": 1000}
+            if pagina:
+                params["pageToken"] = pagina
+            r = requests.get(f"{GEMINI_BASE}/models", params=params,
+                             headers={"x-goog-api-key": chiave}, timeout=TIMEOUT)
+            if r.status_code != 200:
+                log(f"  ! Elenco dei modelli Gemini: HTTP {r.status_code}, provo {preferiti[0]}")
+                return preferiti[0]
+            dati = r.json()
+            for m in dati.get("models", []):
+                disponibili.add(str(m.get("name", "")).split("/", 1)[-1])
+            pagina = dati.get("nextPageToken")
+            if not pagina:
+                break
+    except (requests.RequestException, ValueError) as e:
+        log(f"  ! Elenco dei modelli Gemini illeggibile ({type(e).__name__}), provo {preferiti[0]}")
+        return preferiti[0]
+
+    for m in preferiti:
+        if m in disponibili:
+            return m
+    log(f"  ! Nessuno dei modelli preferiti e' disponibile: {', '.join(preferiti)}")
+    gemini = sorted(m for m in disponibili if "flash" in m)
+    if gemini:
+        log(f"    Quelli con 'flash' nel nome sono: {', '.join(gemini[:12])}")
+        log("    Aggiorna GEMINI_PREFERITI in scripts/scout.py.")
+    return None
+
+
+def testo_da_risposta(dati):
+    """
+    Il testo generato, qualunque sia la forma della risposta.
+
+    Google sta passando dall'API generateContent (candidates -> content ->
+    parts) alla nuova API interactions, e la documentazione non e' univoca
+    su dove stia il testo. Si cercano tutte le forme note, saltando i
+    pensieri del modello, che non fanno parte della risposta.
+    """
+    if isinstance(dati.get("output_text"), str) and dati["output_text"].strip():
+        return dati["output_text"]
+
+    pezzi = []
+
+    def raccogli(blocchi):
+        for b in blocchi or []:
+            if not isinstance(b, dict):
+                continue
+            if b.get("thought") is True or b.get("type") in ("thought", "thinking"):
+                continue
+            if isinstance(b.get("text"), str):
+                pezzi.append(b["text"])
+            for dentro in ("content", "parts"):
+                if isinstance(b.get(dentro), list):
+                    raccogli(b[dentro])
+
+    raccogli(dati.get("outputs"))
+    for passo in dati.get("steps") or []:
+        if isinstance(passo, dict) and passo.get("type") in (None, "model_output"):
+            raccogli(passo.get("content"))
+    for candidato in dati.get("candidates") or []:
+        raccogli(((candidato or {}).get("content") or {}).get("parts"))
+    return "".join(pezzi)
+
+
+# Quale delle due API ha risposto l'ultima volta: una volta trovata quella
+# buona, gli altri candidati non ripagano il tentativo sull'altra.
+_API_GEMINI = {"usata": None}
+
+
+def chiama_gemini(chiave, modello, sistema, utente):
+    """
+    Una richiesta a Gemini. Restituisce (stato_http, testo, attesa_suggerita).
+
+    Prima l'API interactions, che Google indica come quella corrente; se
+    risponde 404 o 400, la classica generateContent, che la documentazione
+    chiama ormai legacy ma che e' la piu' collaudata.
+    """
+    testate = {"x-goog-api-key": chiave, "Content-Type": "application/json"}
+    tentativi = {
+        "interactions": (
+            f"{GEMINI_BASE}/interactions",
+            {
+                "model": modello,
+                "system_instruction": sistema,
+                "input": utente,
+                "generation_config": {
+                    "thinking_level": "low",
+                    "max_output_tokens": GEMINI_MAX_USCITA,
+                },
+            },
+        ),
+        "generateContent": (
+            f"{GEMINI_BASE}/models/{modello}:generateContent",
+            {
+                "systemInstruction": {"parts": [{"text": sistema}]},
+                "contents": [{"role": "user", "parts": [{"text": utente}]}],
+                "generationConfig": {
+                    "maxOutputTokens": GEMINI_MAX_USCITA,
+                    "responseMimeType": "application/json",
+                },
+            },
+        ),
+    }
+    ordine = ["interactions", "generateContent"]
+    if _API_GEMINI["usata"] in ordine:
+        ordine = [_API_GEMINI["usata"]]
+
+    ultimo = (0, "", None)
+    for nome in ordine:
+        url, corpo = tentativi[nome]
+        r = requests.post(url, headers=testate, json=corpo, timeout=60)
+        attesa = r.headers.get("retry-after")
+        try:
+            attesa = int(attesa)
+        except (TypeError, ValueError):
+            attesa = None
+        if r.status_code == 200:
+            _API_GEMINI["usata"] = nome
+            return 200, testo_da_risposta(r.json()), None
+        ultimo = (r.status_code, r.text[:300], attesa)
+        if r.status_code not in (400, 404):
+            break  # 429, 5xx, chiave rifiutata: l'altra API non cambierebbe niente
+    return ultimo
 
 
 # Quando il classificatore non risponde, il candidato NON passa.
@@ -1222,15 +1376,15 @@ NON_CLASSIFICATO = {
 }
 
 
-def classifica(cand, token, quota, tentativi=2):
+def classifica(cand, chiave, modello, quota, tentativi=2):
     """
-    Chiama GitHub Models.
+    Chiede a Gemini se il candidato entra in catalogo.
 
     Due tentativi, non quattro: se il modello e' sotto pressione, insistere sul
     singolo candidato non aiuta — meglio rallentare il ritmo generale (lo fa
     l'oggetto Quota) e andare avanti.
     """
-    if not token or quota.esaurita:
+    if not chiave or not modello or quota.esaurita:
         return NON_CLASSIFICATO
 
     opere = cand.get("_opere_autore")
@@ -1257,29 +1411,9 @@ SINOSSI:
         quota.prima_della_chiamata()
 
         try:
-            r = requests.post(
-                GH_MODELS_URL,
-                headers={"Authorization": f"Bearer {token}",
-                         "Content-Type": "application/json"},
-                json={
-                    "model": GH_MODEL,
-                    "messages": [
-                        {"role": "system", "content": PROMPT},
-                        {"role": "user", "content": scheda},
-                    ],
-                    "temperature": 0.1,
-                    "max_tokens": 300,
-                },
-                timeout=40,
-            )
+            stato, testo, suggerita = chiama_gemini(chiave, modello, PROMPT, scheda)
 
-            if r.status_code == 429:
-                suggerita = r.headers.get("retry-after")
-                try:
-                    suggerita = int(suggerita)
-                except (TypeError, ValueError):
-                    suggerita = None
-
+            if stato == 429:
                 attesa = quota.rate_limited(suggerita)
                 if quota.esaurita or tentativo == tentativi:
                     break
@@ -1287,13 +1421,16 @@ SINOSSI:
                 time.sleep(attesa)
                 continue
 
-            if r.status_code != 200:
-                log(f"      ! HTTP {r.status_code}")
+            if stato != 200:
+                log(f"      ! HTTP {stato}: {testo[:160]}")
                 break
 
-            testo = r.json()["choices"][0]["message"]["content"].strip()
-            testo = re.sub(r"^```(?:json)?|```$", "", testo, flags=re.MULTILINE).strip()
+            # Il modello a volte racchiude il JSON fra ``` anche se gli si
+            # chiede di non farlo: si tolgono prima di leggerlo.
+            testo = re.sub(r"^```(?:json)?|```$", "", (testo or "").strip(), flags=re.MULTILINE).strip()
             esito = json.loads(testo)
+            if not isinstance(esito, dict) or "ammesso" not in esito:
+                raise ValueError("risposta senza il campo 'ammesso'")
             quota.ok()
 
             if not esito.get("genere"):
@@ -1308,6 +1445,69 @@ SINOSSI:
     return NON_CLASSIFICATO
 
 
+def prova_classificatore():
+    """
+    Tre casi di cui si conosce la risposta giusta: un romanzo fantasy di un
+    autore italiano, un libro illustrato per bambini, una traduzione. Serve
+    a verificare il classificatore da GitHub Actions, dove sta la chiave,
+    prima di affidargli il giro vero. Non tocca il database.
+    """
+    casi = [
+        (True, {
+            "titolo": "Il canto di Liscamara", "autore": "Mattia Manfredonia",
+            "editore": "Lumien", "categorie": ["Fantasy", "Narrativa"],
+            "paratesto": "Un romanzo fantasy d'avventura dell'autore italiano Mattia Manfredonia.",
+            "sinossi": ("Nel mare di Vespria una ciurma di pirati da' la caccia a un'antica "
+                        "reliquia che risveglia la magia sopita dei popoli delle isole. "
+                        "Tra patti occulti, maledizioni e creature degli abissi, la giovane "
+                        "Liscamara scopre di essere legata al canto che puo' salvare o "
+                        "distruggere il suo mondo. Un romanzo di avventura e stregoneria."),
+        }),
+        (False, {
+            "titolo": "Il regno degli animali", "autore": "Redazione Giunti",
+            "editore": "Giunti", "categorie": ["Bambini", "Animali", "Divulgazione"],
+            "paratesto": "Un libro illustrato per scoprire gli animali del pianeta. Dai 6 anni.",
+            "sinossi": ("Un viaggio illustrato tra mammiferi, uccelli, rettili e pesci per "
+                        "scoprire come vivono, cosa mangiano e dove abitano gli animali. "
+                        "Con curiosita', schede e tante immagini a colori."),
+        }),
+        (False, {
+            "titolo": "The Ordeals", "autore": "Rachel Greenlaw",
+            "editore": "Giunti", "categorie": ["Young Adult", "Fantasy"],
+            "paratesto": "Il fenomeno fantasy internazionale arriva in Italia, tradotto dall'inglese.",
+            "sinossi": ("In un'accademia magica dove ogni prova puo' essere l'ultima, una "
+                        "giovane studentessa sfida le regole per salvare chi ama. "
+                        "Il bestseller internazionale finalmente in italiano."),
+        }),
+    ]
+
+    chiave = os.environ.get("GEMINI_API_KEY", "")
+    if not chiave:
+        log("GEMINI_API_KEY assente: niente da provare.")
+        return 2
+    modello = gemini_scegli_modello(chiave)
+    if not modello:
+        return 2
+    log(f"Modello scelto: {modello}\n")
+
+    giusti = 0
+    quota = Quota()
+    for atteso, cand in casi:
+        esito = classifica(cand, chiave, modello, quota)
+        if esito.get("_non_classificato"):
+            log(f"  ?  {cand['titolo']}: il classificatore non ha risposto")
+            continue
+        ok = bool(esito.get("ammesso")) == atteso
+        giusti += ok
+        segno = "OK" if ok else "!!"
+        log(f"  {segno} {cand['titolo']}: ammesso={esito.get('ammesso')} "
+            f"(atteso {atteso}) · conf={esito.get('confidenza')} · {esito.get('motivo', '')[:80]}")
+
+    log(f"\nAPI usata: {_API_GEMINI['usata'] or 'nessuna'}")
+    log(f"Verdetti giusti: {giusti} su {len(casi)}")
+    return 0 if giusti == len(casi) else 2
+
+
 # --------------------------------------------------------------------------
 # Programma principale
 # --------------------------------------------------------------------------
@@ -1319,7 +1519,13 @@ def main():
     ap.add_argument("--limite", type=int, default=120,
                     help="Tetto ai candidati classificati. Con la pausa anti-429 "
                          "ogni candidato costa ~8s: 80 sono circa 11 minuti.")
+    ap.add_argument("--prova-classificatore", action="store_true",
+                    help="Classifica tre casi noti e dice se i verdetti tornano. "
+                         "Non legge le fonti e non scrive niente.")
     args = ap.parse_args()
+
+    if args.prova_classificatore:
+        return prova_classificatore()
 
     if args.dal:
         dal = datetime.fromisoformat(args.dal).replace(tzinfo=timezone.utc)
@@ -1480,9 +1686,12 @@ def main():
         superstiti = superstiti[:args.limite]
 
     # --- Arricchimento e classificazione ---
-    token = os.environ.get("GITHUB_TOKEN", "")
-    if not token:
-        log("\n  ! GITHUB_TOKEN assente: senza classificatore non verra' proposto niente.\n")
+    chiave = os.environ.get("GEMINI_API_KEY", "")
+    modello = gemini_scegli_modello(chiave) if chiave else None
+    if not chiave:
+        log("\n  ! GEMINI_API_KEY assente: senza classificatore non verra' proposto niente.\n")
+    elif modello:
+        log(f"\nClassificatore: Gemini, modello {modello}")
 
     nuovi = []
     non_classificati = []
@@ -1533,7 +1742,7 @@ def main():
         if autore_probabilmente_straniero(c.get("autore", "")):
             c["_dubbio_nazionalita"] = True
 
-        esito = classifica(c, token, quota)
+        esito = classifica(c, chiave, modello, quota)
 
         if esito.get("_non_classificato"):
             non_classificati.append(c["titolo"])

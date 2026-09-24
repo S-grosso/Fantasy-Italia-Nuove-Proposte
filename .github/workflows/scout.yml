@@ -16,11 +16,16 @@ on:
         required: false
         default: "120"
         type: string
+      prova_classificatore:
+        description: "Solo prova del classificatore: tre casi noti, nessuna fonte letta, niente scritto"
+        required: false
+        default: false
+        type: boolean
 
-# Serve per committare il backup del catalogo e per parlare con GitHub Models
+# Serve per committare il backup del catalogo. Il permesso "models: read"
+# serviva a GitHub Models, chiuso da GitHub il 30 luglio 2026.
 permissions:
   contents: write
-  models: read
 
 jobs:
   scout:
@@ -43,7 +48,8 @@ jobs:
 
       - name: Cerca le nuove uscite
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Il classificatore: Google Gemini, piano gratuito.
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GOOGLE_BOOKS_KEY: ${{ secrets.GOOGLE_BOOKS_KEY }}
           # La service_role key ignora le regole di sicurezza del database:
           # serve allo Scout per leggere anche gli scarti e scrivere i
@@ -51,6 +57,13 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
+          # La prova non legge le fonti e non scrive niente: dice solo se il
+          # classificatore risponde e se i suoi verdetti su tre casi noti tornano.
+          if [ "${{ inputs.prova_classificatore }}" = "true" ]; then
+            python scripts/scout.py --prova-classificatore
+            exit $?
+          fi
+
           ARGS=""
           if [ -n "${{ inputs.dal }}" ]; then
             ARGS="$ARGS --dal ${{ inputs.dal }}"
