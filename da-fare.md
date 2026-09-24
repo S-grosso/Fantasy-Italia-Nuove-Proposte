@@ -163,6 +163,14 @@ Provato nel browser riproducendo il caso esatto della guida.
 
 Facoltativo: *Nasce Fantasy Italia* non ha il problema, ma è scritto con a capo e grassetti invece di titoli ed elenchi veri. Si legge bene; dargli la stessa struttura della guida lo renderebbe più chiaro anche per i motori di ricerca.
 
+### 4.18 Scout: il classificatore era spento da agosto
+**Cosa è successo.** Il 30 luglio 2026 GitHub ha chiuso GitHub Models, il servizio che classificava i candidati: da quel giorno ogni chiamata rispondeva 410. Lo Scout era fatto per lasciar passare tutto quando la classificazione falliva ("non classificato — da verificare a mano", confidenza bassa), quindi per due mesi in moderazione è arrivato tutto ciò che superava il filtro a regole: classici Disney, saggi, copie autografate, romanzi non fantasy. Il 26 luglio, ultimo giro col classificatore acceso, i verdetti erano buoni: delle 14 proposte "alta" scartate, 10 erano doppioni entrati in catalogo quello stesso giorno, gli errori veri 4 su 16.
+
+- [x] **Protezione** (24 settembre 2026): un candidato non classificato non viene più proposto, e se succede il giro esce con errore così GitHub lo segnala per email. Il filtro a regole scarta anche le varianti di prodotto ("COPIA AUTOGRAFATA", "| Custom Sprayed Edges") e la serie Disney "I Classici e la magia".
+- [x] **Nuovo classificatore: Google Gemini, piano gratuito** (24 settembre 2026). All'avvio lo Scout chiede a Google quali modelli sono disponibili e usa il primo di una lista di preferenze (`GEMINI_PREFERITI` in `scripts/scout.py`): se uno viene ritirato passa al successivo da solo. Prova prima l'API `interactions`, poi la classica `generateContent`, e legge la risposta in tutte le forme documentate. Sul piano gratuito Google può usare i testi inviati per migliorare i suoi prodotti: si inviano solo presentazioni pubbliche degli editori.
+- [ ] **Da fare una volta**: creare la chiave in Google AI Studio, salvarla nei secrets come `GEMINI_API_KEY`, e lanciare lo Scout da Actions con "prova_classificatore" acceso. Deve dire "Verdetti giusti: 3 su 3".
+- [ ] **Fonti mute**: 7 fonti su 14 restituiscono zero titoli a ogni giro (Lumien, Zona 42, Angolazioni, PresentARTsi, Astro, Parallelo45, La nuova carne), eppure Lumien e Zona 42 hanno libri in catalogo. Può essere che non pubblichino nulla in 30 giorni, ma sette su quattordici, sempre, fa pensare ad adattatori rotti. Da indagare fonte per fonte.
+
 ---
 
 ## 5. Da fare — editoriale e strategico
