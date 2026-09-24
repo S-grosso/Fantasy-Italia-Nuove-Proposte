@@ -1221,13 +1221,16 @@ class Quota:
         return min(pausa, 30)  # mai oltre mezzo minuto per un singolo retry
 
 
-def gemini_scegli_modello(chiave):
+def gemini_modelli(chiave):
     """
-    Il primo modello preferito che Google dichiara disponibile per la chiave.
+    I modelli preferiti che Google dichiara disponibili per la chiave, in
+    ordine di preferenza. Non uno solo: il piu' nuovo e' spesso sovraccarico
+    sul piano gratuito (il 24 settembre 2026 gemini-3.8-flash rispondeva 503,
+    "high demand"), e allora si passa al successivo.
 
-    Se l'elenco non e' leggibile si tenta comunque il primo della lista: sara'
-    la chiamata vera a dire se c'e'. Se l'elenco e' leggibile ma nessun
-    preferito compare, si restituisce None e non si classifica niente.
+    Se l'elenco non e' leggibile si tengono tutti i preferiti: saranno le
+    chiamate vere a dire quali ci sono. Se e' leggibile ma nessun preferito
+    compare, la lista e' vuota e non si classifica niente.
     """
     imposto = os.environ.get("GEMINI_MODEL", "").strip()
     preferiti = [imposto] if imposto else list(GEMINI_PREFERITI)
@@ -1240,8 +1243,8 @@ def gemini_scegli_modello(chiave):
             r = requests.get(f"{GEMINI_BASE}/models", params=params,
                              headers={"x-goog-api-key": chiave}, timeout=TIMEOUT)
             if r.status_code != 200:
-                log(f"  ! Elenco dei modelli Gemini: HTTP {r.status_code}, provo {preferiti[0]}")
-                return preferiti[0]
+                log(f"  ! Elenco dei modelli Gemini: HTTP {r.status_code}, provo i preferiti")
+                return preferiti
             dati = r.json()
             for m in dati.get("models", []):
                 disponibili.add(str(m.get("name", "")).split("/", 1)[-1])
@@ -1249,18 +1252,18 @@ def gemini_scegli_modello(chiave):
             if not pagina:
                 break
     except (requests.RequestException, ValueError) as e:
-        log(f"  ! Elenco dei modelli Gemini illeggibile ({type(e).__name__}), provo {preferiti[0]}")
-        return preferiti[0]
+        log(f"  ! Elenco dei modelli Gemini illeggibile ({type(e).__name__}), provo i preferiti")
+        return preferiti
 
-    for m in preferiti:
-        if m in disponibili:
-            return m
+    scelti = [m for m in preferiti if m in disponibili]
+    if scelti:
+        return scelti
     log(f"  ! Nessuno dei modelli preferiti e' disponibile: {', '.join(preferiti)}")
     gemini = sorted(m for m in disponibili if "flash" in m)
     if gemini:
         log(f"    Quelli con 'flash' nel nome sono: {', '.join(gemini[:12])}")
         log("    Aggiorna GEMINI_PREFERITI in scripts/scout.py.")
-    return None
+    return []
 
 
 def testo_da_risposta(dati):
@@ -1376,15 +1379,25 @@ NON_CLASSIFICATO = {
 }
 
 
-def classifica(cand, chiave, modello, quota, tentativi=2):
+# Errori che dicono "il modello e' occupato adesso", non "la richiesta e'
+# sbagliata": ha senso chiedere a un altro modello, o riprovare fra poco.
+SOVRACCARICO = (500, 502, 503, 504)
+
+
+def classifica(cand, chiave, modelli, quota, tentativi=2):
     """
     Chiede a Gemini se il candidato entra in catalogo.
+
+    modelli e' la lista dei disponibili, in ordine di preferenza, condivisa
+    fra tutti i candidati: se il primo e' sovraccarico si prova il
+    successivo, e quello che risponde passa in testa, cosi' i candidati
+    dopo vanno subito da lui.
 
     Due tentativi, non quattro: se il modello e' sotto pressione, insistere sul
     singolo candidato non aiuta — meglio rallentare il ritmo generale (lo fa
     l'oggetto Quota) e andare avanti.
     """
-    if not chiave or not modello or quota.esaurita:
+    if not chiave or not modelli or quota.esaurita:
         return NON_CLASSIFICATO
 
     opere = cand.get("_opere_autore")
@@ -1411,7 +1424,24 @@ SINOSSI:
         quota.prima_della_chiamata()
 
         try:
-            stato, testo, suggerita = chiama_gemini(chiave, modello, PROMPT, scheda)
+            for modello in list(modelli):
+                stato, testo, suggerita = chiama_gemini(chiave, modello, PROMPT, scheda)
+                if stato not in SOVRACCARICO:
+                    break
+                log(f"      · {modello} sovraccarico (HTTP {stato}), provo il successivo")
+
+            if stato in SOVRACCARICO:
+                # Sovraccarichi tutti: si aspetta un poco e si riprova una volta.
+                if tentativo == tentativi:
+                    log("      ! tutti i modelli sovraccarichi")
+                    break
+                time.sleep(15)
+                continue
+
+            if stato == 200 and modelli[0] != modello:
+                modelli.remove(modello)
+                modelli.insert(0, modello)
+                log(f"      · d'ora in poi uso {modello}")
 
             if stato == 429:
                 attesa = quota.rate_limited(suggerita)
@@ -1485,15 +1515,15 @@ def prova_classificatore():
     if not chiave:
         log("GEMINI_API_KEY assente: niente da provare.")
         return 2
-    modello = gemini_scegli_modello(chiave)
-    if not modello:
+    modelli = gemini_modelli(chiave)
+    if not modelli:
         return 2
-    log(f"Modello scelto: {modello}\n")
+    log(f"Modelli disponibili, in ordine: {', '.join(modelli)}\n")
 
     giusti = 0
     quota = Quota()
     for atteso, cand in casi:
-        esito = classifica(cand, chiave, modello, quota)
+        esito = classifica(cand, chiave, modelli, quota)
         if esito.get("_non_classificato"):
             log(f"  ?  {cand['titolo']}: il classificatore non ha risposto")
             continue
@@ -1503,7 +1533,7 @@ def prova_classificatore():
         log(f"  {segno} {cand['titolo']}: ammesso={esito.get('ammesso')} "
             f"(atteso {atteso}) · conf={esito.get('confidenza')} · {esito.get('motivo', '')[:80]}")
 
-    log(f"\nAPI usata: {_API_GEMINI['usata'] or 'nessuna'}")
+    log(f"\nAPI usata: {_API_GEMINI['usata'] or 'nessuna'} · modello: {modelli[0]}")
     log(f"Verdetti giusti: {giusti} su {len(casi)}")
     return 0 if giusti == len(casi) else 2
 
@@ -1687,11 +1717,11 @@ def main():
 
     # --- Arricchimento e classificazione ---
     chiave = os.environ.get("GEMINI_API_KEY", "")
-    modello = gemini_scegli_modello(chiave) if chiave else None
+    modelli = gemini_modelli(chiave) if chiave else []
     if not chiave:
         log("\n  ! GEMINI_API_KEY assente: senza classificatore non verra' proposto niente.\n")
-    elif modello:
-        log(f"\nClassificatore: Gemini, modello {modello}")
+    elif modelli:
+        log(f"\nClassificatore: Gemini, modelli in ordine {', '.join(modelli)}")
 
     nuovi = []
     non_classificati = []
@@ -1742,7 +1772,7 @@ def main():
         if autore_probabilmente_straniero(c.get("autore", "")):
             c["_dubbio_nazionalita"] = True
 
-        esito = classifica(c, chiave, modello, quota)
+        esito = classifica(c, chiave, modelli, quota)
 
         if esito.get("_non_classificato"):
             non_classificati.append(c["titolo"])
