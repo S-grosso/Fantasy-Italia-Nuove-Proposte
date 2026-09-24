@@ -545,16 +545,26 @@ def pagina_indice_articoli(articoli):
 # --------------------------------------------------------------------------
 
 def sitemap(libri, articoli):
-    oggi = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    # Il lastmod delle pagine indice e' la data del contenuto piu' recente
+    # che elencano, non quella di oggi. Con "oggi" la sitemap cambiava ogni
+    # giorno e veniva ricommittata senza motivo, e Google impara presto a
+    # ignorare un lastmod che dice sempre la stessa cosa.
+    date_libri = [data_iso(b.get("updated_at")) for b in libri if b.get("updated_at")]
+    date_articoli = [data_iso(a.get("updated_at") or a.get("published_at")) for a in articoli
+                     if a.get("updated_at") or a.get("published_at")]
+    ripiego = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    data_libri = max(date_libri) if date_libri else ripiego
+    data_articoli = max(date_articoli) if date_articoli else ripiego
+    data_home = max(date_libri + date_articoli) if (date_libri or date_articoli) else ripiego
     righe = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-        f"  <url><loc>{SITO}/</loc><lastmod>{oggi}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>",
-        f"  <url><loc>{SITO}/libri/</loc><lastmod>{oggi}</lastmod><changefreq>weekly</changefreq></url>",
+        f"  <url><loc>{SITO}/</loc><lastmod>{data_home}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>",
+        f"  <url><loc>{SITO}/libri/</loc><lastmod>{data_libri}</lastmod><changefreq>weekly</changefreq></url>",
     ]
     if articoli:
         righe.append(
-            f"  <url><loc>{SITO}/articoli/</loc><lastmod>{oggi}</lastmod>"
+            f"  <url><loc>{SITO}/articoli/</loc><lastmod>{data_articoli}</lastmod>"
             f"<changefreq>weekly</changefreq></url>"
         )
     for b in libri:

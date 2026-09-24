@@ -159,6 +159,29 @@ def ridimensiona(dati):
     return uscita.getvalue(), img.width, img.height
 
 
+def scrivi_report(dati):
+    """
+    Scrive il report solo se e' cambiato qualcosa oltre all'orario.
+
+    Prima lo riscriveva a ogni giro con il solo 'quando' aggiornato, e il
+    workflow committava ogni sei ore un file identico nella sostanza: tredici
+    commit vuoti in quattro giorni, ognuno con il suo nuovo deploy del sito.
+    """
+    try:
+        precedente = json.loads(REPORT.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        precedente = None
+
+    def sostanza(d):
+        return {k: v for k, v in (d or {}).items() if k != "quando"}
+
+    if precedente is not None and sostanza(precedente) == sostanza(dati):
+        return False
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    REPORT.write_text(json.dumps(dati, ensure_ascii=False, indent=2), encoding="utf-8")
+    return True
+
+
 # --------------------------------------------------------------------------
 # Programma
 # --------------------------------------------------------------------------
@@ -180,8 +203,7 @@ def main():
 
     if not libri:
         print("Nessuna copertina da migrare.")
-        REPORT.parent.mkdir(parents=True, exist_ok=True)
-        REPORT.write_text(json.dumps({"falliti": [], "quando": time.strftime("%Y-%m-%d %H:%M")}, ensure_ascii=False, indent=2), encoding="utf-8")
+        scrivi_report({"falliti": [], "quando": time.strftime("%Y-%m-%d %H:%M")})
         return 0
 
     print(f"Copertine da migrare: {len(libri)}")
@@ -222,15 +244,7 @@ def main():
 
         time.sleep(PAUSA)
 
-    REPORT.parent.mkdir(parents=True, exist_ok=True)
-    REPORT.write_text(
-        json.dumps(
-            {"quando": time.strftime("%Y-%m-%d %H:%M"), "migrate": fatte, "falliti": falliti},
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
+    scrivi_report({"quando": time.strftime("%Y-%m-%d %H:%M"), "migrate": fatte, "falliti": falliti})
 
     print(f"Migrate: {fatte} — non riuscite: {len(falliti)} — peso risparmiato: {risparmio//1024} kB")
     if falliti:
