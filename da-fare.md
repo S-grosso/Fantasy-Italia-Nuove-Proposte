@@ -136,14 +136,20 @@ Dal 20 settembre 2026 Google raccoglie impressioni sul sito. Due rilievi alla pr
 - [x] **"Rilevata, ma attualmente non indicizzata"** su 5 schede libro: normale per un sito nuovo, Google le conosce ma non le ha ancora visitate. Si aiuta dando loro una strada: la home disegna le schede con JavaScript, quindi nell'HTML iniziale non c'era nessun collegamento verso `/libri/`. Ora c'è. Il resto è tempo.
 - [x] **Commit a vuoto dei workflow**: 13 in quattro giorni, ognuno con un nuovo deploy del sito. `copertine.py` riscriveva il report a ogni giro con il solo orario aggiornato, e la sitemap dichiarava come `lastmod` delle pagine indice la data del giorno. Ora il report si riscrive solo se cambia la sostanza, e il `lastmod` è la data del contenuto più recente.
 
-Da tenere d'occhio: gli articoli scritti con l'editor di `news-admin.html` possono uscire con ogni riga trasformata in intestazione `<h2>` (è successo alla guida per chi propone). Vedi 4.17.
+L'editor degli articoli trasformava ogni riga incollata in un'intestazione: sistemato al 4.17.
 
-### 4.17 L'editor degli articoli trasforma tutto in intestazioni
-Nella guida per chi propone, salvata il 20 settembre da `news-admin.html`, **ogni riga è diventata un `<h2>`**: 40 intestazioni e nessun paragrafo. A schermo è un muro di testo grande; per Google una pagina fatta solo di titoli. Causa probabile: il testo incollato resta un unico blocco con gli a capo interni, e il pulsante "Titoletto" (`formatBlock h2`) lo converte tutto.
+### 4.17 L'editor degli articoli trasformava tutto in intestazioni — fatto
+Nella guida per chi propone, salvata il 20 settembre da `news-admin.html`, **ogni riga era diventata un `<h2 id="articleTitle">`** con gli stili calcolati della pagina: 40 intestazioni, nessun paragrafo, lo stesso `id` ripetuto 40 volte. Il pulsante "Titoletto" non c'entrava. Quando si incolla in un elemento modificabile, Chrome clona per ogni riga il blocco in cui sta il cursore, attributi compresi: il cursore stava nel titolo di una vecchia vista articolo, e ogni riga incollata ne è diventata una copia.
 
-Due interventi:
-1. **Il contenuto**: ricostruire la struttura della guida — sei intestazioni, paragrafi, elenchi puntati — lasciando il testo esattamente com'è stato scritto.
-2. **L'editor**: all'incolla, spezzare il testo in paragrafi veri e le righe che iniziano con un trattino in elenchi, così il pulsante "Titoletto" agisce solo sulla riga in cui si trova il cursore.
+- [x] **Il contenuto** (24 settembre 2026). Struttura della guida ricostruita — 6 titoli, 6 paragrafi, 5 elenchi con 21 voci — con il testo verificato identico parola per parola (520 parole prima e dopo) e l'impronta di quanto salvato controllata contro il file verificato. L'aggiornamento è passato solo a condizione che l'articolo fosse ancora quello letto, per non sovrascrivere modifiche fatte nel frattempo.
+- [x] **L'editor** (24 settembre 2026), tre interventi:
+  - all'incolla entra solo il testo, rimontato in paragrafi; le righe che iniziano con trattino, pallino o asterisco diventano un elenco vero. Incollando sopra tutto il contenuto, o in un editor vuoto, il testo lo sostituisce per intero senza ereditare niente dal blocco in cui stava il cursore. Una riga sola si inserisce dove sta il cursore, spazi compresi;
+  - al salvataggio si tolgono comunque `style`, `id`, `class`, gli `<span>` e `<font>` rimasti vuoti e i blocchi fatti solo di un a capo: vale anche per quello che arriva per altre strade;
+  - "Titoletto" diventa un interruttore: premuto su un titolo lo riporta a paragrafo. Prima un titolo non si toglieva più.
+
+Provato nel browser riproducendo il caso esatto della guida.
+
+Facoltativo: *Nasce Fantasy Italia* non ha il problema, ma è scritto con a capo e grassetti invece di titoli ed elenchi veri. Si legge bene; dargli la stessa struttura della guida lo renderebbe più chiaro anche per i motori di ricerca.
 
 ---
 
