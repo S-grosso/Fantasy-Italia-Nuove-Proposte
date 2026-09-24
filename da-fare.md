@@ -71,8 +71,14 @@ Il modulo che esiste in `index.html` non è "Segnala un titolo" ma un Contatti g
 - [x] **Chiuso e collegato** (20 settembre 2026). L'invio viene intercettato e trasformato in un messaggio di posta già compilato, con `onsubmit="return false"` come rete di sicurezza per il caso in cui lo script non parta. Il modulo non si svuota, così se il programma di posta non si apre il testo non va perso. La sezione ora si raggiunge dal pulsante "Contatti" nella barra, dall'hash `#contatti` e dal link nel footer, che prima apriva una mail vuota.
 - [x] **Il "Segnala un titolo" vero** (20 settembre 2026), fatto insieme al 4.13: il modulo delle proposte scrive su `books` in stato `candidate` passando da una Edge Function. Turnstile non è stato usato, vedi 4.13 per il perché.
 
-### 4.4 Kit autore
-Alla prima approvazione di un titolo, avvisare autore o editore con: link alla scheda, immagine pronta per i social, badge da incorporare sul proprio sito. Richiede un campo contatto su `books` e un canale di invio email. È la leva di traffico a costo più basso: ogni approvazione genera una condivisione e un collegamento in entrata.
+### 4.4 Kit autore — fatto, in versione leggera
+- [x] **Fatto** (24 settembre 2026), senza servizi esterni né dipendenze nuove. Quando una scheda proposta dal modulo pubblico viene pubblicata, il pannello resta sulla scheda e mostra **"Scrivi all'autore"**: apre il programma di posta con un messaggio già compilato — link alla scheda, un testo pronto da condividere, il codice del badge e, solo per gli esordi, l'offerta di un'intervista. Si rilegge e si invia. **"Copia il messaggio"** fa da ripiego per i programmi di posta che tagliano i messaggi lunghi (la versione con l'esordio arriva a circa 1.800 caratteri, vicino alla soglia di alcuni).
+- Il testo del messaggio sta tutto in un punto di `catalogo-admin.html` (`KIT_OGGETTO`, `KIT_TESTO`, `KIT_INTERVISTA`), commentato, per poterlo cambiare senza toccare il resto.
+- Prima di aprire la posta il pannello controlla che la pagina statica del libro esista già: se non c'è ancora, il link funziona ma nelle chat l'anteprima uscirebbe senza copertina, quindi avvisa e chiede conferma.
+- Il badge è `badge/presente.svg`, ospitato sul sito, con i colori del catalogo.
+- Note legali aggiornate: la frase "non chiede né conserva dati di chi lo consulta" non era più vera dal 4.13, perché il modulo delle proposte conserva l'email di chi propone. Ora il testo dice a cosa serve quell'indirizzo e come chiederne la cancellazione.
+
+Resta fuori: l'**immagine pronta per i social** generata per ogni libro (copertina più marchio del sito). Oggi fa lo stesso lavoro l'anteprima del link, che mostra la copertina. Da riprendere se si vede che gli autori condividono soprattutto su Instagram, dove i link non producono anteprime.
 
 ### 4.5 Pagine autore, editore e mese
 Stesso generatore, tre nuovi tipi di pagina: `/autori/<slug>/`, `/editori/<slug>/`, `/uscite/<anno>-<mese>/`. La pagina mensile intercetta chi cerca novità senza un titolo in mente ed è la base della newsletter.
