@@ -60,7 +60,10 @@ jobs:
           fi
           python scripts/scout.py $ARGS
 
+      # Anche se lo Scout esce con errore: succede apposta quando il
+      # classificatore non risponde, e il backup del catalogo resta valido.
       - name: Salva il backup del catalogo
+        if: always()
         run: |
           # I candidati ora vanno su Supabase: qui si committa solo la copia
           # di sicurezza del catalogo, che il sito non usa ma che permette di

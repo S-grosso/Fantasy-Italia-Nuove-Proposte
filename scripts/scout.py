@@ -72,6 +72,11 @@ NON_LIBRI = [
     "kit ", "bundle", "cofanetto", "abbonamento", "gadget", "poster",
     "segnalibro", "shopper", "spilla", "tazza", "maglietta", "t-shirt",
     "buono regalo", "gift card", "iscrizione", "quota", "pubblicita",
+    # Varianti dello stesso libro vendute come prodotti a parte: la copia
+    # firmata o col taglio colorato non e' un titolo nuovo. Arrivavano in
+    # moderazione come "Hyperversum - COPIA AUTOGRAFATA".
+    "copia autografata", "copia firmata", "autografato", "sprayed edges",
+    "edizione con dedica",
 ]
 
 
@@ -971,6 +976,9 @@ ESCLUSIONI_BRAND = [
     "cenerentola", "aladdin", "bella addormentata", "cappuccetto",
     "principesse", "unicorni", "gabby", "nebulous stars", "mini cuccioli",
     "babbo natale", "natale",
+    # Serie Disney che passava il filtro per via della parola "magia":
+    # "Carica dei 101 - I Classici e la magia del backstage" e simili.
+    "i classici e la magia",
 ]
 
 # Dopo l'esclusione, serve almeno un indizio POSITIVO di fantasy.
@@ -992,6 +1000,10 @@ def passa_prefiltro(cand, obbligatorio):
     # Stadio 0: bundle, gadget, abbonamenti (vale per tutti gli editori)
     if any(x in titolo_low for x in NON_LIBRI):
         return False, "non e' un romanzo"
+    # Su Shopify la barra separa il titolo dalla variante di prodotto
+    # ("Wings of Reverie | Custom Sprayed Edges"): e' un libro gia' visto.
+    if " | " in cand.get("titolo", ""):
+        return False, "variante di un prodotto"
 
     if not obbligatorio:
         return True, ""
@@ -1193,6 +1205,23 @@ class Quota:
         return min(pausa, 30)  # mai oltre mezzo minuto per un singolo retry
 
 
+# Quando il classificatore non risponde, il candidato NON passa.
+#
+# Prima passava, con confidenza "bassa" e il motivo "da verificare a mano":
+# l'idea era non perdere niente. Il 30 luglio 2026 GitHub ha chiuso GitHub
+# Models, ogni chiamata ha cominciato a rispondere 410, e per due mesi in
+# moderazione e' arrivato tutto quello che superava il filtro a regole:
+# classici Disney, saggi, copie autografate, romanzi non fantasy, e quasi
+# tutto e' stato scartato a mano. Il tempo di chi modera costa piu' di un titolo
+# perso: un libro scartato qui torna nella finestra dei 30 giorni al giro
+# dopo, e comunque si recupera con --dal.
+NON_CLASSIFICATO = {
+    "ammesso": False,
+    "motivo": "classificatore non raggiungibile",
+    "_non_classificato": True,
+}
+
+
 def classifica(cand, token, quota, tentativi=2):
     """
     Chiama GitHub Models.
@@ -1202,10 +1231,7 @@ def classifica(cand, token, quota, tentativi=2):
     l'oggetto Quota) e andare avanti.
     """
     if not token or quota.esaurita:
-        return {"ammesso": True,
-                "motivo": "non classificato — da verificare a mano",
-                "genere": genere_esplicito(cand), "esordio": None,
-                "confidenza": "bassa"}
+        return NON_CLASSIFICATO
 
     opere = cand.get("_opere_autore")
     nota_naz = ""
@@ -1279,13 +1305,7 @@ SINOSSI:
                 break
             time.sleep(2)
 
-    return {
-        "ammesso": True,
-        "motivo": "non classificato — da verificare a mano",
-        "genere": genere_esplicito(cand),
-        "esordio": None,
-        "confidenza": "bassa",
-    }
+    return NON_CLASSIFICATO
 
 
 # --------------------------------------------------------------------------
@@ -1462,9 +1482,10 @@ def main():
     # --- Arricchimento e classificazione ---
     token = os.environ.get("GITHUB_TOKEN", "")
     if not token:
-        log("\n  ! GITHUB_TOKEN assente: i candidati passeranno senza classificazione.\n")
+        log("\n  ! GITHUB_TOKEN assente: senza classificatore non verra' proposto niente.\n")
 
     nuovi = []
+    non_classificati = []
     quota = Quota()
     log(f"\nClassifico {len(superstiti)} candidati...")
     inizio = time.time()
@@ -1514,6 +1535,11 @@ def main():
 
         esito = classifica(c, token, quota)
 
+        if esito.get("_non_classificato"):
+            non_classificati.append(c["titolo"])
+            log("        ? non classificato: resta fuori")
+            continue
+
         if not esito.get("ammesso"):
             log(f"        ✗ {esito.get('motivo', '')[:60]}")
             continue
@@ -1550,6 +1576,11 @@ def main():
     durata = int(time.time() - inizio)
     log(f"\n  (classificazione: {durata//60}m {durata%60}s)")
 
+    if non_classificati:
+        log(f"\n  ! {len(non_classificati)} candidati NON classificati, quindi non proposti:")
+        for titolo in non_classificati[:15]:
+            log(f"      - {titolo[:70]}")
+
     # --- Scrittura ---
     log("\n" + "=" * 60)
     log(f"Nuovi candidati: {len(nuovi)}")
@@ -1557,7 +1588,7 @@ def main():
     if args.dry_run:
         log("(dry-run: non scrivo nulla)")
         print(json.dumps(nuovi, ensure_ascii=False, indent=2)[:3000])
-        return
+        return 2 if non_classificati else 0
 
     durata_totale = int(time.time() - avvio)
 
@@ -1599,7 +1630,7 @@ def main():
         # Modalita' di ripiego, senza Supabase: si scrive il vecchio file.
         if not nuovi:
             log("Niente da aggiungere.")
-            return
+            return 2 if non_classificati else 0
         tutti = esistenti + nuovi
         CANDIDATES_FILE.write_text(
             json.dumps(tutti, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -1607,6 +1638,14 @@ def main():
         log(f"Scritto {CANDIDATES_FILE.relative_to(ROOT)} — "
             f"{len(tutti)} candidati in attesa.")
 
+    if non_classificati:
+        log("\n" + "=" * 60)
+        log(f"ATTENZIONE: il classificatore non ha risposto per {len(non_classificati)} "
+            "candidati, che NON sono stati proposti.")
+        log("Il giro esce con errore apposta, perche' GitHub lo segnali per email.")
+        return 2
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
