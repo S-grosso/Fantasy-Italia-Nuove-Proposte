@@ -586,6 +586,24 @@
     "status": "approved"
   },
   {
+    "id": "pmupohbj4e7kc",
+    "title": "Il Gatto delle Anime",
+    "author": "Emanuela Di Novo",
+    "publisher": "Acheron Books",
+    "year": 2024,
+    "series": "",
+    "isbn": "9791254981115",
+    "coverUrl": "https://nncnhlbaqnfqtjwembii.supabase.co/storage/v1/object/public/copertine/il-gatto-delle-anime.jpg",
+    "description": "Melvin è un bellissimo spirito gatto dal lungo pelo nero, ma la sua vita è ormai un inferno. Da quando è salito al potere il tirannico Dulsa, gli spiriti naturali del Piemonte vivono nel terrore della sua sete di potere inesauribile e della sua brama di continui sacrifici umani.\n\nGli altri spiriti gatto hanno sfidato Dulsa e sono stati esiliati. Solo Melvin è rimasto fedele al tiranno, ma è precipitato in fondo alla scala sociale e ormai subisce angherie di ogni tipo. Per riscattarsi deve mostrarsi utile portando sacrifici, e la conoscenza di Anna – una ragazzina con la sindrome di Down, bullizzata dai compagni, amante dei boschi e delle tradizioni locali – potrebbe trarlo d’impiccio.\n\nMelvin la circuisce con la promessa di diventare bella e avere delle amiche, creando così un sodalizio. I due alleati però scopriranno che Dulsa ha un oscuro segreto e dovranno affrontarne la furia. Solo così potranno capire chi sono, liberarsi delle etichette e trovare il proprio posto nel mondo.",
+    "storeAmazonUrl": "https://www.amazon.it/gatto-delle-anime-Emanuela-Novo/dp/B0D8CYHSFS",
+    "storePublisherUrl": "https://www.acheron.it/Il-Gatto-delle-Anime-p704703496",
+    "isDebut": true,
+    "genre": "Urban fantasy",
+    "labels": [],
+    "featured": false,
+    "status": "approved"
+  },
+  {
     "id": "b1755029691071",
     "title": "Gli eroi perduti. La saga completa",
     "author": "Simone Laudiero",
