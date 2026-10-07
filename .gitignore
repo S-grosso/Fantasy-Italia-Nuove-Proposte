@@ -17,3 +17,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# File dell'assistente (configurazione del server di prova locale): servono
+# solo sul computer di chi lavora, non al sito.
+.claude/

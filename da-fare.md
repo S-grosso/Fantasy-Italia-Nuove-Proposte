@@ -1,6 +1,6 @@
 # Fantasy Italia — Nuove Proposte · Stato e da fare
 
-Documento di lavoro. Aggiornato: 24 settembre 2026, a chiusura della prima sessione di lavoro in locale (20–24 settembre).
+Documento di lavoro. Aggiornato: 7 ottobre 2026, dopo la sessione sulla condivisione sui social e sulle fonti dello Scout.
 Repository: `S-grosso/Fantasy-Italia-Nuove-Proposte` — ramo `main` — sito pubblicato su GitHub Pages al dominio `www.fantasyitalianuoveproposte.it`.
 
 ---
@@ -22,11 +22,13 @@ Vincolo di fondo: un solo moderatore, tempo da hobby. Ogni scelta va valutata pe
 
 In ordine. Ogni voce rimanda al suo paragrafo nella sezione 4.
 
-1. **Le 7 fonti mute dello Scout** (4.18). Lumien, Zona 42, Angolazioni, PresentARTsi, Astro, Parallelo45 e La nuova carne restituiscono zero titoli a ogni giro, eppure Lumien e Zona 42 hanno libri in catalogo. Ora che il classificatore funziona, più titoli buoni in ingresso sono il modo più diretto di far crescere il catalogo. Da indagare fonte per fonte: endpoint raggiungibile, adattatore giusto, filtro per data, risposta vuota o in errore. Obiettivo collegato: dare al classificatore più contesto (categorie, paratesto) dove le fonti lo offrono.
-2. **Il primo giro vero dello Scout con Gemini**, lunedì 28 settembre (4.18): quanti candidati arrivano, con che motivazioni, e se il piano gratuito ha risposto.
-3. **Pagine editore e autore** (4.5), solo per chi ha almeno due titoli.
-4. **Il mese di uscita** (4.19), che serve alla pagina mensile e alla newsletter.
-5. Poi, in sessioni brevi: backup del catalogo anche da `pagine.yml` (4.12), feed RSS (4.7), la pulizia di `index.html` in una sessione a sé (4.9), la PWA da decidere (4.11), `e_admin()` (4.15), il campo genere (4.6).
+1. **Provare dal telefono la condivisione sui social** (4.20): è online dal 7 ottobre, provata nel browser ma non con le app vere. Da fare una volta su Android e, potendo, su iPhone.
+2. **Lo Scout non trova quasi niente** (4.18). Il classificatore funziona e i suoi verdetti sono giusti: il problema è che gli arrivano 3–8 titoli a giro, tutti fuori tema. I titoli buoni di ottobre li ha trovati il moderatore a mano, e uscivano da editori che lo Scout non guarda. Due lavori distinti: applicare la correzione A all'adattatore WordPress, già pronta e provata; e soprattutto una ricerca per genere e novità, non per editore.
+3. **La riga "Condividi" anche nelle pagine statiche** (4.20): chi arriva da un link condiviso atterra su `/libri/<slug>/` o `/articoli/<slug>/`, dove le icone non ci sono ancora.
+4. **Avviso doppioni su "Nuovo titolo"** (4.22), piccolo, quando si rimette mano al pannello.
+5. **Pagine editore e autore** (4.5), solo per chi ha almeno due titoli.
+6. **Il mese di uscita** (4.19), che serve alla pagina mensile e alla newsletter.
+7. Poi, in sessioni brevi: backup del catalogo anche da `pagine.yml` (4.12), feed RSS (4.7), la pulizia di `index.html` in una sessione a sé (4.9), la PWA da decidere (4.11), `e_admin()` (4.15), il campo genere (4.6).
 
 ---
 
@@ -34,7 +36,7 @@ In ordine. Ogni voce rimanda al suo paragrafo nella sezione 4.
 
 - **Dati**: Supabase (`https://nncnhlbaqnfqtjwembii.supabase.co`), tabelle `books` (`candidate`/`draft`/`approved`/`rejected`) e `news` (`draft`/`published`), più `scout_runs`. RLS con funzione `e_admin()` su allowlist di email; autenticazione Supabase Auth.
 - **Sito**: HTML/CSS/JS statico, nessun framework, nessun passaggio di build. `index.html` contiene catalogo, notizie e scheda libro; `catalogo-admin.html` e `news-admin.html` sono i pannelli di moderazione, ottimizzati per telefono.
-- **Automazione**: GitHub Actions. `scout.yml` (settimanale) esegue `scripts/scout.py`, che scopre le uscite da 14 editori monitorati e le classifica con GitHub Models. `pagine.yml` (ogni 6 ore) esegue `scripts/copertine.py` e `scripts/genera_pagine.py`.
+- **Automazione**: GitHub Actions. `scout.yml` (settimanale) esegue `scripts/scout.py`, che scopre le uscite da 14 editori monitorati e le classifica con Google Gemini (piano gratuito; fino a luglio 2026 con GitHub Models, poi chiuso). `pagine.yml` (ogni 6 ore) esegue `scripts/copertine.py` e `scripts/genera_pagine.py`.
 - **Niente cookie, niente analytics, nessun dato raccolto dai visitatori.** Il controllo del traffico passa da Google Search Console.
 
 ---
@@ -118,7 +120,7 @@ Iscrizione sul sito e invio mensile (Brevo, fornitore europeo con piano gratuito
 Eredità della migrazione a Supabase, tutte in `index.html` salvo dove indicato. Da fare in una sessione a sé, separata dalle modifiche funzionali.
 - Testi e nomi che raccontano un'architettura che non esiste più: "Caricamento catalogo da GitHub…", la funzione `loadFromGitHub()`, e soprattutto il messaggio d'errore "Non riesco a caricare i JSON da GitHub. Controlla gli URL Raw in **Impostazioni**" — che compare quando è Supabase a non rispondere e rimanda a campi che in Impostazioni non ci sono più.
 - Codice morto: il download di `data/candidates.json` da raw.githubusercontent (fermo a 16 candidati di un flusso superato), l'editor notizie locale con "esporta e carica su GitHub", il pulsante "Esporta catalogo".
-- File residui in radice: `Index.txt` (vecchia copia di `index.html`), `fantasy-italia-nuove-proposte.json` (10 titoli in formato pre-Supabase) e `post.html`, pagina che mostrava un articolo da sola e che dal 4.2 è superata dalle pagine statiche: non è collegata da nessuna parte.
+- File residui in radice: `Index.txt` (vecchia copia di `index.html`), `fantasy-italia-nuove-proposte.json` (10 titoli in formato pre-Supabase) e `post.html`, pagina che mostrava un articolo da sola e che dal 4.2 è superata dalle pagine statiche: non è collegata da nessuna parte. Dal 7 ottobre anche `logo_store.png`, il vecchio logo Amazon con il fondo colorato, sostituito da `logo-amazon.png` (4.21).
 
 ### 4.10 Aggiornamenti di manutenzione — fatto
 - [x] **Fatto** (20 settembre 2026). `actions/checkout@v5` e `actions/setup-python@v6` in entrambi i workflow: chiude l'avviso su Node 20.
@@ -186,12 +188,52 @@ Facoltativo: *Nasce Fantasy Italia* non ha il problema, ma è scritto con a capo
 - [x] **Nuovo classificatore: Google Gemini, piano gratuito** (24 settembre 2026). All'avvio lo Scout chiede a Google quali modelli sono disponibili e usa il primo di una lista di preferenze (`GEMINI_PREFERITI` in `scripts/scout.py`): se uno viene ritirato passa al successivo da solo. Prova prima l'API `interactions`, poi la classica `generateContent`, e legge la risposta in tutte le forme documentate. Sul piano gratuito Google può usare i testi inviati per migliorare i suoi prodotti: si inviano solo presentazioni pubbliche degli editori.
 - [x] **Chiave e prova** (24 settembre 2026): `GEMINI_API_KEY` nei secrets, prova da Actions superata con **3 verdetti giusti su 3**, e motivazioni sensate ("traduzione dall'inglese", "libro di divulgazione per bambini"). Risponde l'API `interactions`.
 - **Il piano gratuito è congestionato.** Alla prima prova il modello più nuovo rispondeva 503 ("high demand"); alla seconda erano sovraccarichi tutti e quattro, e dopo l'attesa ha risposto `gemini-3.5-flash`. Per questo lo Scout prova i modelli uno dopo l'altro e tiene quello che risponde. Se un lunedì fossero tutti irraggiungibili, i candidati restano fuori e arriva l'email: basta rilanciare lo Scout da Actions più tardi.
-- Da guardare al primo giro vero, lunedì 28 settembre: quanti candidati arrivano e con che motivazioni.
+- [x] **I primi due giri veri** (28 settembre e 5 ottobre 2026): zero candidati in entrambi, ma non per un guasto. Dopo doppioni e filtro a regole sono arrivati al classificatore 3 e 8 titoli, e li ha scartati tutti a ragione: una traduzione dal canadese, albi per bambini, un calendario dell'Avvento, un kit di carta, un racconto di Poe. Il 5 ottobre i modelli erano sovraccarichi (503) a più riprese: lo Scout è passato dall'uno all'altro e ha classificato tutto, in 3 minuti e mezzo invece di 18 secondi.
 - Le 4 proposte rimaste del 21 settembre, arrivate a classificatore spento (Cobalto, The Ordeals, La madre rossa, Profili d'ambra), sono state scartate: titoli non pertinenti o autori non italiani. La coda di moderazione è vuota.
-- [ ] **Fonti mute**: 7 fonti su 14 restituiscono zero titoli a ogni giro (Lumien, Zona 42, Angolazioni, PresentARTsi, Astro, Parallelo45, La nuova carne), eppure Lumien e Zona 42 hanno libri in catalogo. Può essere che non pubblichino nulla in 30 giorni, ma sette su quattordici, sempre, fa pensare ad adattatori rotti. Da indagare fonte per fonte.
+- [x] **Le 7 fonti mute, indagate una per una** (24 settembre 2026). Non erano tutte rotte:
+  - **Lumien, La nuova carne, Parallelo45, Angolazioni** funzionano: l'endpoint risponde e coincide con il sito. Semplicemente non pubblicano da più di 30 giorni (ultimi prodotti: 1° maggio, 10 luglio, 5 febbraio, 7 aprile 2026). La prova è nello storico: il 26 luglio, con la finestra dal 1° gennaio, avevano dato 6, 3, 3 e 2 titoli.
+  - **Zona 42** è cieca per costruzione: cerca su Google Books i libri degli autori già in catalogo, e ne ha uno solo ("Vargas", col solo cognome). Il negozio del sito non espone i prodotti, ma il blog annuncia ogni uscita con un articolo "*Titolo*: la copertina" che contiene autore, traduttore, ISBN e sinossi: 15 in dodici mesi. Sono quasi tutte traduzioni.
+  - **Astro Edizioni** è cieca e il sito è fermo dal 2023–25, ma l'editore pubblica ancora (IBS elenca uscite 2026). Si cerca un solo autore, Jack Roland.
+  - **PresentARTsi** non ha un sito raggiungibile e in catalogo ha un titolo del 2022: probabilmente non pubblica.
+- [ ] **Correzione A, adattatore WordPress: pronta e provata, non applicata.** Due difetti veri, che riguardano tutte le fonti WordPress comprese quelle che funzionano. Le categorie arrivavano al classificatore illeggibili (su La nuova carne "0 1 2 3", altrove voci tecniche come `post-16174 instock purchasable`, che riempivano i 300 caratteri concessi dal prompt). E l'autore si perdeva: è scritto nelle classi del prodotto (`autore-`, `pa_autore-`, `product_author-`, `authors-`), e senza autore il classificatore è tenuto a scartare — così sono cadute le due schede di La nuova carne. Su Angolazioni finiva come autore "149, 148", gli ID numerici dei termini. Provata dal vivo su tutte le fonti: stessi titoli prima e dopo, La Corte passa da 0 a 11 autori, il genere riconosciuto migliora ("urban fantasy" invece di "fantasy"). 77 righe in `scripts/scout.py`, tutte in `adapter_wordpress` e in una funzione nuova, `leggi_class_list`. Alcatraz non migliora: non espone né classi né tassonomie, ma ha l'ISBN nell'estratto.
+- [ ] **Correzione B**: un adattatore che legge gli annunci del blog di Zona 42.
+- [ ] **Correzione C**: gli autori ricorrenti di Astro nella lista `autori_watch` di `data/sources.json`.
+- [ ] **Il problema vero è la copertura.** I sette titoli entrati a ottobre li ha trovati il moderatore su social e siti: Bookabook, Armenia, Aculei Edizioni, Fucine Editoriali, due autopubblicati e uno di Acheron. Solo l'ultimo editore è tra i 14 monitorati. Sistemare gli adattatori aiuta poco: serve una ricerca per genere e novità, non per editore. Da progettare.
+- Le fonti su Google Books non si possono provare in locale: senza chiave la quota anonima risponde 429 a ogni chiamata. O si passa `GOOGLE_BOOKS_KEY` dall'ambiente della sessione, o si verifica con un giro da Actions. Sui sette ISBN di ottobre Open Library ne ha trovati zero.
 
 ### 4.19 Il mese di uscita
 Il catalogo registra solo l'anno (`year`). Senza il mese non si possono fare la pagina mensile delle uscite (5.1), la base della newsletter (4.8) né statistiche per mese nel rapporto annuale (5.3). Serve una colonna nuova (per esempio `published_month`, `AAAA-MM`), compilata dallo Scout quando la fonte lo indica (Google Books dà spesso la data completa, i feed degli editori la data di pubblicazione del prodotto) e in moderazione quando manca. Conviene farla presto: ogni scheda approvata senza mese è un dato da ricostruire a mano più avanti. Per le 53 schede esistenti si può tentare un recupero da Google Books tramite ISBN.
+
+### 4.20 Condivisione sui social — fatto per il sito, da fare per le pagine statiche
+- [x] **Schede dei libri** (7 ottobre 2026). Nella scheda aperta, sotto i pulsanti dei negozi, una riga "Condividi" con sei icone: WhatsApp, Instagram, Facebook, X, Bluesky e copia link. "Copia link" c'era già come pulsante col testo: è rimasto, come icona, perché copre tutto ciò che non ha un'icona (posta, Telegram, Threads).
+- [x] **Articoli** (7 ottobre 2026). La stessa riga sotto titolo e data, senza Instagram: vuole un'immagine, e per gli articoli non se ne prepara una.
+
+Come è fatto:
+- **WhatsApp, Facebook, X e Bluesky sono link semplici** che aprono il servizio con il messaggio già scritto (titolo, autore, indirizzo). Nessuno script di terzi nella pagina, quindi nessun cookie e nessun tracciamento: resta vero quanto dichiarato al punto 2.
+- **Instagram non accetta link, vuole un'immagine**, e un sito non può aprire il suo compositore. Dal telefono l'icona passa al pannello di condivisione l'immagine 1080×1350 già sullo Storage (4.4), e Instagram chiede dove metterla: Feed, Stories, Reels, Messages. La didascalia viene copiata negli appunti nello stesso momento, perché Instagram ignora il testo passato da fuori. Dal computer l'icona scarica l'immagine. Gli hashtag stanno in un punto solo di `index.html`, `IG_ETICHETTE`.
+- **L'indirizzo dell'immagine si ricava dallo slug** (`copertine/instagram/<slug>.jpg`, lo stesso nome che usa `immagini_social.py`). La colonna `social_url` resta leggibile solo dal pannello: nessuna modifica al database.
+- **Scheda appena pubblicata**: l'immagine non c'è finché non gira `pagine.yml`, entro sei ore. L'icona lo dice. Lo stesso vale per l'anteprima con copertina su WhatsApp e Facebook, che dipende dalla pagina statica.
+- **Safari** rifiuta la condivisione se nel frattempo si è atteso lo scaricamento dell'immagine: in quel caso l'icona si evidenzia e chiede un secondo tocco, che parte subito.
+- **Icone**: tracciati di Simple Icons (licenza CC0) scritti nella pagina, in tinta col testo. Nessun file né dipendenza in più.
+- Una sola funzione, `rigaCondividi`, costruisce la riga per libri e articoli.
+
+Provato nel browser, anche in emulazione telefono con i quattro esiti di Instagram (riuscita, pannello chiuso, rifiuto di Safari, immagine non pronta). **Non provato con le app vere**: lo può fare solo chi ha gli account.
+
+Uso consigliato su Instagram: Feed per ogni titolo, con autore ed editore taggati e l'autore invitato come collaboratore; poi lo stesso post nelle Stories con l'adesivo "Link" verso la scheda, l'unico link cliccabile di Instagram oltre alla bio.
+
+- [ ] **Pagine statiche.** `/libri/<slug>/` e `/articoli/<slug>/` sono generate da `scripts/genera_pagine.py` e non hanno ancora la riga: chi arriva da un link condiviso non trova le icone per ricondividere. Va aggiunta al generatore.
+- [ ] **Un'immagine per gli articoli**, se si vuole Instagram anche lì: stesso meccanismo di `immagini_social.py`, con titolo e data al posto della copertina.
+
+### 4.21 Pulsanti dei negozi e logo Amazon — fatto
+- [x] **Fatto** (7 ottobre 2026). I pulsanti "Amazon" e "Store editore" misurano sempre 100 px: prima crescevano fino a 130, e Amazon da solo era più largo che in coppia. Sugli schermi stretti, in coppia accanto alla copertina, si stringono di qualche pixel invece di uscire dalla card.
+- Quando lo store dell'editore manca, Amazon sta nella riga dei tag, dopo "Esordio", invece di occupare una riga sua: se "Esordio" è andato a capo per un genere lungo, gli si affianca.
+- Il logo Amazon ha il fondo trasparente (`logo-amazon.png`) e prende il colore del pulsante: il riquadro di tonalità diversa non si vede più. Il sito lo carica direttamente. Prima chiedeva `Logo Amazon.png`, che non esiste, e ripiegava sul file ospitato su GitHub dopo un 404 per ogni scheda.
+
+### 4.22 Inserimento diretto dei titoli
+Esiste già: nel pannello di moderazione, sotto i filtri, **"Nuovo titolo"** apre l'editor vuoto, e "Pubblica in catalogo" mette la scheda online senza passare dal modulo pubblico né dalla coda. Verificato il 7 ottobre 2026 simulando il salvataggio del pannello in una transazione annullata: la scheda entra come pubblicata e riceve lo slug. Passare dal pannello evita anche il limite di tre proposte al giorno per indirizzo, che vale per il modulo.
+
+- [ ] **Avviso doppioni.** Il modulo pubblico controlla titolo+autore e ISBN in tutti gli stati; "Nuovo titolo" no. Oggi il catalogo si tiene a mente, ma gli scartati (44) non si vedono sul sito e un titolo rifiutato mesi prima può rientrare. Un avviso prima del salvataggio, non un blocco.
+- **Compilazione automatica dall'ISBN: non ora.** Sarebbe il vero risparmio di tempo, ma sui sette ISBN di ottobre Open Library ne ha trovati zero, e la copertura di Google Books su autopubblicati e piccoli editori è da misurare con la chiave. Amazon, da cui arrivano copertina e sinossi, non si lascia leggere da un programma.
 
 ---
 
@@ -261,3 +303,6 @@ Regola: non vendere spazi prima di avere numeri misurabili da mostrare.
 - La copia di lavoro ha i fine riga CRLF (`core.autocrlf=true`) mentre il repository li salva LF: le modifiche fatte con script vanno riscritte in CRLF, altrimenti il diff mostra l'intero file come cambiato.
 - Prima di `git pull --rebase` si committa: i workflow committano sul ramo più volte al giorno, e con modifiche in sospeso il riallineamento si rifiuta.
 - La service key va passata dall'ambiente della sessione, mai scritta in un file della cartella.
+- Per provare il sito nel browser serve un server locale (`python -m http.server 8765` dalla cartella): aprendo `index.html` come file gli indirizzi `/libri/<slug>/` non funzionano. L'assistente lo avvia da `.claude/launch.json`, un file suo che non va versionato. Dopo una modifica conviene ricaricare con un parametro qualunque nell'indirizzo (`/?x=2`): il browser tiene in memoria la versione di prima.
+- `scout.py` in locale si ferma sulla freccia `→` dei suoi messaggi, perché la console di Windows non è in UTF-8: va lanciato con `PYTHONIOENCODING=utf-8`. Su Actions non succede.
+- OneDrive tiene bloccati i file per qualche istante mentre li sincronizza: una scrittura da script può fallire con "Invalid argument" senza aver toccato niente. Si riprova.

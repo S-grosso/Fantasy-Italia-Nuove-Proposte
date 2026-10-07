@@ -151,6 +151,9 @@
   .news-article{max-width:900px;margin:0 auto;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:16px}
   .backRow{margin-top:16px;display:flex;gap:10px}
   .news-meta{color:var(--muted);font-size:12px;margin-bottom:10px}
+  /* La riga "Condividi" sta fra la data e il testo: serve aria sotto. */
+  #articleShare{margin-bottom:16px}
+  #articleShare .dlg-share{margin-top:0}
 
   /* Footer */
   footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
@@ -336,6 +339,7 @@
       <button class="btn" id="btnBackTop">← Torna agli articoli</button>
       <h2 id="articleTitle" style="margin:6px 0 4px 0"></h2>
       <div id="articleMeta" class="news-meta"></div>
+      <div id="articleShare"></div>
       <div id="articleBody"></div>
       <div class="backRow"><button class="btn" id="btnBackBottom">← Torna agli articoli</button></div>
     </div>
@@ -1378,6 +1382,12 @@
     $('#articleMeta').textContent  = new Date(n.ts || Date.now())
       .toLocaleDateString('it-IT', {day:'numeric', month:'long', year:'numeric'});
     $('#articleBody').innerHTML    = n.bodyHtml || '';
+    // Le stesse icone delle schede dei libri, senza Instagram: vuole
+    // un'immagine, e per gli articoli non ne prepariamo una. Solo per gli
+    // articoli con un indirizzo proprio, cioè quelli pubblicati.
+    const condividi = $('#articleShare');
+    condividi.innerHTML = '';
+    if(n.slug) condividi.appendChild(rigaCondividi(location.origin + urlArticolo(n), n.title || ''));
     showTab('newsview');
     window.scrollTo({top:0});
     const dove = urlArticolo(n);
@@ -1528,10 +1538,8 @@
   // WhatsApp, Facebook, X e Bluesky sono semplici link che aprono il servizio
   // con il messaggio già scritto: nessuno script di terzi nella pagina,
   // quindi nessun cookie e nessun tracciamento finché non si tocca l'icona.
-  // L'anteprima con la copertina la produce la pagina statica del libro.
-  function linkCondivisione(b){
-    const url = location.origin + urlLibro(b);
-    const testo = '«' + (b.title || '') + '»' + (b.author ? ' di ' + b.author : '');
+  // L'anteprima con l'immagine la produce la pagina statica (libro o articolo).
+  function linkCondivisione(url, testo){
     const e = encodeURIComponent;
     return {
       whatsapp: ['Condividi su WhatsApp', 'https://wa.me/?text=' + e(testo + '\n' + url)],
@@ -1539,6 +1547,43 @@
       x:        ['Condividi su X',        'https://x.com/intent/post?text=' + e(testo) + '&url=' + e(url)],
       bluesky:  ['Condividi su Bluesky',  'https://bsky.app/intent/compose?text=' + e(testo + '\n' + url)]
     };
+  }
+  // La riga "Condividi", uguale per le schede dei libri e per gli articoli.
+  // creaInstagram è facoltativa: riceve la riga di stato e restituisce il
+  // pulsante. La passano solo i libri, gli unici ad avere l'immagine che
+  // Instagram richiede.
+  function rigaCondividi(url, testo, creaInstagram){
+    const frag = document.createDocumentFragment();
+    const cond = document.createElement('div'); cond.className = 'dlg-share';
+    const voce = document.createElement('span'); voce.className = 'muted'; voce.textContent = 'Condividi';
+    cond.appendChild(voce);
+    // La riga sotto le icone dice cosa è successo e cosa fare dopo: un'icona
+    // non può cambiare testo, e il pannello di condivisione non spiega niente.
+    const nota = document.createElement('div'); nota.className = 'muted dlg-nota'; nota.hidden = true;
+    nota.setAttribute('role', 'status');
+    const link = linkCondivisione(url, testo);
+    const aLink = nome => {
+      const a = pulsanteIcona('a', nome, link[nome][0]);
+      a.href = link[nome][1]; a.target = '_blank'; a.rel = 'noopener';
+      return a;
+    };
+    cond.appendChild(aLink('whatsapp'));
+    if(creaInstagram) cond.appendChild(creaInstagram(nota));
+    ['facebook', 'x', 'bluesky'].forEach(n => cond.appendChild(aLink(n)));
+    // Il link copiato resta: copre tutto ciò che non ha un'icona qui
+    // (posta, Telegram, Threads…).
+    if(navigator.clipboard){
+      const c = pulsanteIcona('button', 'link', 'Copia il link');
+      c.addEventListener('click', () => {
+        navigator.clipboard.writeText(url).then(() => {
+          nota.textContent = 'Link copiato.'; nota.hidden = false;
+        }).catch(() => {});
+      });
+      cond.appendChild(c);
+    }
+    frag.appendChild(cond);
+    frag.appendChild(nota);
+    return frag;
   }
 
   // Instagram è un caso a parte: non accetta link, vuole un'immagine.
@@ -1668,35 +1713,10 @@
 
     // Riga "Condividi", solo per le schede che hanno un indirizzo proprio.
     if(b.slug){
-      const cond = document.createElement('div'); cond.className = 'dlg-share';
-      const voce = document.createElement('span'); voce.className = 'muted'; voce.textContent = 'Condividi';
-      cond.appendChild(voce);
-      // La riga sotto le icone dice cosa è successo e cosa fare dopo: un'icona
-      // non può cambiare testo, e il pannello di condivisione non spiega niente.
-      const nota = document.createElement('div'); nota.className = 'muted dlg-nota'; nota.hidden = true;
-      nota.setAttribute('role', 'status');
-      const link = linkCondivisione(b);
-      const aLink = nome => {
-        const a = pulsanteIcona('a', nome, link[nome][0]);
-        a.href = link[nome][1]; a.target = '_blank'; a.rel = 'noopener';
-        return a;
-      };
-      cond.appendChild(aLink('whatsapp'));
-      cond.appendChild(pulsanteInstagram(b, nota));
-      ['facebook', 'x', 'bluesky'].forEach(n => cond.appendChild(aLink(n)));
-      // Il link copiato resta: copre tutto ciò che non ha un'icona qui
-      // (posta, Telegram, Threads…).
-      if(navigator.clipboard){
-        const c = pulsanteIcona('button', 'link', 'Copia il link');
-        c.addEventListener('click', () => {
-          navigator.clipboard.writeText(location.origin + urlLibro(b)).then(() => {
-            nota.textContent = 'Link copiato.'; nota.hidden = false;
-          }).catch(() => {});
-        });
-        cond.appendChild(c);
-      }
-      frag.appendChild(cond);
-      frag.appendChild(nota);
+      frag.appendChild(rigaCondividi(
+        location.origin + urlLibro(b),
+        '«' + (b.title || '') + '»' + (b.author ? ' di ' + b.author : ''),
+        nota => pulsanteInstagram(b, nota)));
     }
     return frag;
   }
