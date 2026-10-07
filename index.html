@@ -49,7 +49,8 @@
   .meta{flex:1;min-width:0}
   .meta h3{margin:0 0 6px 0;font-size:16px;line-height:1.2}
   .by{color:var(--muted);font-size:13px;margin-bottom:6px}
-  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  /* align-items: nella riga dei tag può esserci il pulsante Amazon, più alto. */
+  .tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
   .tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
   .tag.label{color:#9fc8ff;border-color:#2854aa}
   .tag.genre{color:#c9a0ff;border-color:#5a3d8a;text-transform:lowercase}
@@ -65,18 +66,21 @@
   .btn.small{font-size:12px;padding:6px 8px}
 
   /* Store buttons: 35x100, nero Amazon */
-  /* Larghezza elastica invece che fissa: i due pulsanti si dividono lo
-     spazio disponibile e restano affiancati dentro la card, sia su
-     schermo largo sia su telefono. */
+  /* Sempre 100px, da soli o in coppia: prima crescevano fino a 130 e il
+     pulsante Amazon cambiava larghezza da una card all'altra. Possono solo
+     stringersi, sugli schermi dove due da 100 non stanno accanto alla
+     copertina. */
   .btn-amz, .btn-store{
-    flex:1 1 0;min-width:0;max-width:130px;height:35px;padding:0 6px;
+    flex:0 1 100px;min-width:0;max-width:100px;height:35px;padding:0 6px;
     display:inline-flex;align-items:center;justify-content:center;
     border-radius:10px;font-size:12px;font-weight:600;letter-spacing:.2px;
     border:1px solid #0c0e14;text-decoration:none;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .btn-amz{background:#131a22}
-  .btn-amz img{display:block;max-height:70%;max-width:90%;object-fit:contain}
+  /* Il file non ha margini: 48% dell'altezza del pulsante tiene il logo
+     della misura che aveva quando il margine era dentro l'immagine. */
+  .btn-amz img{display:block;max-height:48%;max-width:90%;object-fit:contain}
   .btn-store{background:#131a22;color:#fff;text-decoration:none}
 
   .row{display:flex;gap:10px;flex-wrap:wrap}
@@ -913,16 +917,22 @@
     if(amz){
       const btn=document.createElement('a'); btn.href=amz; btn.target='_blank'; btn.rel='noopener'; btn.className='btn-amz'; btn.title='Amazon';
       const imgA=document.createElement('img'); imgA.alt='Amazon'; imgA.loading='lazy';
-      imgA.src='Logo Amazon.png';
-      imgA.onerror=()=>{ imgA.onerror=null; imgA.src='https://raw.githubusercontent.com/S-grosso/Fantasy-Italia-Nuove-Proposte/main/logo_store.png'; };
-      btn.appendChild(imgA); actions.appendChild(btn);
+      // Logo a fondo trasparente, cosi' prende il colore del pulsante. Percorso
+      // assoluto: con una scheda aperta l'indirizzo e' /libri/<slug>/ e un
+      // percorso relativo lo cercherebbe la' dentro.
+      imgA.src='/logo-amazon.png';
+      btn.appendChild(imgA);
+      // Da solo, Amazon sta nella riga dei tag, dopo "Esordio": una riga
+      // tutta sua, sotto un tag andato a capo, allungava la card per niente.
+      (b.storePublisherUrl ? actions : tags).appendChild(btn);
     }
     if(b.storePublisherUrl){
       const s=document.createElement('a'); s.href=b.storePublisherUrl; s.target='_blank'; s.rel='noopener'; s.className='btn btn-store'; s.textContent='Store editore';
       actions.appendChild(s);
     }
 
-    meta.appendChild(h3); meta.appendChild(by); meta.appendChild(desc); meta.appendChild(tags); meta.appendChild(actions);
+    meta.appendChild(h3); meta.appendChild(by); meta.appendChild(desc); meta.appendChild(tags);
+    if(actions.childNodes.length) meta.appendChild(actions);
     el.appendChild(aCover); el.appendChild(meta);
     return el;
   }
@@ -1646,8 +1656,7 @@
       const imgA = document.createElement('img'); imgA.alt = 'Amazon'; imgA.loading = 'lazy';
       // Percorso assoluto: con la scheda aperta l'indirizzo è /libri/<slug>/,
       // e un percorso relativo cercherebbe il logo dentro quella cartella.
-      imgA.src = '/Logo%20Amazon.png';
-      imgA.onerror = () => { imgA.onerror = null; imgA.src = 'https://raw.githubusercontent.com/S-grosso/Fantasy-Italia-Nuove-Proposte/main/logo_store.png'; };
+      imgA.src = '/logo-amazon.png';
       btn.appendChild(imgA); actions.appendChild(btn);
     }
     if(b.storePublisherUrl){
