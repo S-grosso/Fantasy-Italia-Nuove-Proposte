@@ -1,6 +1,6 @@
 # Fantasy Italia — Nuove Proposte · Stato e da fare
 
-Documento di lavoro. Aggiornato: 7 ottobre 2026, dopo la sessione sulla condivisione sui social e sulle fonti dello Scout.
+Documento di lavoro. Aggiornato: 11 ottobre 2026, dopo la sessione sulla condivisione sui social e sulle fonti dello Scout.
 Repository: `S-grosso/Fantasy-Italia-Nuove-Proposte` — ramo `main` — sito pubblicato su GitHub Pages al dominio `www.fantasyitalianuoveproposte.it`.
 
 ---
@@ -110,6 +110,8 @@ La pagina mensile delle uscite, prevista qui in origine, non si può fare: il ca
 ### 4.6 Qualità del campo genere
 `genre` è testo libero e contiene voci composte separate da virgola. Serve normalizzazione e, a regime, una lista chiusa con possibilità di aggiunta controllata dalla moderazione.
 
+- [x] **La ricerca del catalogo guarda anche il sottogenere** (11 ottobre 2026): "romantasy" o "dark fantasy" nella casella trovano le schede con quell'etichetta. Il confronto ignora le maiuscole e cerca dentro il testo, quindi regge le grafie diverse che oggi convivono ("dark fantasy", "Dark fantasy", "Grim dark fantasy"); la normalizzazione resta da fare, ma per la ricerca non è urgente.
+
 ### 4.7 Feed RSS
 `/feed.xml` con le ultime schede approvate e gli ultimi articoli. Costo basso, utile agli aggregatori e ai lettori forti.
 
@@ -119,7 +121,7 @@ Iscrizione sul sito e invio mensile (Brevo, fornitore europeo con piano gratuito
 ### 4.9 Pulizie
 Eredità della migrazione a Supabase, tutte in `index.html` salvo dove indicato. Da fare in una sessione a sé, separata dalle modifiche funzionali.
 - Testi e nomi che raccontano un'architettura che non esiste più: "Caricamento catalogo da GitHub…", la funzione `loadFromGitHub()`, e soprattutto il messaggio d'errore "Non riesco a caricare i JSON da GitHub. Controlla gli URL Raw in **Impostazioni**" — che compare quando è Supabase a non rispondere e rimanda a campi che in Impostazioni non ci sono più.
-- Codice morto: il download di `data/candidates.json` da raw.githubusercontent (fermo a 16 candidati di un flusso superato), l'editor notizie locale con "esporta e carica su GitHub", il pulsante "Esporta catalogo".
+- Codice morto: il download di `data/candidates.json` da raw.githubusercontent (fermo a 16 candidati di un flusso superato), l'editor notizie locale con "esporta e carica su GitHub". Il pulsante "Esporta catalogo" è stato tolto l'11 ottobre 2026: compariva solo da amministratore e scaricava il catalogo nel formato precedente a Supabase; la copia di sicurezza la scrive lo Scout in `data/catalogo.json` (4.12).
 - File residui in radice: `Index.txt` (vecchia copia di `index.html`), `fantasy-italia-nuove-proposte.json` (10 titoli in formato pre-Supabase) e `post.html`, pagina che mostrava un articolo da sola e che dal 4.2 è superata dalle pagine statiche: non è collegata da nessuna parte. Dal 7 ottobre anche `logo_store.png`, il vecchio logo Amazon con il fondo colorato, sostituito da `logo-amazon.png` (4.21).
 
 ### 4.10 Aggiornamenti di manutenzione — fatto
@@ -228,6 +230,8 @@ Uso consigliato su Instagram: Feed per ogni titolo, con autore ed editore taggat
 - [x] **Fatto** (7 ottobre 2026). I pulsanti "Amazon" e "Store editore" misurano sempre 100 px: prima crescevano fino a 130, e Amazon da solo era più largo che in coppia. Sugli schermi stretti, in coppia accanto alla copertina, si stringono di qualche pixel invece di uscire dalla card.
 - Quando lo store dell'editore manca, Amazon sta nella riga dei tag, dopo "Esordio", invece di occupare una riga sua: se "Esordio" è andato a capo per un genere lungo, gli si affianca.
 - Il logo Amazon ha il fondo trasparente (`logo-amazon.png`) e prende il colore del pulsante: il riquadro di tonalità diversa non si vede più. Il sito lo carica direttamente. Prima chiedeva `Logo Amazon.png`, che non esiste, e ripiegava sul file ospitato su GitHub dopo un 404 per ogni scheda.
+
+- [x] **Barra del catalogo allineata** (11 ottobre 2026): su schermo largo il filtro "Anno ≥", che ha l'etichetta sopra, e la casella di ricerca, che non ce l'ha, finivano a due altezze diverse. Ora si allineano alla base e hanno la stessa altezza.
 
 ### 4.22 Inserimento diretto dei titoli
 Esiste già: nel pannello di moderazione, sotto i filtri, **"Nuovo titolo"** apre l'editor vuoto, e "Pubblica in catalogo" mette la scheda online senza passare dal modulo pubblico né dalla coda. Verificato il 7 ottobre 2026 simulando il salvataggio del pannello in una transazione annullata: la scheda entra come pubblicata e riceve lo slug. Passare dal pannello evita anche il limite di tre proposte al giorno per indirizzo, che vale per il modulo.
