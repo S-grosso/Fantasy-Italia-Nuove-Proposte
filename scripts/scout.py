@@ -547,6 +547,49 @@ def leggi_class_list(classi):
     return categorie, autori
 
 
+def pulisci_titolo_prodotto(titolo):
+    """
+    Toglie dal titolo la dicitura di prevendita, che e' del negozio e non del
+    libro: "Pre-Ordine – I peccati del sangue nero", "Pre-Order Luna Rossa",
+    "Io sono Odio – Pre-ordine" (Winter Edizioni le usa tutte e tre). Lasciata
+    li', finirebbe nella scheda proposta e il titolo non si riconoscerebbe piu'
+    come gia' presente in catalogo.
+    """
+    titolo = re.sub(r"^\s*pre-?\s?ord(?:er|ine)\s*(?:[–—:-]\s*)?", "", titolo, flags=re.IGNORECASE)
+    titolo = re.sub(r"\s*(?:[–—-]\s*|\()pre-?\s?ord(?:er|ine)\)?\s*$", "", titolo, flags=re.IGNORECASE)
+    return titolo.strip()
+
+
+# Le etichette con cui alcuni editori chiudono la descrizione del prodotto:
+# "AUTORE: Laura Dudu GENERE: Dark Fantasy COLLANA: Lupus PAGINE: 646 ISBN: ..."
+# Servono a capire dove finisce un valore: tolto l'HTML resta una riga sola.
+ETICHETTE_SCHEDA = (r"uscita|autor[ei]|autrice|genere|collana|data di pubblicazione|"
+                    r"pubblicazione|pagine|dimension[ei]|formato|copertina|illustrazion[ei]|"
+                    r"edges|isbn|spedizione|prezzo|traduzione|traduttore|traduttrice")
+
+
+def scheda_tecnica(testo):
+    """
+    Legge autore, genere e ISBN dalla scheda tecnica scritta nel testo.
+
+    Dove c'e', e' il dato piu' affidabile: l'ha scritto l'editore, con accenti
+    e punteggiatura, mentre dalle classi del prodotto si ricava solo uno slug.
+    Il valore finisce alla prossima etichetta nota; il tetto di 80 caratteri
+    evita che un "autore:" capitato dentro una frase si porti via un paragrafo.
+    """
+    trovati = {}
+    for campo, etichetta in (("autore", r"autor[ei]|autrice"), ("genere", r"genere"), ("isbn", r"isbn")):
+        m = re.search(
+            rf"\b(?:{etichetta})\s*:\s*(.{{1,80}}?)\s*(?=\b(?:{ETICHETTE_SCHEDA})\b[^:]{{0,25}}:|$)",
+            testo or "", flags=re.IGNORECASE)
+        valore = m.group(1).strip(" .,;-") if m else ""
+        # Due punti nel valore: l'etichetta era vuota ("AUTORE: GENERE: ...")
+        # e si e' preso il campo dopo.
+        if valore and ":" not in valore:
+            trovati[campo] = valore
+    return trovati
+
+
 def adapter_wordpress(source, dal):
     """
     Adapter generico per la REST API di WordPress. Funziona con qualunque
@@ -586,19 +629,32 @@ def adapter_wordpress(source, dal):
             break
 
         for p in dati:
-            titolo = strip_html((p.get("title") or {}).get("rendered", ""))
+            titolo = pulisci_titolo_prodotto(
+                strip_html((p.get("title") or {}).get("rendered", "")))
             if not titolo:
                 continue
+
+            # Alcuni negozi scrivono "Autore – Titolo" nel nome del prodotto
+            # (Aculei). Va detto fonte per fonte in sources.json: altrove lo
+            # stesso trattino separa il titolo dal sottotitolo.
+            autore_nel_titolo = ""
+            if source.get("titolo_con_autore"):
+                parti = re.split(r"\s+[–—-]\s+", titolo, maxsplit=1)
+                if len(parti) == 2 and parti[1].strip():
+                    autore_nel_titolo, titolo = parti[0].strip(), parti[1].strip()
 
             # L'excerpt e' la presentazione editoriale: contiene i segnali
             # piu' preziosi ("gia' autore di...", "esordio", il genere).
             excerpt = strip_html((p.get("excerpt") or {}).get("rendered", ""))
             contenuto = strip_html((p.get("content") or {}).get("rendered", ""))
+            scheda = scheda_tecnica(contenuto)
 
             autore = ""
             if tax and isinstance(p.get(tax), list):
                 nomi = [autori_cache.get(i, "") for i in p[tax]]
                 autore = " & ".join(n for n in nomi if n)
+            if not autore:
+                autore = autore_nel_titolo or scheda.get("autore", "")
 
             # Fallback autore per i post type senza tassonomia dedicata (es. il
             # 'book' di Acheron): molti temi mettono l'autore in un meta o in
@@ -622,6 +678,10 @@ def adapter_wordpress(source, dal):
             categorie, autori_classi = leggi_class_list(p.get("class_list"))
             if not autore and autori_classi:
                 autore = " & ".join(autori_classi)
+            # Il genere dichiarato dall'editore va fra le categorie: nella
+            # sinossi sta in fondo, oltre il punto in cui il prompt la taglia.
+            if scheda.get("genere"):
+                categorie.append("genere: " + scheda["genere"])
 
             # La copertina arriva dentro _embedded, annidata in profondita'.
             copertina = ""
@@ -645,6 +705,7 @@ def adapter_wordpress(source, dal):
                 "sinossi": contenuto or excerpt,
                 "paratesto": excerpt,  # separato: e' la voce dell'editore
                 "copertina": copertina,
+                "isbn": normalizza_isbn(scheda.get("isbn")) or "",
                 "data": p.get("date", ""),
                 "categorie": categorie,
                 "_fonte": "woocommerce",

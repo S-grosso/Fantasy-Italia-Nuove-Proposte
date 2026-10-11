@@ -110,4 +110,9 @@ jobs:
             QUANTI=$(python -c "import json;print(len(json.load(open('data/catalogo.json'))))")
             git commit -m "Backup catalogo: $QUANTI titoli"
           fi
+          # Sul ramo committano anche il workflow delle pagine e chi lavora al
+          # sito: se qualcuno ha pubblicato mentre lo Scout girava, senza
+          # riallinearsi il push verrebbe rifiutato e gli scarti di questo
+          # giro andrebbero persi.
+          git pull --rebase
           git push

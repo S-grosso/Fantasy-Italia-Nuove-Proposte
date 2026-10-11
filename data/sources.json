@@ -116,6 +116,21 @@
         "Present ARTsì",
         "Presentartsi"
       ]
+    },
+    {
+      "publisher": "Winter Edizioni",
+      "adapter": "woocommerce",
+      "endpoint": "https://winteredizioni.com/wp-json/wp/v2/product",
+      "attivo": true,
+      "note": "Aggiunto il 2026-10-11. Fantasy, horror e gotico. I titoli in prevendita iniziano con 'Pre-Ordine': lo Scout lo toglie. Autore e genere stanno nella scheda tecnica in fondo alla descrizione ('AUTORE: ... GENERE: ...')."
+    },
+    {
+      "publisher": "Aculei Edizioni",
+      "adapter": "woocommerce",
+      "endpoint": "https://www.aculei.it/wp-json/wp/v2/product",
+      "titolo_con_autore": true,
+      "attivo": true,
+      "note": "Aggiunto il 2026-10-11. Narrativa, poesia e una collana di fantastico (Stramonio). Il nome del prodotto e' 'Autore – Titolo': 'titolo_con_autore' dice allo Scout di separarli."
     }
   ]
 }
