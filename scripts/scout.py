@@ -404,6 +404,71 @@ def get_json(url, params=None):
 # Adapter: uno per piattaforma
 # --------------------------------------------------------------------------
 
+# Classi CSS di un prodotto WooCommerce che portano l'autore. I temi usano nomi
+# diversi: tassonomia 'autore' (Lumien), attributo 'pa_autore' (La nuova carne),
+# tassonomia 'product_author' (La Corte), 'authors' (Angolazioni). Non sempre
+# sono esposte dalla REST API come campo, ma finiscono tutte in class_list.
+CLASSI_AUTORE = ("autore-", "pa_autore-", "pa_author-", "product_author-",
+                 "book_author-", "authors-")
+
+# Le sole classi che dicono qualcosa del libro: collana, categorie, tag e gli
+# altri attributi del prodotto (genere, formato). Il resto ('post-16174',
+# 'instock', 'purchasable'...) riempiva i 300 caratteri che il prompt concede
+# alle categorie prima di arrivare a quelle utili.
+CLASSI_CATEGORIA = ("product_cat-", "product_tag-", "pa_")
+
+
+def senza_suffisso(slug):
+    # Il "-2" finale e' WordPress che distingue due slug uguali
+    # ("parallelo45-2"): nel nome non significa niente. Si toglie solo se
+    # resta qualcosa, per non svuotare valori come "2026".
+    return re.sub(r"(.)-\d+$", r"\1", slug)
+
+
+def leggi_class_list(classi):
+    """
+    Ricava da class_list le categorie leggibili e gli autori.
+
+    WordPress la restituisce come lista, ma come oggetto {"0": ..., "1": ...}
+    quando PHP ne ha tolto qualche voce (succede su La nuova carne): letta
+    cosi' com'era, al classificatore arrivavano come categorie le chiavi
+    "0 1 2 3".
+
+    Dallo slug non si recuperano accenti ne' punti ("matthew-m-bartlett" diventa
+    "Matthew M Bartlett"): meglio di un autore vuoto, che il classificatore e'
+    tenuto a scartare, e in moderazione si corregge.
+    """
+    if isinstance(classi, dict):
+        classi = list(classi.values())
+    if not isinstance(classi, list):
+        return [], []
+
+    categorie, autori = [], []
+    for c in classi:
+        c = str(c)
+        pref_autore = next((p for p in CLASSI_AUTORE if c.startswith(p)), None)
+        if pref_autore:
+            slug = senza_suffisso(c[len(pref_autore):])
+            nome = " ".join(w.capitalize() for w in slug.split("-") if w)
+            if nome and nome not in autori:
+                autori.append(nome)
+            continue
+        pref_cat = next((p for p in CLASSI_CATEGORIA if c.startswith(p)), None)
+        if pref_cat:
+            voce = c[len(pref_cat):]
+            # Negli attributi il nome dell'attributo resta come etichetta
+            # ("pa_formato-cartaceo" -> "formato: cartaceo").
+            if pref_cat == "pa_" and "-" in voce:
+                nome_attr, valore = voce.split("-", 1)
+                voce = f"{nome_attr}: {senza_suffisso(valore)}"
+            else:
+                voce = senza_suffisso(voce)
+            voce = voce.replace("-", " ").strip()
+            if voce and voce not in categorie:
+                categorie.append(voce)
+    return categorie, autori
+
+
 def adapter_wordpress(source, dal):
     """
     Adapter generico per la REST API di WordPress. Funziona con qualunque
@@ -463,11 +528,22 @@ def adapter_wordpress(source, dal):
             if not autore:
                 for campo in ("author_name", "book_author", "autore", "authors"):
                     val = p.get(campo) or (p.get("meta") or {}).get(campo)
+                    # Una tassonomia esposta dalla REST API arriva come lista di
+                    # ID numerici ('authors' di Angolazioni: [149, 148]): non e'
+                    # un nome, e finiva nella scheda come autore "149, 148".
+                    if isinstance(val, list) and all(isinstance(x, int) for x in val):
+                        continue
                     if isinstance(val, list):
                         val = ", ".join(str(x) for x in val)
                     if val and isinstance(val, str) and val.strip():
                         autore = strip_html(val)
                         break
+
+            # Ultimo ripiego: l'autore scritto nelle classi del prodotto. Viene
+            # dopo la tassonomia perche' questa conserva accenti e punti.
+            categorie, autori_classi = leggi_class_list(p.get("class_list"))
+            if not autore and autori_classi:
+                autore = " & ".join(autori_classi)
 
             # La copertina arriva dentro _embedded, annidata in profondita'.
             copertina = ""
@@ -492,7 +568,7 @@ def adapter_wordpress(source, dal):
                 "paratesto": excerpt,  # separato: e' la voce dell'editore
                 "copertina": copertina,
                 "data": p.get("date", ""),
-                "categorie": p.get("class_list", []),  # contiene product_cat-*
+                "categorie": categorie,
                 "_fonte": "woocommerce",
             })
 
