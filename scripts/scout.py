@@ -277,7 +277,7 @@ def supa_leggi_libri():
                 headers=supa_headers({
                     "Range": f"{pagina*per_pagina}-{(pagina+1)*per_pagina-1}"
                 }),
-                params={"select": "id,title,author,publisher,isbn,status"},
+                params={"select": "id,title,author,publisher,isbn,status,store_publisher_url"},
                 timeout=TIMEOUT,
             )
             if r.status_code not in (200, 206):
@@ -563,7 +563,7 @@ def pulisci_titolo_prodotto(titolo):
 # Le etichette con cui alcuni editori chiudono la descrizione del prodotto:
 # "AUTORE: Laura Dudu GENERE: Dark Fantasy COLLANA: Lupus PAGINE: 646 ISBN: ..."
 # Servono a capire dove finisce un valore: tolto l'HTML resta una riga sola.
-ETICHETTE_SCHEDA = (r"uscita|autor[ei]|autrice|genere|collana|data di pubblicazione|"
+ETICHETTE_SCHEDA = (r"uscita|autor[ei]|autrice|genere|sottogenere|collana|data di pubblicazione|"
                     r"pubblicazione|pagine|dimension[ei]|formato|copertina|illustrazion[ei]|"
                     r"edges|isbn|spedizione|prezzo|traduzione|traduttore|traduttrice")
 
@@ -578,11 +578,18 @@ def scheda_tecnica(testo):
     evita che un "autore:" capitato dentro una frase si porti via un paragrafo.
     """
     trovati = {}
-    for campo, etichetta in (("autore", r"autor[ei]|autrice"), ("genere", r"genere"), ("isbn", r"isbn")):
+    for campo, etichetta in (("autore", r"autor[ei]|autrice"), ("genere", r"genere"),
+                             ("sottogenere", r"sottogenere"), ("isbn", r"isbn"),
+                             ("pubblicazione", r"data di pubblicazione|pubblicazione|uscita")):
         m = re.search(
             rf"\b(?:{etichetta})\s*:\s*(.{{1,80}}?)\s*(?=\b(?:{ETICHETTE_SCHEDA})\b[^:]{{0,25}}:|$)",
             testo or "", flags=re.IGNORECASE)
         valore = m.group(1).strip(" .,;-") if m else ""
+        if campo == "isbn":
+            # Dopo il numero puo' seguire altro testo ("... Disponibile su"):
+            # si tiene solo il numero.
+            numero = re.search(r"97[89](?:[\s-]?\d){10}", valore)
+            valore = numero.group(0) if numero else ""
         # Due punti nel valore: l'etichetta era vuota ("AUTORE: GENERE: ...")
         # e si e' preso il campo dopo.
         if valore and ":" not in valore:
@@ -854,6 +861,21 @@ def adapter_rss(source, dal):
     return trovati
 
 
+def resoconto_google(conto, dal):
+    """
+    Dove si perdono i volumi fra la risposta di Google Books e i candidati.
+
+    Senza questa riga una fonte a zero non dice niente: puo' essere che
+    Google non restituisca volumi, o che li restituisca e li scarti il filtro
+    su editore e anno. Acheron, Delos e Sperling sono passate da 3, 3 e 1
+    titoli a zero senza che nel registro comparisse un motivo.
+    """
+    log(f"      Google Books: {conto['ricerche']} ricerche "
+        f"({conto['mute']} senza risposta, {conto['vuote']} senza volumi), "
+        f"{conto['volumi']} volumi ricevuti; scartati {conto['altro_editore']} di un altro "
+        f"editore, {conto['vecchi']} usciti prima del {dal.year}, {conto['senza_data']} senza data")
+
+
 def adapter_google_books_autori(source, dal, autori_editore=None):
     """
     Per gli editori SENZA API di catalogo (Acheron, Zona 42, Astro, Sperling):
@@ -879,7 +901,10 @@ def adapter_google_books_autori(source, dal, autori_editore=None):
     autori.discard("")
 
     if not autori:
-        return []  # nessun autore noto: niente da cercare
+        log("      nessun autore noto per questo editore: niente da cercare")
+        return []
+
+    conto = dict.fromkeys(("ricerche", "mute", "vuote", "volumi", "altro_editore", "vecchi", "senza_data"), 0)
 
     for autore in sorted(autori):
         dati = get_json(GOOGLE_BOOKS, {
@@ -890,8 +915,13 @@ def adapter_google_books_autori(source, dal, autori_editore=None):
             "printType": "books",
         })
         time.sleep(0.4)
+        conto["ricerche"] += 1
         if not isinstance(dati, dict):
+            conto["mute"] += 1
             continue
+        if not dati.get("items"):
+            conto["vuote"] += 1
+        conto["volumi"] += len(dati.get("items", []))
 
         for v in dati.get("items", []):
             info = v.get("volumeInfo", {})
@@ -907,14 +937,17 @@ def adapter_google_books_autori(source, dal, autori_editore=None):
             ed_pubblicato = (info.get("publisher") or "").lower()
             nome_ed = editore.lower().split()[0]  # 'acheron' da 'Acheron Books'
             if ed_pubblicato and nome_ed not in ed_pubblicato:
+                conto["altro_editore"] += 1
                 continue
 
             visti.add(titolo)
             data_pub = info.get("publishedDate", "")
             try:
                 if int(data_pub[:4]) < dal.year:
+                    conto["vecchi"] += 1
                     continue
             except (ValueError, IndexError):
+                conto["senza_data"] += 1
                 continue
 
             isbn = ""
@@ -940,6 +973,7 @@ def adapter_google_books_autori(source, dal, autori_editore=None):
                 "_fonte": "google_books_autori",
             })
 
+    resoconto_google(conto, dal)
     return trovati
 
 
@@ -964,6 +998,8 @@ def adapter_google_books(source, dal):
         varianti.append(prima)
     varianti.extend(source.get("alias", []))
 
+    conto = dict.fromkeys(("ricerche", "mute", "vuote", "volumi", "altro_editore", "vecchi", "senza_data"), 0)
+
     for nome in varianti:
         dati = get_json(GOOGLE_BOOKS, {
             "q": f'inpublisher:"{nome}"',
@@ -973,9 +1009,15 @@ def adapter_google_books(source, dal):
             "printType": "books",
         })
         time.sleep(0.5)
+        conto["ricerche"] += 1
 
-        if not isinstance(dati, dict) or not dati.get("items"):
+        if not isinstance(dati, dict):
+            conto["mute"] += 1
             continue
+        if not dati.get("items"):
+            conto["vuote"] += 1
+            continue
+        conto["volumi"] += len(dati["items"])
 
         for v in dati["items"]:
             info = v.get("volumeInfo", {})
@@ -988,8 +1030,10 @@ def adapter_google_books(source, dal):
             try:
                 anno = int(data_pub[:4])
                 if anno < dal.year:
+                    conto["vecchi"] += 1
                     continue
             except (ValueError, IndexError):
+                conto["senza_data"] += 1
                 continue
 
             isbn = ""
@@ -1015,10 +1059,148 @@ def adapter_google_books(source, dal):
                 "_fonte": "google_books",
             })
 
+    resoconto_google(conto, dal)
+    return trovati
+
+
+# Tetto di sicurezza alle pagine lette per editore in un giro: un elenco
+# impazzito non deve trasformare lo Scout in un programma che martella un sito.
+MAX_PAGINE_PRODOTTO = 80
+# I titoli piu' vecchi di cosi' non si propongono: il catalogo segue le uscite
+# recenti, e il filtro per anno del sito mostra gli ultimi tre.
+ANNI_SEGUITI = 2
+
+
+def url_pulito(url):
+    """Lo stesso indirizzo scritto in modi diversi deve risultare uguale."""
+    return html.unescape(url or "").split("#")[0].split("?")[0].rstrip("/")
+
+
+def leggi_pagina(url):
+    try:
+        r = requests.get(url, headers=UA, timeout=TIMEOUT)
+        return r.text if r.status_code == 200 else ""
+    except requests.RequestException:
+        return ""
+
+
+def dati_prodotto(pagina):
+    """
+    I dati strutturati (JSON-LD, tipo Product) che i negozi mettono nella
+    pagina per i motori di ricerca: nome, descrizione, immagine. Sono il modo
+    piu' stabile di leggere un prodotto senza dipendere dall'impaginazione.
+    """
+    for blocco in re.findall(r"(?is)<script[^>]+application/ld\+json[^>]*>(.*?)</script>", pagina):
+        try:
+            dati = json.loads(blocco)
+        except ValueError:
+            continue
+        voci = dati if isinstance(dati, list) else [dati]
+        if isinstance(dati, dict) and isinstance(dati.get("@graph"), list):
+            voci = dati["@graph"]
+        for v in voci:
+            if isinstance(v, dict) and v.get("@type") == "Product":
+                return v
+    return {}
+
+
+def adapter_pagine_prodotto(source, dal, url_noti=None):
+    """
+    Per i negozi senza API (Wix, costruttori di siti): si legge l'elenco dei
+    prodotti — di solito la sitemap del negozio — e poi una pagina alla volta.
+    Copre: Spirito Libero Edizioni, Fucine Editoriali.
+
+    Due differenze dagli altri adapter, entrambe perche' qui ogni titolo
+    costa una richiesta al sito dell'editore:
+    - le pagine gia' note (in catalogo o fra gli scarti ricordati) non si
+      rileggono: dopo il primo giro restano solo i prodotti nuovi;
+    - questi elenchi non hanno date, quindi non c'e' finestra dei 30 giorni.
+      Dove la pagina dichiara l'anno e il libro e' vecchio, lo si segna come
+      scarto diretto: non va al classificatore e non si rilegge.
+    """
+    trovati = []
+    editore = source["publisher"]
+    filtro = source.get("filtro_url", "")
+    url_noti = url_noti or set()
+
+    indirizzi = []
+    for elenco in source.get("elenco", []):
+        for u in re.findall(r"https?://[^\s\"'<>\\]+", leggi_pagina(elenco)):
+            u = url_pulito(u)
+            if filtro and filtro in u and u not in indirizzi:
+                indirizzi.append(u)
+        time.sleep(PAUSA)
+
+    da_leggere = [u for u in indirizzi if u not in url_noti][:MAX_PAGINE_PRODOTTO]
+    log(f"      {len(indirizzi)} prodotti in elenco, {len(da_leggere)} non ancora visti")
+
+    for u in da_leggere:
+        pagina = leggi_pagina(u)
+        time.sleep(PAUSA)
+        dati = dati_prodotto(pagina)
+        nome = strip_html(str(dati.get("name") or ""))
+        if not nome:
+            continue
+
+        descrizione = strip_html(str(dati.get("description") or ""))
+        testo = strip_html(re.sub(r"(?is)<(script|style)\b.*?</\1>", " ", pagina))
+        # La scheda tecnica puo' stare nella descrizione (Fucine) o solo nel
+        # testo della pagina (Spirito Libero): vale la prima che la riporta.
+        scheda = scheda_tecnica(testo)
+        scheda.update(scheda_tecnica(descrizione))
+
+        # "TITOLO di Autore" nel nome del prodotto: si spezza sull'ultimo
+        # " di ", perche' il titolo puo' contenerne altri.
+        titolo, autore = nome, scheda.get("autore", "")
+        separatore = source.get("nome_con_autore")
+        if separatore and separatore in nome:
+            titolo, autore = (x.strip() for x in nome.rsplit(separatore, 1))
+
+        # La descrizione di Fucine prosegue con la scheda tecnica e con
+        # residui di impaginazione: la sinossi finisce dove inizia la scheda.
+        inizio_scheda = re.search(r"\b(?:autor[ei]|autrice|genere|formato)\s*:", descrizione, re.IGNORECASE)
+        sinossi = descrizione[:inizio_scheda.start()].strip(" -") if inizio_scheda and inizio_scheda.start() > 80 else descrizione
+
+        # Al classificatore serve anche il resto della pagina: spesso la
+        # descrizione strutturata e' una riga e la trama sta sotto. Non finisce
+        # nella scheda proposta, perche' porta con se' i testi dei pulsanti.
+        paratesto = ""
+        if sinossi[:40] and sinossi[:40] in testo:
+            paratesto = testo[testo.index(sinossi[:40]):][:1500]
+
+        immagine = dati.get("image")
+        if isinstance(immagine, list):
+            immagine = immagine[0] if immagine else ""
+        if isinstance(immagine, dict):
+            immagine = immagine.get("contentUrl") or immagine.get("url") or ""
+
+        anno = re.search(r"(?:19|20)\d\d", scheda.get("pubblicazione", ""))
+        anno = int(anno.group(0)) if anno else None
+
+        cand = {
+            "titolo": titolo,
+            "autore": autore,
+            "editore": editore,
+            "url": u,
+            "sinossi": sinossi,
+            "paratesto": paratesto,
+            "copertina": immagine if isinstance(immagine, str) else "",
+            "isbn": normalizza_isbn(scheda.get("isbn")) or "",
+            "data": str(anno) if anno else "",
+            "categorie": [f"{k}: {scheda[k]}" for k in ("genere", "sottogenere") if scheda.get(k)],
+            "_fonte": "pagine_prodotto",
+        }
+        if anno is None:
+            cand["_anno_ignoto"] = True
+        elif anno < dal.year - ANNI_SEGUITI:
+            cand["_scarto_diretto"] = f"uscito nel {anno}, prima del periodo seguito"
+        trovati.append(cand)
+
     return trovati
 
 
 ADAPTERS = {
+    "pagine_prodotto": adapter_pagine_prodotto,
     "wordpress": adapter_wordpress,
     "woocommerce": adapter_wordpress,  # alias: e' lo stesso adapter generico
     "shopify": adapter_shopify,
@@ -1791,6 +1973,7 @@ def main():
             "publisher": b.get("publisher") or "",
             "isbn": b.get("isbn") or "",
             "status": b.get("status") or "",
+            "url": b.get("store_publisher_url") or "",
         } for b in libri]
         scartati_noti = sum(1 for b in catalogo if b["status"] == "rejected")
         log(f"Supabase: {len(catalogo)} schede note "
@@ -1841,6 +2024,13 @@ def main():
     avvio = time.time()
     resa_fonti = {}   # editore -> quanti elementi ha prodotto
 
+    # Servono gia' qui, non solo al dedup: l'adapter che legge i negozi una
+    # pagina alla volta salta gli indirizzi gia' in catalogo o gia' scartati.
+    scarti = leggi_scarti()
+    scarti_prima = len(scarti)
+    url_noti = {url_pulito(b.get("url")) for b in catalogo if b.get("url")}
+    url_noti.update(url_pulito(v.get("url")) for v in scarti.values() if v.get("url"))
+
     for src in config["sources"]:
         if not src.get("attivo", True):
             continue
@@ -1855,6 +2045,8 @@ def main():
             if src["adapter"] == "google_books_autori":
                 autori_ed = autori_per_editore.get(nome, set())
                 trovati = fn(src, dal, autori_ed)
+            elif src["adapter"] == "pagine_prodotto":
+                trovati = fn(src, dal, url_noti)
             else:
                 trovati = fn(src, dal)
         except Exception as e:
@@ -1874,9 +2066,8 @@ def main():
 
     # --- Dedup e prefiltro ---
     superstiti = []
-    scartati = {"gia_in_catalogo": 0, "prefiltro": 0, "non_libri": 0, "gia_valutati": 0}
-    scarti = leggi_scarti()
-    scarti_prima = len(scarti)
+    scartati = {"gia_in_catalogo": 0, "prefiltro": 0, "non_libri": 0, "gia_valutati": 0,
+                "fuori_periodo": 0}
 
     for g in grezzi:
         # La chiave si calcola qui, sui dati come arrivano dalla fonte: piu'
@@ -1900,6 +2091,18 @@ def main():
             scartati["gia_in_catalogo"] += 1
             continue
 
+        # Troppo vecchio per il catalogo: lo dice la pagina stessa, non serve
+        # il classificatore. Si ricorda, cosi' la pagina non viene riletta.
+        if g.get("_scarto_diretto"):
+            scarti[g["_chiave_scarto"]] = {
+                "chiave": g["_chiave_scarto"], "titolo": g["titolo"],
+                "autore": g.get("autore", ""), "editore": g["editore"],
+                "url": g.get("url", ""), "motivo": g["_scarto_diretto"],
+                "data": datetime.now(timezone.utc).date().isoformat(),
+            }
+            scartati["fuori_periodo"] += 1
+            continue
+
         ok, motivo = passa_prefiltro(g, g.get("_prefiltro_obbligatorio", False))
         if not ok:
             scartati["non_libri" if "romanzo" in motivo else "prefiltro"] += 1
@@ -1910,7 +2113,8 @@ def main():
     log(f"Dopo dedup e prefiltro: {len(superstiti)} da valutare")
     log(f"  scartati: {scartati['gia_in_catalogo']} già in catalogo, "
         f"{scartati['prefiltro']} fuori tema, {scartati['non_libri']} non romanzi, "
-        f"{scartati['gia_valutati']} già scartati dal classificatore")
+        f"{scartati['gia_valutati']} già scartati in un giro precedente, "
+        f"{scartati['fuori_periodo']} usciti prima del periodo seguito")
 
     # PRIORITA' DELLE FONTI. Bug scoperto nel log: Giunti da solo produce 1000
     # elementi, per lo piu' spazzatura generalista, e satura il limite PRIMA che
@@ -1926,6 +2130,7 @@ def main():
         "google_books_autori": 1,   # fonti per autore: mirate, poche e buone
         "google_books": 1,
         "rss": 1,
+        "pagine_prodotto": 0,       # Spirito Libero, Fucine: piccoli editori di genere
         "shopify": 2,               # Giunti, ACS: generalisti, tanta spazzatura
     }
     superstiti.sort(key=lambda g: PRIORITA.get(g.get("_fonte", ""), 3))
@@ -2038,6 +2243,7 @@ def main():
                     "titolo": c["titolo"],
                     "autore": c.get("autore", ""),
                     "editore": c["editore"],
+                    "url": c.get("url", ""),
                     "motivo": (esito.get("motivo") or "")[:200],
                     "data": datetime.now(timezone.utc).date().isoformat(),
                 }
@@ -2067,7 +2273,11 @@ def main():
             "status": "candidate",
             "source": c.get("_fonte", ""),
             "confidence": esito.get("confidenza", "bassa"),
-            "reason": (esito.get("motivo") or "")[:300],
+            # Dove la fonte non dichiara l'anno, quello scritto qui sopra e'
+            # l'anno in corso per mancanza di meglio: va detto a chi modera.
+            "reason": ((esito.get("motivo") or "")[:300]
+                       + (" — Anno di uscita non indicato dalla fonte: da verificare."
+                          if c.get("_anno_ignoto") else "")),
         })
         log(f"        ✓ {esito.get('genere') or 'fantasy'} · "
             f"esordio={esito.get('esordio')} · conf={esito.get('confidenza')}")

@@ -131,6 +131,29 @@
       "titolo_con_autore": true,
       "attivo": true,
       "note": "Aggiunto il 2026-10-11. Narrativa, poesia e una collana di fantastico (Stramonio). Il nome del prodotto e' 'Autore – Titolo': 'titolo_con_autore' dice allo Scout di separarli."
+    },
+    {
+      "publisher": "Spirito Libero Edizioni",
+      "adapter": "pagine_prodotto",
+      "endpoint": null,
+      "elenco": [
+        "https://www.spiritoliberoedizioni.it/store-products-sitemap.xml"
+      ],
+      "filtro_url": "/product-page/",
+      "nome_con_autore": " di ",
+      "attivo": true,
+      "note": "Aggiunto il 2026-10-11. Sito Wix, nessuna API: si legge la sitemap del negozio e poi ogni pagina. Il nome del prodotto e' 'TITOLO di Autore'. Horror, thriller, fantasy, romantasy. La sitemap non ha date: le pagine gia' viste non si rileggono."
+    },
+    {
+      "publisher": "Fucine Editoriali",
+      "adapter": "pagine_prodotto",
+      "endpoint": null,
+      "elenco": [
+        "https://fucineeditoriali.it/sitemap_ecommerce.xml"
+      ],
+      "filtro_url": "/shop/products/",
+      "attivo": true,
+      "note": "Aggiunto il 2026-10-11. Sito su piattaforma Aruba, nessuna API. Ogni pagina riporta 'Autore: ... Genere: ... Pubblicazione: ... ISBN: ...': i titoli usciti piu' di due anni fa vengono messi da parte senza classificarli."
     }
   ]
 }
