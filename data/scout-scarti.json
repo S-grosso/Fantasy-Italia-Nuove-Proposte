@@ -1,0 +1,82 @@
+[
+  {
+    "chiave": "berenice",
+    "titolo": "Berenice",
+    "autore": "",
+    "editore": "Agenzia Alcatraz",
+    "motivo": "Si tratta di un celebre racconto dell'autore americano Edgar Allan Poe, non di un romanzo di un autore italiano.",
+    "data": "2026-10-11"
+  },
+  {
+    "chiave": "booknooklabellaelabestialabibliotecadibelledioramiinminiaturadisney",
+    "titolo": "Book Nook La Bella e la Bestia. La biblioteca di Belle. Diorami in miniatura",
+    "autore": "DISNEY",
+    "editore": "Giunti",
+    "motivo": "Non è un romanzo ma un kit creativo per costruire un diorama (book nook), e l'autore non è italiano.",
+    "data": "2026-10-11"
+  },
+  {
+    "chiave": "calendariodellavvento",
+    "titolo": "Calendario dell'Avvento",
+    "autore": "",
+    "editore": "Another Coffee Stories Editore",
+    "motivo": "Non è un romanzo ma una box/cofanetto promozionale contenente più libri e l'autore non è indicato.",
+    "data": "2026-10-11"
+  },
+  {
+    "chiave": "dad",
+    "titolo": "DAD",
+    "autore": "",
+    "editore": "Another Coffee Stories Editore",
+    "motivo": "Non è un'opera fantasy, bensì narrativa contemporanea/introspettiva senza elementi sovrannaturali.",
+    "data": "2026-10-11"
+  },
+  {
+    "chiave": "kavarilratto",
+    "titolo": "Kavar il ratto",
+    "autore": "",
+    "editore": "Agenzia Alcatraz",
+    "motivo": "Autore straniero (Thomas Owen, autore belga) e si tratta di un'antologia di racconti",
+    "data": "2026-10-11"
+  },
+  {
+    "chiave": "latestavolante",
+    "titolo": "La testa volante",
+    "autore": "",
+    "editore": "Agenzia Alcatraz",
+    "motivo": "Autore non indicato e opera pulp/weird straniera in traduzione (da Strange Stories), oltre a non essere un romanzo (racconto di 54 pagine)",
+    "data": "2026-10-11"
+  },
+  {
+    "chiave": "perchesogniamopintadera",
+    "titolo": "Perché sogniamo?",
+    "autore": "PINTADERA",
+    "editore": "Giunti",
+    "motivo": "Si tratta di un albo illustrato per bambini scritto da un autore straniero (duo catalano Fran Pintadera - Santander).",
+    "data": "2026-10-11"
+  },
+  {
+    "chiave": "sirboneelacrostatadilamponi",
+    "titolo": "SIRBONE E LA CROSTATA DI LAMPONI",
+    "autore": "",
+    "editore": "Another Coffee Stories Editore",
+    "motivo": "Si tratta di una favola per l'infanzia di sole 50 pagine, non di un romanzo.",
+    "data": "2026-10-11"
+  },
+  {
+    "chiave": "whendealingwithdragonsswift",
+    "titolo": "When dealing with dragons",
+    "autore": "SWIFT",
+    "editore": "Giunti",
+    "motivo": "L'autrice (Dana Swift) è straniera, l'opera è una traduzione.",
+    "data": "2026-10-11"
+  },
+  {
+    "chiave": "wondrousillatooscurodellameravigliadisney",
+    "titolo": "Wondrous Il lato oscuro della meraviglia",
+    "autore": "DISNEY",
+    "editore": "Giunti",
+    "motivo": "L'autrice effettiva è la scrittrice canadese Heather Fawcett, non un autore italiano",
+    "data": "2026-10-11"
+  }
+]
