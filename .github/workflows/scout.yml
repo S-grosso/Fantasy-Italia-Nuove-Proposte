@@ -89,14 +89,25 @@ jobs:
           git config user.name  "Scout"
           git config user.email "actions@github.com"
           git add data/catalogo.json
+          # Gli scarti del classificatore: lo Scout li rilegge al giro dopo
+          # per non rivalutare gli stessi titoli. Il file nasce al primo scarto.
+          if [ -f data/scout-scarti.json ]; then
+            git add data/scout-scarti.json
+          fi
 
           # --cached confronta con l'indice: funziona anche su file nuovi,
           # a differenza di 'git diff' nudo che ignora i non tracciati.
           if git diff --cached --quiet; then
-            echo "Catalogo invariato: niente da committare."
+            echo "Catalogo e scarti invariati: niente da committare."
             exit 0
           fi
 
-          QUANTI=$(python -c "import json;print(len(json.load(open('data/catalogo.json'))))")
-          git commit -m "Backup catalogo: $QUANTI titoli"
+          # Il messaggio dice cosa e' cambiato davvero: un commit "Backup
+          # catalogo" che tocca solo gli scarti confonderebbe chi legge la storia.
+          if git diff --cached --quiet -- data/catalogo.json; then
+            git commit -m "Scout: scarti del classificatore aggiornati"
+          else
+            QUANTI=$(python -c "import json;print(len(json.load(open('data/catalogo.json'))))")
+            git commit -m "Backup catalogo: $QUANTI titoli"
+          fi
           git push

@@ -37,6 +37,14 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCES_FILE = ROOT / "data" / "sources.json"
 CATALOG_FILE = ROOT / "data" / "catalogo.json"
 CANDIDATES_FILE = ROOT / "data" / "candidates.json"
+# Gli scarti del classificatore, per non rivalutarli a ogni giro (vedi
+# leggi_scarti). Dopo 400 giorni una voce non serve piu': la finestra delle
+# fonti e' di 30 giorni, quella di Google Books dell'anno in corso.
+SCARTI_FILE = ROOT / "data" / "scout-scarti.json"
+SCARTI_GIORNI = 400
+# Quanto aspettare prima di riprovare i candidati rimasti senza verdetto: il
+# piano gratuito di Gemini conta le richieste al minuto.
+PAUSA_RIPASSO = 20
 
 TIMEOUT = 25
 PAUSA = 1.0  # cortesia verso i server degli editori
@@ -388,16 +396,86 @@ def get_json(url, params=None):
     # Aggancia la API key a ogni chiamata Google Books. Senza chiave la quota
     # anonima e' praticamente zero (429 "quota_limit_value: 0"): e' la ragione
     # per cui arricchimento e ricerca per autore fallivano a intermittenza.
-    if GOOGLE_BOOKS_KEY and url.startswith(GOOGLE_BOOKS):
+    google = url.startswith(GOOGLE_BOOKS)
+    if GOOGLE_BOOKS_KEY and google:
         params = dict(params or {})
         params["key"] = GOOGLE_BOOKS_KEY
     try:
         r = requests.get(url, headers=UA, params=params, timeout=TIMEOUT)
         if r.status_code != 200:
+            if google:
+                annota_errore_google(r.status_code, r.text)
             return None
         return r.json()
-    except (requests.RequestException, ValueError):
+    except (requests.RequestException, ValueError) as e:
+        if google:
+            # Solo il tipo di errore: il messaggio di requests riporta
+            # l'indirizzo completo, chiave compresa.
+            annota_errore_google(type(e).__name__, "")
         return None
+
+
+# Google Books che non risponde era invisibile: get_json restituiva None e la
+# fonte risultava "0 elementi", come un editore che non ha pubblicato niente.
+# Sei fonti a zero per due settimane sono passate cosi'. Qui si conta ogni
+# chiamata fallita e si scrive nel registro il primo messaggio di ogni tipo.
+ERRORI_GOOGLE = {}
+
+
+def annota_errore_google(stato, corpo):
+    primo = stato not in ERRORI_GOOGLE
+    ERRORI_GOOGLE[stato] = ERRORI_GOOGLE.get(stato, 0) + 1
+    if not primo:
+        return
+    messaggio = ""
+    try:
+        messaggio = (json.loads(corpo).get("error") or {}).get("message", "")
+    except (ValueError, AttributeError):
+        messaggio = strip_html(corpo or "")
+    # La chiave non deve finire in un registro pubblico, nemmeno per sbaglio.
+    if GOOGLE_BOOKS_KEY:
+        messaggio = messaggio.replace(GOOGLE_BOOKS_KEY, "***")
+    log(f"      ! Google Books non risponde ({stato}): {messaggio[:200] or 'nessun dettaglio'}")
+
+
+def riepilogo_errori_google():
+    if not ERRORI_GOOGLE:
+        return
+    dettaglio = ", ".join(f"{stato} × {n}" for stato, n in ERRORI_GOOGLE.items())
+    log(f"  ! Google Books: {sum(ERRORI_GOOGLE.values())} chiamate fallite ({dettaglio}). "
+        "Le fonti che passano da li' e l'arricchimento ne risentono.")
+
+
+# --------------------------------------------------------------------------
+# Memoria degli scarti del classificatore
+# --------------------------------------------------------------------------
+
+def leggi_scarti():
+    """
+    I titoli che il classificatore ha gia' scartato, per chiave.
+
+    Senza questa memoria lo stesso albo per bambini di Giunti tornava ogni
+    lunedi' finche' restava nella finestra dei 30 giorni: chiamate sprecate
+    su un servizio gratuito e congestionato, e occasioni in piu' perche' un
+    candidato restasse senza verdetto e facesse uscire il giro con errore.
+
+    Sta in un file e non nel database perche' cosi' non riempie la lista
+    "Scartati" della moderazione, e resta leggibile: per far rivalutare un
+    titolo basta cancellarne la voce.
+    """
+    try:
+        voci = json.loads(SCARTI_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    limite = (datetime.now(timezone.utc) - timedelta(days=SCARTI_GIORNI)).date().isoformat()
+    return {v["chiave"]: v for v in voci
+            if isinstance(v, dict) and v.get("chiave") and v.get("data", "") >= limite}
+
+
+def scrivi_scarti(scarti):
+    voci = sorted(scarti.values(), key=lambda v: (v.get("data", ""), v.get("titolo", "")))
+    SCARTI_FILE.write_text(json.dumps(voci, ensure_ascii=False, indent=2) + "\n",
+                           encoding="utf-8")
 
 
 # --------------------------------------------------------------------------
@@ -1731,12 +1809,23 @@ def main():
         time.sleep(PAUSA)
 
     log(f"\nRaccolti {len(grezzi)} elementi grezzi.")
+    riepilogo_errori_google()
 
     # --- Dedup e prefiltro ---
     superstiti = []
-    scartati = {"gia_in_catalogo": 0, "prefiltro": 0, "non_libri": 0}
+    scartati = {"gia_in_catalogo": 0, "prefiltro": 0, "non_libri": 0, "gia_valutati": 0}
+    scarti = leggi_scarti()
+    scarti_prima = len(scarti)
 
     for g in grezzi:
+        # La chiave si calcola qui, sui dati come arrivano dalla fonte: piu'
+        # avanti l'arricchimento puo' aggiungere l'autore, e la stessa scheda
+        # al giro dopo non si riconoscerebbe piu'.
+        g["_chiave_scarto"] = chiave_titolo(g["titolo"], g.get("autore", ""))
+        if g["_chiave_scarto"] in scarti:
+            scartati["gia_valutati"] += 1
+            continue
+
         isbn = normalizza_isbn(g.get("isbn"))
         if isbn and isbn in isbn_noti:
             scartati["gia_in_catalogo"] += 1
@@ -1759,7 +1848,8 @@ def main():
 
     log(f"Dopo dedup e prefiltro: {len(superstiti)} da valutare")
     log(f"  scartati: {scartati['gia_in_catalogo']} già in catalogo, "
-        f"{scartati['prefiltro']} fuori tema, {scartati['non_libri']} non romanzi")
+        f"{scartati['prefiltro']} fuori tema, {scartati['non_libri']} non romanzi, "
+        f"{scartati['gia_valutati']} già scartati dal classificatore")
 
     # PRIORITA' DELLE FONTI. Bug scoperto nel log: Giunti da solo produce 1000
     # elementi, per lo piu' spazzatura generalista, e satura il limite PRIMA che
@@ -1805,8 +1895,22 @@ def main():
     log(f"\nClassifico {len(superstiti)} candidati...")
     inizio = time.time()
 
-    for i, c in enumerate(superstiti, 1):
-        log(f"  [{i}/{len(superstiti)}] {c['titolo'][:55]}")
+    # La coda puo' allungarsi mentre la si scorre: un candidato rimasto senza
+    # verdetto viene rimesso in fondo e riprovato una volta sola, dopo una
+    # pausa. Prima veniva abbandonato subito, anche se il servizio tornava a
+    # rispondere al candidato dopo, e bastava a far uscire il giro con errore.
+    coda = list(superstiti)
+    ripasso_iniziato = False
+
+    for i, c in enumerate(coda, 1):
+        if c.get("_ripasso"):
+            if not ripasso_iniziato:
+                ripasso_iniziato = True
+                log(f"\n  Riprovo i candidati rimasti senza verdetto (pausa di {PAUSA_RIPASSO}s)...")
+                time.sleep(PAUSA_RIPASSO)
+            log(f"  [ripasso] {c['titolo'][:55]}")
+        else:
+            log(f"  [{i}/{len(superstiti)}] {c['titolo'][:55]}")
 
         # --- Arricchimento: solo se serve davvero ---
         # Un candidato che ha gia' copertina e ISBN non ha bisogno di Google Books.
@@ -1851,12 +1955,31 @@ def main():
         esito = classifica(c, chiave, modelli, quota)
 
         if esito.get("_non_classificato"):
+            # Se la quota e' finita o il classificatore manca del tutto,
+            # riprovare non cambia niente.
+            if not c.get("_ripasso") and chiave and modelli and not quota.esaurita:
+                c["_ripasso"] = True
+                coda.append(c)
+                log("        ? senza verdetto: lo riprovo in fondo")
+                continue
             non_classificati.append(c["titolo"])
             log("        ? non classificato: resta fuori")
             continue
 
         if not esito.get("ammesso"):
             log(f"        ✗ {esito.get('motivo', '')[:60]}")
+            # Si ricorda solo uno scarto deciso. Con confidenza bassa il
+            # classificatore sta dicendo che gli mancavano elementi (di solito
+            # l'autore): al giro dopo, con dati migliori, puo' cambiare idea.
+            if esito.get("confidenza") in ("alta", "media"):
+                scarti[c["_chiave_scarto"]] = {
+                    "chiave": c["_chiave_scarto"],
+                    "titolo": c["titolo"],
+                    "autore": c.get("autore", ""),
+                    "editore": c["editore"],
+                    "motivo": (esito.get("motivo") or "")[:200],
+                    "data": datetime.now(timezone.utc).date().isoformat(),
+                }
             continue
 
         anno = datetime.now().year
@@ -1890,6 +2013,8 @@ def main():
 
     durata = int(time.time() - inizio)
     log(f"\n  (classificazione: {durata//60}m {durata%60}s)")
+    # Di nuovo, perche' anche l'arricchimento interroga Google Books.
+    riepilogo_errori_google()
 
     if non_classificati:
         log(f"\n  ! {len(non_classificati)} candidati NON classificati, quindi non proposti:")
@@ -1904,6 +2029,11 @@ def main():
         log("(dry-run: non scrivo nulla)")
         print(json.dumps(nuovi, ensure_ascii=False, indent=2)[:3000])
         return 2 if non_classificati else 0
+
+    if len(scarti) != scarti_prima:
+        scrivi_scarti(scarti)
+        log(f"Scarti del classificatore ricordati: {len(scarti)} "
+            f"({len(scarti) - scarti_prima:+d} in questo giro).")
 
     durata_totale = int(time.time() - avvio)
 
