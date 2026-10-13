@@ -25,7 +25,7 @@ In ordine. Ogni voce rimanda al suo paragrafo nella sezione 4.
 1. **Lo Scout dipende da un classificatore gratuito che a volte non risponde** (4.18). Il 12 ottobre 46 titoli su 46 sono rimasti senza verdetto. Ora si ferma presto, si riprova da solo e gira due volte la settimana; da guardare i prossimi due o tre giri, e se continua a fallire decidere fra la versione a pagamento di Gemini e un secondo classificatore di riserva. Il resto è a posto: 18 editori seguiti, quattro dei quali aggiunti a ottobre partendo dai titoli trovati a mano dal moderatore.
 2. **Pagine editore e autore** (4.5), solo per chi ha almeno due titoli.
 3. **Il mese di uscita** (4.19), che serve alla pagina mensile e alla newsletter.
-4. Poi, in sessioni brevi: la riga "Condividi" anche nelle pagine statiche di libri e articoli (4.20; bassa priorità, il catalogo la offre già), le fonti Zona 42 e Astro dello Scout (4.18, correzioni B e C), backup del catalogo anche da `pagine.yml` (4.12), feed RSS (4.7), la pulizia di `index.html` in una sessione a sé (4.9), la PWA da decidere (4.11), `e_admin()` (4.15), il campo genere (4.6).
+4. Poi, in sessioni brevi: le fonti Zona 42 e Astro dello Scout (4.18, correzioni B e C), backup del catalogo anche da `pagine.yml` (4.12), feed RSS (4.7), la pulizia di `index.html` in una sessione a sé (4.9), la PWA da decidere (4.11), `e_admin()` (4.15), il campo genere (4.6).
 
 ---
 
@@ -217,7 +217,7 @@ Facoltativo: *Nasce Fantasy Italia* non ha il problema, ma è scritto con a capo
 ### 4.19 Il mese di uscita
 Il catalogo registra solo l'anno (`year`). Senza il mese non si possono fare la pagina mensile delle uscite (5.1), la base della newsletter (4.8) né statistiche per mese nel rapporto annuale (5.3). Serve una colonna nuova (per esempio `published_month`, `AAAA-MM`), compilata dallo Scout quando la fonte lo indica (Google Books dà spesso la data completa, i feed degli editori la data di pubblicazione del prodotto) e in moderazione quando manca. Conviene farla presto: ogni scheda approvata senza mese è un dato da ricostruire a mano più avanti. Per le 53 schede esistenti si può tentare un recupero da Google Books tramite ISBN.
 
-### 4.20 Condivisione sui social — fatto per il sito, da fare per le pagine statiche
+### 4.20 Condivisione sui social — fatto
 - [x] **Schede dei libri** (7 ottobre 2026). Nella scheda aperta, sotto i pulsanti dei negozi, una riga "Condividi" con sei icone: WhatsApp, Instagram, Facebook, X, Bluesky e copia link. "Copia link" c'era già come pulsante col testo: è rimasto, come icona, perché copre tutto ciò che non ha un'icona (posta, Telegram, Threads).
 - [x] **Articoli** (7 ottobre 2026). La stessa riga sotto titolo e data, senza Instagram: vuole un'immagine, e per gli articoli non se ne prepara una.
 
@@ -234,7 +234,7 @@ Provato nel browser, anche in emulazione telefono con i quattro esiti di Instagr
 
 Uso consigliato su Instagram: Feed per ogni titolo, con autore ed editore taggati e l'autore invitato come collaboratore; poi lo stesso post nelle Stories con l'adesivo "Link" verso la scheda, l'unico link cliccabile di Instagram oltre alla bio.
 
-- [ ] **Pagine statiche.** `/libri/<slug>/` e `/articoli/<slug>/` sono generate da `scripts/genera_pagine.py` e non hanno ancora la riga: chi arriva da un link condiviso non trova le icone per ricondividere. Va aggiunta al generatore.
+- [x] **Pagine statiche** (13 ottobre 2026). `/libri/<slug>/` e `/articoli/<slug>/` hanno la stessa riga "Condividi": chi arriva da un link condiviso può inoltrarlo senza tornare al catalogo. La genera `scripts/genera_pagine.py` (`riga_condividi`). I link a WhatsApp, Facebook, X e Bluesky sono scritti nella pagina; per Instagram e "copia link" c'è un piccolo script, il primo in queste pagine. **Le due versioni non hanno codice in comune**, perché il sito non ha un passaggio di build: icone, hashtag e testo della didascalia stanno sia in `index.html` sia nel generatore, e una modifica va riportata in entrambi. Ogni pagina pesa circa 10 kB in più.
 - [ ] **Un'immagine per gli articoli**, se si vuole Instagram anche lì: stesso meccanismo di `immagini_social.py`, con titolo e data al posto della copertina.
 
 ### 4.21 Pulsanti dei negozi e logo Amazon — fatto
