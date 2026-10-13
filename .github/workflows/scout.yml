@@ -84,6 +84,9 @@ jobs:
           # volta. Il secondo passaggio rilegge le fonti ma classifica solo
           # cio' che era rimasto fuori. Se va a vuoto anche quello, il giro
           # fallisce e GitHub avvisa per email, come prima.
+          # Con codice 3 il classificatore e' proprio fuori servizio (quota
+          # finita o silenzio prolungato): riprovare dopo 25 minuti farebbe
+          # solo rileggere le pagine degli editori, quindi si esce subito.
           set +e
           python scripts/scout.py $ARGS
           ESITO=$?

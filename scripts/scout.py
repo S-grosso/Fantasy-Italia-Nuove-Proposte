@@ -1532,6 +1532,71 @@ def genere_esplicito(cand):
 
 
 # --------------------------------------------------------------------------
+# Ripiego a regole, per quando il classificatore non risponde
+# --------------------------------------------------------------------------
+# Il classificatore gratuito in certi giorni non risponde affatto: fra il 12 e
+# il 13 ottobre 2026 non ha dato un solo verdetto, e nello stesso periodo il
+# moderatore ha trovato a mano trenta titoli. Un titolo senza verdetto resta
+# fuori — e deve restare cosi' per gli editori generalisti, da cui nell'estate
+# del 2026 arrivo' in moderazione di tutto — ma per i piccoli editori di
+# genere c'e' un segnale che non ha bisogno di un modello: l'editore stesso
+# che scrive "Genere: Fantasy" sulla scheda del libro.
+#
+# La regola e' volutamente stretta. Propone solo se:
+# - la fonte e' fra quelle abilitate in sources.json ('ripiego_a_regole');
+# - l'autore c'e' e non ha un nome palesemente straniero;
+# - fra le etichette dell'editore (categorie, tag, genere dichiarato) ce n'e'
+#   una di fantasy, e non e' il nome di una collana mista con la fantascienza;
+# - non e' un'antologia, un cofanetto, un fumetto, una rivista;
+# - la presentazione non parla di traduzione.
+# Non sa dire se l'autore e' italiano ne' se e' un esordio: lo scrive nel
+# motivo, e la proposta arriva con confidenza bassa.
+RIPIEGO_GENERI = ("fantasy", "romantasy", "grimdark", "sword and sorcery")
+RIPIEGO_ESCLUSI = (
+    "antologia", "racconti", "raccolta", "box ", "cofanetto", "fumetto",
+    "graphic novel", "manga", "albo ", "illustrato", "saggio", "manuale",
+    "librogame", "libro-game", "gioco di ruolo", "rivista", "poesi",
+)
+RIPIEGO_TRADUZIONI = ("traduzione", "tradotto", "traduttore", "traduttrice")
+
+
+def ripiego_a_regole(cand):
+    """Un verdetto di ammissione costruito sulle etichette dell'editore, o None."""
+    if not cand.get("_ripiego"):
+        return None
+    autore = (cand.get("autore") or "").strip()
+    if not autore or autore_probabilmente_straniero(autore):
+        return None
+
+    etichette = [str(c).lower() for c in cand.get("categorie", []) if c]
+    # "Labyrinth fantasy e fantascienza" (La Corte) e' una collana: un romanzo
+    # di fantascienza che ne fa parte porta la parola "fantasy" senza esserlo.
+    dichiarate = [c for c in etichette
+                  if any(g in c for g in RIPIEGO_GENERI) and "fantascienza" not in c]
+    if not dichiarate:
+        return None
+
+    intestazione = (cand.get("titolo", "") + " " + " ".join(etichette)).lower()
+    if any(x in intestazione for x in RIPIEGO_ESCLUSI):
+        return None
+    presentazione = (cand.get("sinossi", "")[:1500] + " " + cand.get("paratesto", "")[:1500]).lower()
+    if any(x in presentazione for x in RIPIEGO_TRADUZIONI):
+        return None
+
+    etichetta = dichiarate[0]
+    if etichetta.startswith("genere: "):
+        etichetta = etichetta[len("genere: "):]
+    return {
+        "ammesso": True,
+        "motivo": (f"Proposto per l'etichetta dell'editore («{etichetta}»): il classificatore "
+                   "non era disponibile. Autore italiano ed esordio da verificare."),
+        "genere": genere_esplicito(cand),
+        "esordio": None,
+        "confidenza": "bassa",
+    }
+
+
+# --------------------------------------------------------------------------
 # Classificatore (GitHub Models)
 # --------------------------------------------------------------------------
 
@@ -1987,6 +2052,19 @@ def prova_classificatore():
 # Programma principale
 # --------------------------------------------------------------------------
 
+def codice_uscita(non_classificati, quota):
+    """
+    0: tutto classificato. 2: qualche candidato senza verdetto, ma il
+    classificatore a tratti rispondeva — riprovare piu' tardi ha senso, e il
+    workflow lo fa. 3: il classificatore e' stato dato per fuori servizio
+    (quota finita o silenzio prolungato) — riprovare dopo venti minuti
+    rileggerebbe le pagine degli editori per niente.
+    """
+    if not non_classificati:
+        return 0
+    return 3 if quota.esaurita else 2
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dal", help="Data di partenza (YYYY-MM-DD). Default: 30 giorni fa.")
@@ -2104,6 +2182,7 @@ def main():
         # Un editore che fallisce non deve fermare gli altri tredici.
         for t in trovati:
             t["_prefiltro_obbligatorio"] = src.get("prefiltro_obbligatorio", False)
+            t["_ripiego"] = src.get("ripiego_a_regole", False)
         grezzi.extend(trovati)
         resa_fonti[nome] = len(trovati)
         log(f"      {len(trovati)} elementi")
@@ -2205,6 +2284,7 @@ def main():
 
     nuovi = []
     non_classificati = []
+    per_regola = []   # proposti dal ripiego a regole, a classificatore muto
     quota = Quota()
     log(f"\nClassifico {len(superstiti)} candidati...")
     inizio = time.time()
@@ -2278,9 +2358,16 @@ def main():
                 coda.append(c)
                 log("        ? senza verdetto: lo riprovo in fondo")
                 continue
-            non_classificati.append(c["titolo"])
-            log("        ? non classificato: resta fuori")
-            continue
+            # Il classificatore non c'e': per i piccoli editori di genere
+            # decide l'etichetta dell'editore. Se la regola dice si', il
+            # candidato prosegue come uno ammesso; altrimenti resta fuori.
+            esito = ripiego_a_regole(c)
+            if not esito:
+                non_classificati.append(c["titolo"])
+                log("        ? non classificato: resta fuori")
+                continue
+            per_regola.append(c["titolo"])
+            log("        ≈ senza verdetto, ma l'editore lo dichiara fantasy: lo propongo")
 
         if not esito.get("ammesso"):
             log(f"        ✗ {esito.get('motivo', '')[:60]}")
@@ -2337,6 +2424,13 @@ def main():
     # Di nuovo, perche' anche l'arricchimento interroga Google Books.
     riepilogo_errori_google()
 
+    if per_regola:
+        log("")
+        log(f"  ≈ {len(per_regola)} proposti per l'etichetta dell'editore, perche' il "
+            "classificatore non ha risposto:")
+        for titolo in per_regola[:15]:
+            log(f"      - {titolo[:70]}")
+
     if non_classificati:
         log(f"\n  ! {len(non_classificati)} candidati NON classificati, quindi non proposti:")
         for titolo in non_classificati[:15]:
@@ -2349,7 +2443,7 @@ def main():
     if args.dry_run:
         log("(dry-run: non scrivo nulla)")
         print(json.dumps(nuovi, ensure_ascii=False, indent=2)[:3000])
-        return 2 if non_classificati else 0
+        return codice_uscita(non_classificati, quota)
 
     if len(scarti) != scarti_prima:
         scrivi_scarti(scarti)
@@ -2396,7 +2490,7 @@ def main():
         # Modalita' di ripiego, senza Supabase: si scrive il vecchio file.
         if not nuovi:
             log("Niente da aggiungere.")
-            return 2 if non_classificati else 0
+            return codice_uscita(non_classificati, quota)
         tutti = esistenti + nuovi
         CANDIDATES_FILE.write_text(
             json.dumps(tutti, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -2409,8 +2503,7 @@ def main():
         log(f"ATTENZIONE: il classificatore non ha risposto per {len(non_classificati)} "
             "candidati, che NON sono stati proposti.")
         log("Il giro esce con errore apposta, perche' GitHub lo segnali per email.")
-        return 2
-    return 0
+    return codice_uscita(non_classificati, quota)
 
 
 if __name__ == "__main__":

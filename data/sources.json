@@ -1,5 +1,6 @@
 {
   "_commento": "Configurazione delle fonti monitorate. Esito della ricognizione del 2026-07. Se un editore rifà il sito, si corregge qui: nessun'altra modifica al codice.",
+  "_commento_ripiego": "'ripiego_a_regole': quando il classificatore non risponde, lo Scout propone lo stesso i titoli che l'editore dichiara fantasy (vedi ripiego_a_regole in scripts/scout.py). Solo piccoli editori di genere con autori per lo piu' italiani. Fuori di proposito: Giunti e Sperling (generalisti), Zona 42 e Another Coffee Stories (quasi solo traduzioni), Agenzia Alcatraz (il sito non espone ne' autore ne' genere).",
   "sources": [
     {
       "publisher": "Lumien",
@@ -7,19 +8,22 @@
       "endpoint": "https://www.lumien.it/wp-json/wp/v2/product",
       "author_taxonomy": "autore",
       "attivo": true,
-      "note": "Espone la tassonomia 'autore': nome autore recuperabile senza inferenza."
+      "note": "Espone la tassonomia 'autore': nome autore recuperabile senza inferenza.",
+      "ripiego_a_regole": true
     },
     {
       "publisher": "La Corte Editore",
       "adapter": "woocommerce",
       "endpoint": "https://www.lacorteditore.it/wp-json/wp/v2/product",
-      "attivo": true
+      "attivo": true,
+      "ripiego_a_regole": true
     },
     {
       "publisher": "La nuova carne Edizioni",
       "adapter": "woocommerce",
       "endpoint": "https://www.lanuovacarne.it/wp-json/wp/v2/product",
-      "attivo": true
+      "attivo": true,
+      "ripiego_a_regole": true
     },
     {
       "publisher": "Agenzia Alcatraz",
@@ -31,7 +35,8 @@
       "publisher": "Parallelo45 Edizioni",
       "adapter": "woocommerce",
       "endpoint": "https://www.parallelo45edizioni.it/wp-json/wp/v2/product",
-      "attivo": true
+      "attivo": true,
+      "ripiego_a_regole": true
     },
     {
       "publisher": "Giunti",
@@ -58,7 +63,8 @@
         "Lorenzo Manara",
         "Giorgia Cappelletti",
         "Laura Seegard"
-      ]
+      ],
+      "ripiego_a_regole": true
     },
     {
       "publisher": "Zona 42",
@@ -72,7 +78,8 @@
       "adapter": "google_books_autori",
       "endpoint": null,
       "attivo": true,
-      "note": "Nessuna API di catalogo (post type assente o non esposto via REST). Ricerca su Google Books per autore: quelli gia' in catalogo + watchlist. Aggiungi qui gli autori ricorrenti per ampliare la copertura."
+      "note": "Nessuna API di catalogo (post type assente o non esposto via REST). Ricerca su Google Books per autore: quelli gia' in catalogo + watchlist. Aggiungi qui gli autori ricorrenti per ampliare la copertura.",
+      "ripiego_a_regole": true
     },
     {
       "publisher": "Sperling & Kupfer",
@@ -87,7 +94,8 @@
       "adapter": "woocommerce",
       "endpoint": "https://angolazioni.it/wp-json/wp/v2/product",
       "attivo": true,
-      "note": "Dominio corretto: .it (non .net, come nella prima ricognizione). Da verificare al primo run: se fallisce, cade automaticamente su Google Books."
+      "note": "Dominio corretto: .it (non .net, come nella prima ricognizione). Da verificare al primo run: se fallisce, cade automaticamente su Google Books.",
+      "ripiego_a_regole": true
     },
     {
       "publisher": "Delos Digital",
@@ -103,7 +111,8 @@
       "autori_watch": [
         "Grace D.",
         "Damiano Lotto"
-      ]
+      ],
+      "ripiego_a_regole": true
     },
     {
       "publisher": "PresentARTsi",
@@ -115,14 +124,16 @@
         "PresentARTsì",
         "Present ARTsì",
         "Presentartsi"
-      ]
+      ],
+      "ripiego_a_regole": true
     },
     {
       "publisher": "Winter Edizioni",
       "adapter": "woocommerce",
       "endpoint": "https://winteredizioni.com/wp-json/wp/v2/product",
       "attivo": true,
-      "note": "Aggiunto il 2026-10-11. Fantasy, horror e gotico. I titoli in prevendita iniziano con 'Pre-Ordine': lo Scout lo toglie. Autore e genere stanno nella scheda tecnica in fondo alla descrizione ('AUTORE: ... GENERE: ...')."
+      "note": "Aggiunto il 2026-10-11. Fantasy, horror e gotico. I titoli in prevendita iniziano con 'Pre-Ordine': lo Scout lo toglie. Autore e genere stanno nella scheda tecnica in fondo alla descrizione ('AUTORE: ... GENERE: ...').",
+      "ripiego_a_regole": true
     },
     {
       "publisher": "Aculei Edizioni",
@@ -130,7 +141,8 @@
       "endpoint": "https://www.aculei.it/wp-json/wp/v2/product",
       "titolo_con_autore": true,
       "attivo": true,
-      "note": "Aggiunto il 2026-10-11. Narrativa, poesia e una collana di fantastico (Stramonio). Il nome del prodotto e' 'Autore – Titolo': 'titolo_con_autore' dice allo Scout di separarli."
+      "note": "Aggiunto il 2026-10-11. Narrativa, poesia e una collana di fantastico (Stramonio). Il nome del prodotto e' 'Autore – Titolo': 'titolo_con_autore' dice allo Scout di separarli.",
+      "ripiego_a_regole": true
     },
     {
       "publisher": "Spirito Libero Edizioni",
@@ -142,7 +154,8 @@
       "filtro_url": "/product-page/",
       "nome_con_autore": " di ",
       "attivo": true,
-      "note": "Aggiunto il 2026-10-11. Sito Wix, nessuna API: si legge la sitemap del negozio e poi ogni pagina. Il nome del prodotto e' 'TITOLO di Autore'. Horror, thriller, fantasy, romantasy. La sitemap non ha date: le pagine gia' viste non si rileggono."
+      "note": "Aggiunto il 2026-10-11. Sito Wix, nessuna API: si legge la sitemap del negozio e poi ogni pagina. Il nome del prodotto e' 'TITOLO di Autore'. Horror, thriller, fantasy, romantasy. La sitemap non ha date: le pagine gia' viste non si rileggono.",
+      "ripiego_a_regole": true
     },
     {
       "publisher": "Fucine Editoriali",
@@ -153,7 +166,8 @@
       ],
       "filtro_url": "/shop/products/",
       "attivo": true,
-      "note": "Aggiunto il 2026-10-11. Sito su piattaforma Aruba, nessuna API. Ogni pagina riporta 'Autore: ... Genere: ... Pubblicazione: ... ISBN: ...': i titoli usciti piu' di due anni fa vengono messi da parte senza classificarli."
+      "note": "Aggiunto il 2026-10-11. Sito su piattaforma Aruba, nessuna API. Ogni pagina riporta 'Autore: ... Genere: ... Pubblicazione: ... ISBN: ...': i titoli usciti piu' di due anni fa vengono messi da parte senza classificarli.",
+      "ripiego_a_regole": true
     }
   ]
 }
