@@ -55,6 +55,14 @@ PAUSA = 1.0  # cortesia verso i server degli editori
 # (La versione a pausa fissa di 6s faceva durare il run un'ora e mezza.)
 PAUSA_MODELLO_MIN = 0.0
 PAUSA_MODELLO_MAX = 12.0
+# Quanto aspettare una risposta di Gemini. Quando risponde lo fa in pochi
+# secondi; il 12 ottobre 2026 non rispondeva affatto, e con 60 secondi di
+# attesa per due tentativi ogni candidato costava due minuti a vuoto.
+GEMINI_TIMEOUT = 30
+# Dopo tanti candidati di fila senza verdetto il classificatore si considera
+# fuori servizio e si smette di chiamarlo: quel giorno 46 candidati su 46
+# sono rimasti senza risposta, e il giro e' durato 22 minuti per niente.
+MAX_MUTI_DI_FILA = 4
 
 UA = {"User-Agent": "FantasyItaliaBot/1.0 (+https://www.fantasyitalianuoveproposte.it)"}
 
@@ -402,6 +410,12 @@ def get_json(url, params=None):
         params["key"] = GOOGLE_BOOKS_KEY
     try:
         r = requests.get(url, headers=UA, params=params, timeout=TIMEOUT)
+        # Google Books risponde spesso 503 ("Service temporarily unavailable")
+        # e un attimo dopo funziona: il 12 ottobre 2026 sono fallite cosi' 45
+        # chiamate. Una sola ripetizione, per non allungare il giro.
+        if google and r.status_code in (500, 502, 503, 504):
+            time.sleep(3)
+            r = requests.get(url, headers=UA, params=params, timeout=TIMEOUT)
         if r.status_code != 200:
             if google:
                 annota_errore_google(r.status_code, r.text)
@@ -1591,6 +1605,17 @@ class Quota:
         self.pausa = PAUSA_MODELLO_MIN
         self.esaurita = False
         self.consecutivi_429 = 0
+        self.muti_di_fila = 0
+        self.detto_429 = False
+
+    def senza_verdetto(self):
+        """Un candidato e' rimasto senza risposta, per qualunque motivo."""
+        self.muti_di_fila += 1
+        if self.muti_di_fila >= MAX_MUTI_DI_FILA and not self.esaurita:
+            self.esaurita = True
+            log(f"\n  ! Il classificatore non risponde da {self.muti_di_fila} candidati di fila:")
+            log("    mi fermo qui. I candidati restanti NON vengono proposti e")
+            log("    verranno ripresi al prossimo giro.\n")
 
     def prima_della_chiamata(self):
         if self.pausa > 0:
@@ -1598,6 +1623,7 @@ class Quota:
 
     def ok(self):
         self.consecutivi_429 = 0
+        self.muti_di_fila = 0
         # Il modello risponde: allenta gradualmente
         if self.pausa > PAUSA_MODELLO_MIN:
             self.pausa = max(PAUSA_MODELLO_MIN, self.pausa - 1.0)
@@ -1744,7 +1770,7 @@ def chiama_gemini(chiave, modello, sistema, utente):
     ultimo = (0, "", None)
     for nome in ordine:
         url, corpo = tentativi[nome]
-        r = requests.post(url, headers=testate, json=corpo, timeout=60)
+        r = requests.post(url, headers=testate, json=corpo, timeout=GEMINI_TIMEOUT)
         attesa = r.headers.get("retry-after")
         try:
             attesa = int(attesa)
@@ -1823,6 +1849,23 @@ SINOSSI:
         try:
             for modello in list(modelli):
                 stato, testo, suggerita = chiama_gemini(chiave, modello, PROMPT, scheda)
+                if stato == 429:
+                    # Su Gemini il limite di richieste e' di ciascun modello,
+                    # non della chiave: uno puo' rifiutare e il successivo
+                    # rispondere. Il 13 ottobre 2026 lo Scout si fermava qui,
+                    # con due modelli sovraccarichi, il terzo oltre il limite e
+                    # il quarto mai interpellato.
+                    if not quota.detto_429:
+                        # Una volta per giro, il messaggio di Google: dice se
+                        # il limite e' al minuto o al giorno.
+                        quota.detto_429 = True
+                        try:
+                            dettaglio = (json.loads(testo).get("error") or {}).get("message", "")
+                        except (ValueError, AttributeError):
+                            dettaglio = testo
+                        log(f"      · troppe richieste (HTTP 429): {strip_html(dettaglio)[:220]}")
+                    log(f"      · {modello} oltre il limite di richieste, provo il successivo")
+                    continue
                 if stato not in SOVRACCARICO:
                     break
                 log(f"      · {modello} sovraccarico (HTTP {stato}), provo il successivo")
@@ -1841,6 +1884,7 @@ SINOSSI:
                 log(f"      · d'ora in poi uso {modello}")
 
             if stato == 429:
+                # Qui si arriva solo se anche l'ultimo modello era oltre il limite.
                 attesa = quota.rate_limited(suggerita)
                 if quota.esaurita or tentativo == tentativi:
                     break
@@ -1864,11 +1908,15 @@ SINOSSI:
                 esito["genere"] = genere_esplicito(cand)
             return esito
 
-        except (requests.RequestException, KeyError, ValueError):
+        except (requests.RequestException, KeyError, ValueError) as e:
+            # Solo il tipo di errore: prima questo caso non lasciava traccia,
+            # e un candidato "senza verdetto" poteva voler dire qualunque cosa.
+            log(f"      · nessuna risposta utilizzabile ({type(e).__name__})")
             if tentativo == tentativi:
                 break
             time.sleep(2)
 
+    quota.senza_verdetto()
     return NON_CLASSIFICATO
 
 
@@ -2170,7 +2218,9 @@ def main():
 
     for i, c in enumerate(coda, 1):
         if c.get("_ripasso"):
-            if not ripasso_iniziato:
+            # Se nel frattempo il classificatore e' stato dato per fuori servizio,
+            # aspettare non serve: il candidato resta fuori subito.
+            if not ripasso_iniziato and not quota.esaurita:
                 ripasso_iniziato = True
                 log(f"\n  Riprovo i candidati rimasti senza verdetto (pausa di {PAUSA_RIPASSO}s)...")
                 time.sleep(PAUSA_RIPASSO)

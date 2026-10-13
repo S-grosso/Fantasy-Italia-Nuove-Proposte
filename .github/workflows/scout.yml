@@ -1,9 +1,14 @@
 name: Scout nuove uscite
 
 on:
-  # Ogni lunedì alle 6:00 (ora italiana d'inverno; UTC non segue l'ora legale)
+  # Lunedì e giovedì alle 6:00 (ora italiana d'inverno; UTC non segue l'ora
+  # legale). Due volte la settimana perche' il classificatore gratuito a
+  # volte non risponde per ore: se il lunedì va a vuoto, il giovedì riprende
+  # da solo. Un giro in piu' costa poco: lo Scout ricorda cio' che ha gia'
+  # valutato e non lo rilegge.
   schedule:
     - cron: "0 5 * * 1"
+    - cron: "0 5 * * 4"
   # Avviabile a mano dalla tab Actions, utile per il backfill
   workflow_dispatch:
     inputs:
@@ -31,8 +36,9 @@ jobs:
   scout:
     runs-on: ubuntu-latest
     # Rete di sicurezza: se qualcosa si impianta, meglio fallire
-    # in 40 minuti che restare appesi per ore.
-    timeout-minutes: 40
+    # che restare appesi per ore. 90 minuti perche' un giro che trova il
+    # classificatore muto aspetta e riprova una volta (vedi sotto).
+    timeout-minutes: 90
 
     steps:
       - name: Scarica il repository
@@ -71,7 +77,24 @@ jobs:
           if [ -n "${{ inputs.limite }}" ]; then
             ARGS="$ARGS --limite ${{ inputs.limite }}"
           fi
+
+          # Lo Scout esce con codice 2 quando il classificatore ha lasciato
+          # qualche candidato senza verdetto. Di solito e' un sovraccarico
+          # passeggero del servizio gratuito: si aspetta e si riprova una
+          # volta. Il secondo passaggio rilegge le fonti ma classifica solo
+          # cio' che era rimasto fuori. Se va a vuoto anche quello, il giro
+          # fallisce e GitHub avvisa per email, come prima.
+          set +e
           python scripts/scout.py $ARGS
+          ESITO=$?
+          if [ "$ESITO" = "2" ]; then
+            echo ""
+            echo "Il classificatore non ha risposto a tutti i candidati: riprovo fra 25 minuti."
+            sleep 1500
+            python scripts/scout.py $ARGS
+            ESITO=$?
+          fi
+          exit $ESITO
 
       # Anche se lo Scout esce con errore: succede apposta quando il
       # classificatore non risponde, e il backup del catalogo resta valido.
