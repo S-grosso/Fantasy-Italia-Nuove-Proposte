@@ -789,10 +789,72 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
     return riga;
   }
 
+  /* ---------------- doppioni ---------------- */
+  // Il modulo pubblico controlla i doppioni lato server; "Nuovo titolo" no,
+  // perche' scrive direttamente. Con cento o duecento schede, e con gli
+  // scartati che sul sito non si vedono, non si puo' piu' andare a memoria.
+  //
+  // Il confronto si fa qui e non con una ricerca nel database: gli stessi
+  // titoli convivono con apostrofi diversi (' e ’), accenti e maiuscole, e
+  // una ricerca esatta se li perderebbe. Le schede sono poche centinaia.
+  function chiaveTitolo(t){
+    return String(t || '').toLowerCase()
+      .normalize('NFKD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '');
+  }
+  function soloCifre(isbn){ return String(isbn || '').replace(/[^0-9Xx]/g, ''); }
+
+  // Restituisce le schede che somigliano a quella nuova; null se non si
+  // riesce a leggere l'elenco.
+  async function cercaDoppioni(riga){
+    const { data, error } = await supa.from('books')
+      .select('id,title,author,publisher,status,isbn_norm');
+    if(error) return null;
+    const titolo = chiaveTitolo(riga.title);
+    const isbn = soloCifre(riga.isbn);
+    return (data || []).filter(b => {
+      if(b.id === riga.id) return false;
+      if(isbn.length >= 10 && b.isbn_norm && b.isbn_norm === isbn) return true;
+      const altro = chiaveTitolo(b.title);
+      if(!titolo || !altro) return false;
+      if(altro === titolo) return true;
+      // Stesso libro con o senza sottotitolo ("Namirya" e "Namirya. L'enigma
+      // degli Elfi"). Solo per titoli non brevissimi: "Ira" sta dentro a
+      // troppe parole.
+      const corto = titolo.length <= altro.length ? titolo : altro;
+      const lungo = corto === titolo ? altro : titolo;
+      return corto.length >= 8 && lungo.startsWith(corto);
+    });
+  }
+
+  // true se si puo' procedere col salvataggio.
+  async function confermaSeDoppione(riga){
+    const simili = await cercaDoppioni(riga);
+    if(simili === null){
+      return confirm('Non riesco a controllare se questo titolo è già presente.\n\nSalvo lo stesso?');
+    }
+    if(!simili.length) return true;
+    const elenco = simili.slice(0, 6).map(b =>
+      '• ' + (b.title || '(senza titolo)')
+      + (b.author ? ' — ' + b.author : '')
+      + (b.publisher ? ' (' + b.publisher + ')' : '')
+      + ' · ' + ((ETICHETTA_STATO[b.status] || ['', b.status || '?'])[1])
+    ).join('\n');
+    return confirm('Possibile doppione: '
+      + (simili.length === 1 ? 'c\'è già una scheda simile.' : 'ci sono già ' + simili.length + ' schede simili.')
+      + '\n\n' + elenco
+      + (simili.length > 6 ? '\n…' : '')
+      + '\n\nSalvo comunque questa scheda?');
+  }
+
   async function salva(stato, messaggio){
     const riga = raccogli(stato);
     if(!riga) return;
     azzeraErroreCopertina(riga);
+
+    // Solo per un titolo nuovo: una scheda aperta dall'elenco esiste già, e
+    // i candidati dello Scout e del modulo arrivano già controllati.
+    if(!libro && stato !== 'rejected' && !(await confermaSeDoppione(riga))) return;
 
     const bottoni = ['#btnSalva','#btnApprova','#btnScarta'];
     bottoni.forEach(s=>$(s).disabled = true);
