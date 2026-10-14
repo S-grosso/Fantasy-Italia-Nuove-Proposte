@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.fantasyitalianuoveproposte.it/</loc><lastmod>2026-10-13</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://www.fantasyitalianuoveproposte.it/libri/</loc><lastmod>2026-10-13</lastmod><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.fantasyitalianuoveproposte.it/</loc><lastmod>2026-10-14</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://www.fantasyitalianuoveproposte.it/libri/</loc><lastmod>2026-10-14</lastmod><changefreq>weekly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/articoli/</loc><lastmod>2026-09-24</lastmod><changefreq>weekly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/anomaly/</loc><lastmod>2026-10-11</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/bluejay/</loc><lastmod>2026-10-13</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/bound-by-a-crimson-fate/</loc><lastmod>2026-10-13</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/cronistoria-dal-regno-dei-daimon/</loc><lastmod>2026-10-07</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/dreamwalker-il-lato-oscuro-dei-sogni/</loc><lastmod>2026-10-11</lastmod><changefreq>monthly</changefreq></url>
+  <url><loc>https://www.fantasyitalianuoveproposte.it/libri/eredi-di-angisi-la-stella-purpurea/</loc><lastmod>2026-10-14</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/falange-dei-sogni/</loc><lastmod>2026-09-24</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/forgotten-love/</loc><lastmod>2026-10-07</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/forgotten-world-il-circo-dei-dimenticati/</loc><lastmod>2026-10-10</lastmod><changefreq>monthly</changefreq></url>
@@ -17,6 +18,7 @@
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/il-canto-di-liscamara/</loc><lastmod>2026-09-24</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/il-difensore-stelle-binarie/</loc><lastmod>2026-09-24</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/il-flagello-degli-eretici/</loc><lastmod>2026-10-07</lastmod><changefreq>monthly</changefreq></url>
+  <url><loc>https://www.fantasyitalianuoveproposte.it/libri/il-patto-di-eurynome/</loc><lastmod>2026-10-14</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/il-prezzo-di-un-anima/</loc><lastmod>2026-10-09</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/il-pugnale-dei-poeti-il-richiamo-del-vento/</loc><lastmod>2026-09-24</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/il-segreto-delle-querce/</loc><lastmod>2026-10-07</lastmod><changefreq>monthly</changefreq></url>
@@ -31,11 +33,13 @@
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/le-cronache-di-fuoco-e-sangue-il-serpente-e-il-drago/</loc><lastmod>2026-10-13</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/le-ombre-delle-virtu-buio/</loc><lastmod>2026-10-11</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/le-vite-di-narses/</loc><lastmod>2026-09-24</lastmod><changefreq>monthly</changefreq></url>
+  <url><loc>https://www.fantasyitalianuoveproposte.it/libri/marenero/</loc><lastmod>2026-10-14</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/ombre-perse-nel-tempo/</loc><lastmod>2026-10-09</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/animae-duae-animus-unus/</loc><lastmod>2026-10-09</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/arhos-la-sabbia-e-il-vento/</loc><lastmod>2026-09-24</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/carnivalia-schiavi-della-maschera/</loc><lastmod>2026-09-24</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/cio-che-resta-delle-tenebre-loki-e-sigyn-inganno-e-fedelta/</loc><lastmod>2026-10-09</lastmod><changefreq>monthly</changefreq></url>
+  <url><loc>https://www.fantasyitalianuoveproposte.it/libri/cronaca-di-una-geometrista-di-armonica/</loc><lastmod>2026-10-14</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/dalla-morte-e-dalla-vendetta/</loc><lastmod>2026-09-24</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/dammi-un-fiume-di-sangue/</loc><lastmod>2026-10-13</lastmod><changefreq>monthly</changefreq></url>
   <url><loc>https://www.fantasyitalianuoveproposte.it/libri/dark-ballad-i-cavalieri-di-luxar/</loc><lastmod>2026-10-09</lastmod><changefreq>monthly</changefreq></url>
