@@ -48,7 +48,8 @@ PREFISSO_SOCIAL = f"{PREFISSO_COPERTINE}{CARTELLA}/"
 
 # Se cambia il disegno, si alza questo numero: tutte le impronte cambiano e
 # al giro dopo le immagini si rifanno da sole.
-VERSIONE_DISEGNO = "2"
+# 3 (15 ottobre 2026): i premi accanto all'esordio.
+VERSIONE_DISEGNO = "3"
 
 LARGHEZZA, ALTEZZA = 1080, 1350
 MARGINE = 70
@@ -62,6 +63,13 @@ INCHIOSTRO = (231, 233, 238)
 SPENTO = (169, 173, 187)
 ACCENTO = (122, 166, 255)
 BORDO = (42, 46, 64)
+# I premi hanno i colori delle etichette sul sito (.tag.label), cosi' si
+# distinguono dal contrassegno dell'esordio.
+PREMIO = (159, 200, 255)
+PREMIO_BORDO = (40, 84, 170)
+# Oltre questo numero di premi l'immagine ruberebbe spazio alla copertina:
+# si mostrano i primi, nell'ordine in cui stanno nella scheda.
+MAX_PREMI = 2
 
 # DejaVu c'e' sulle macchine delle GitHub Actions (il workflow lo installa se
 # manca). In locale, su Windows, Verdana ha larghezze simili: l'anteprima che
@@ -79,7 +87,7 @@ CARATTERI = {
     ],
 }
 
-CAMPI = "id,slug,title,author,publisher,year,cover_url,is_debut"
+CAMPI = "id,slug,title,author,publisher,year,cover_url,is_debut,labels"
 
 UA = {"User-Agent": "FantasyItaliaBot/1.0 (+https://www.fantasyitalianuoveproposte.it)"}
 
@@ -180,6 +188,37 @@ def altezza_riga(font):
     return int(font.size * 1.22)
 
 
+def premi_da_mostrare(b):
+    """I premi della scheda (le sue etichette), al massimo MAX_PREMI."""
+    return [str(p).strip() for p in (b.get("labels") or []) if str(p).strip()][:MAX_PREMI]
+
+
+SPAZIO_PASTIGLIE = 14
+
+
+def disponi_pastiglie(pastiglie, font, larghezza):
+    """
+    Mette le pastiglie (testo, colore, bordo) in righe larghe al massimo
+    `larghezza`: tutte su una riga se ci stanno, altrimenti a capo. Un premio
+    troppo lungo anche da solo si accorcia con i puntini, invece di uscire
+    dall'immagine.
+    """
+    righe, riga, occupato = [], [], 0
+    for testo, colore, bordo in pastiglie:
+        while font.getlength(testo) + 44 > larghezza and len(testo) > 4:
+            testo = testo[:-2].rstrip() + "…"
+        larg = int(font.getlength(testo)) + 44
+        serve = larg if not riga else occupato + SPAZIO_PASTIGLIE + larg
+        if riga and serve > larghezza:
+            righe.append(riga)
+            riga, serve = [], larg
+        riga.append((testo, colore, bordo, larg))
+        occupato = serve
+    if riga:
+        righe.append(riga)
+    return righe
+
+
 # --------------------------------------------------------------------------
 # Disegno
 # --------------------------------------------------------------------------
@@ -226,9 +265,15 @@ def componi(copertina, b):
     f_autore = che_sta(b.get("author") or "", "normale", 36, 24, utile)
     f_dati = che_sta(dati, "normale", 28, 20, utile)
 
+    # Contrassegni sopra il titolo: l'esordio e i premi, in pastiglie come le
+    # etichette del sito.
+    f_pastiglia = carattere("grassetto", 24)
+    pastiglie = [("ESORDIO", ACCENTO, ACCENTO)] if b.get("is_debut") is True else []
+    pastiglie += [(p, PREMIO, PREMIO_BORDO) for p in premi_da_mostrare(b)]
+    righe_pastiglie = disponi_pastiglie(pastiglie, f_pastiglia, utile)
+    passo_pastiglie = altezza_riga(f_pastiglia) + 22
+
     blocco = []  # (testo, font, colore, spazio_dopo, e_pastiglia)
-    if b.get("is_debut") is True:
-        blocco.append(("ESORDIO", carattere("grassetto", 24), ACCENTO, 18, True))
     for i, riga in enumerate(righe_titolo):
         blocco.append((riga, f_titolo, INCHIOSTRO, 14 if i == len(righe_titolo) - 1 else 0, False))
     if b.get("author"):
@@ -236,7 +281,8 @@ def componi(copertina, b):
     if dati:
         blocco.append((dati, f_dati, SPENTO, 0, False))
 
-    alto_blocco = sum(altezza_riga(f) + dopo for _, f, _, dopo, _ in blocco)
+    alto_blocco = (len(righe_pastiglie) * passo_pastiglie
+                   + sum(altezza_riga(f) + dopo for _, f, _, dopo, _ in blocco))
     y_blocco = y_marchio - 56 - alto_blocco
 
     # --- la copertina prende tutto lo spazio che resta sopra ---
@@ -257,17 +303,19 @@ def componi(copertina, b):
 
     # --- testi ---
     y = y_blocco
-    for testo, font, colore, dopo, pastiglia in blocco:
-        if pastiglia:
-            # il contrassegno dell'esordio e' una pastiglia, come sul sito
-            larg = int(font.getlength(testo)) + 44
+    for riga in righe_pastiglie:
+        totale = sum(larg for *_, larg in riga) + SPAZIO_PASTIGLIE * (len(riga) - 1)
+        x = centro - totale // 2
+        for testo, colore, bordo, larg in riga:
             disegno.rounded_rectangle(
-                (centro - larg // 2, y - 4, centro + larg // 2, y + altezza_riga(font) + 4),
-                radius=20, outline=ACCENTO, width=2,
+                (x, y - 4, x + larg, y + altezza_riga(f_pastiglia) + 4),
+                radius=20, outline=bordo, width=2,
             )
-            disegno.text((centro, y + 4), testo, font=font, fill=colore, anchor="mt")
-        else:
-            disegno.text((centro, y), testo, font=font, fill=colore, anchor="mt")
+            disegno.text((x + larg // 2, y + 4), testo, font=f_pastiglia, fill=colore, anchor="mt")
+            x += larg + SPAZIO_PASTIGLIE
+        y += passo_pastiglie
+    for testo, font, colore, dopo, _ in blocco:
+        disegno.text((centro, y), testo, font=font, fill=colore, anchor="mt")
         y += altezza_riga(font) + dopo
 
     # filo sottile fra libro e marchio
@@ -288,7 +336,8 @@ def componi(copertina, b):
 def firma(b):
     """Impronta di tutto cio' che compare nell'immagine, piu' la versione del disegno."""
     parti = [VERSIONE_DISEGNO, b.get("title"), b.get("author"), b.get("publisher"),
-             b.get("year"), b.get("cover_url"), b.get("is_debut")]
+             b.get("year"), b.get("cover_url"), b.get("is_debut"),
+             "·".join(premi_da_mostrare(b))]
     return hashlib.sha1("|".join(str(p) for p in parti).encode("utf-8")).hexdigest()[:12]
 
 

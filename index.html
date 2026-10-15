@@ -1620,7 +1620,12 @@
       if(!file){
         p.disabled = true; avvisa('Preparo l’immagine…');
         try{
-          const r = await fetch(urlImmagineSocial(b));
+          // no-cache: lo Storage dice ai browser di tenere l'immagine per un
+          // giorno, e allo stesso indirizzo. Senza, dopo una correzione alla
+          // scheda (un esordio tolto, un premio aggiunto) il browser
+          // riproponeva l'immagine vecchia. Cosi' chiede se e' cambiata, e
+          // la riscarica solo in quel caso.
+          const r = await fetch(urlImmagineSocial(b), { cache: 'no-cache' });
           if(!r.ok) throw new Error('HTTP ' + r.status);
           file = new File([await r.blob()], b.slug + '.jpg', { type: 'image/jpeg' });
         }catch(e){

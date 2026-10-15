@@ -276,6 +276,8 @@ STILE_CONDIVIDI = """
 # pannello di condivisione, dal computer la si scarica; la didascalia va negli
 # appunti perche' Instagram ignora il testo passato da fuori. E' la stessa
 # logica di pulsanteInstagram() in index.html, scritta senza dipendenze.
+# L'immagine si chiede con cache 'no-cache': lo Storage la fa tenere ai browser
+# per un giorno, e dopo una correzione alla scheda tornava quella vecchia.
 SCRIPT_CONDIVIDI = """
 (function(){
   var D = __DATI__;
@@ -299,7 +301,7 @@ SCRIPT_CONDIVIDI = """
     if(!file){
       ig.disabled = true; avvisa('Preparo l’immagine…');
       try{
-        var r = await fetch(D.immagine);
+        var r = await fetch(D.immagine, { cache: 'no-cache' });
         if(!r.ok) throw new Error('HTTP ' + r.status);
         file = new File([await r.blob()], D.nomeFile, { type: 'image/jpeg' });
       }catch(e){
