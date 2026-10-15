@@ -63,6 +63,10 @@ GEMINI_TIMEOUT = 30
 # fuori servizio e si smette di chiamarlo: quel giorno 46 candidati su 46
 # sono rimasti senza risposta, e il giro e' durato 22 minuti per niente.
 MAX_MUTI_DI_FILA = 4
+# Quante volte, per un candidato, si aspetta che passi il limite al minuto
+# prima di arrendersi. Il piano gratuito concede 5 richieste al minuto per
+# modello: un'attesa di solito basta.
+MAX_ATTESE_MINUTO = 3
 
 UA = {"User-Agent": "FantasyItaliaBot/1.0 (+https://www.fantasyitalianuoveproposte.it)"}
 
@@ -1671,7 +1675,7 @@ class Quota:
         self.esaurita = False
         self.consecutivi_429 = 0
         self.muti_di_fila = 0
-        self.detto_429 = False
+        self.detti_429 = set()   # tipi di limite gia' riportati nel registro
 
     def senza_verdetto(self):
         """Un candidato e' rimasto senza risposta, per qualunque motivo."""
@@ -1872,6 +1876,27 @@ NON_CLASSIFICATO = {
 SOVRACCARICO = (500, 502, 503, 504)
 
 
+def tipo_di_limite(testo):
+    """
+    Dal messaggio di un 429: ("giorno" | "minuto" | "", secondi da aspettare
+    o None, messaggio). Google lo scrive per esteso, per esempio "Rate limit
+    exceeded for model gemini-3.8-flash (limit: 5 requests per minute on Free
+    Tier). Please retry in 28s".
+    """
+    try:
+        messaggio = (json.loads(testo).get("error") or {}).get("message", "")
+    except (ValueError, AttributeError):
+        messaggio = testo or ""
+    basso = messaggio.lower()
+    attesa = re.search(r"retry in ([0-9.]+)s", basso)
+    secondi = float(attesa.group(1)) if attesa else None
+    if "per day" in basso or "perday" in basso:
+        return "giorno", secondi, messaggio
+    if "per minute" in basso or "perminute" in basso:
+        return "minuto", secondi, messaggio
+    return "", secondi, messaggio
+
+
 def classifica(cand, chiave, modelli, quota, tentativi=2):
     """
     Chiede a Gemini se il candidato entra in catalogo.
@@ -1908,32 +1933,64 @@ PRESENTAZIONE DELL'EDITORE:
 SINOSSI:
 {cand.get('sinossi', '')[:1800]}"""
 
-    for tentativo in range(1, tentativi + 1):
+    # Un while e non un for: un'attesa per il limite al minuto non deve
+    # consumare uno dei tentativi (vedi sotto).
+    tentativo, attese_minuto = 0, 0
+    while tentativo < tentativi:
+        tentativo += 1
         quota.prima_della_chiamata()
 
         try:
+            if not modelli:
+                # Tutti messi da parte per oggi, durante questo candidato.
+                break
+            stato, attesa_minuto = None, 0
             for modello in list(modelli):
                 stato, testo, suggerita = chiama_gemini(chiave, modello, PROMPT, scheda)
                 if stato == 429:
                     # Su Gemini il limite di richieste e' di ciascun modello,
                     # non della chiave: uno puo' rifiutare e il successivo
-                    # rispondere. Il 13 ottobre 2026 lo Scout si fermava qui,
-                    # con due modelli sovraccarichi, il terzo oltre il limite e
-                    # il quarto mai interpellato.
-                    if not quota.detto_429:
-                        # Una volta per giro, il messaggio di Google: dice se
-                        # il limite e' al minuto o al giorno.
-                        quota.detto_429 = True
-                        try:
-                            dettaglio = (json.loads(testo).get("error") or {}).get("message", "")
-                        except (ValueError, AttributeError):
-                            dettaglio = testo
-                        log(f"      · troppe richieste (HTTP 429): {strip_html(dettaglio)[:220]}")
-                    log(f"      · {modello} oltre il limite di richieste, provo il successivo")
+                    # rispondere. E i limiti sono due, al minuto e al giorno,
+                    # che vanno trattati in modo opposto: il primo passa da
+                    # solo in pochi secondi, il secondo dura fino a domani.
+                    tipo, secondi, messaggio = tipo_di_limite(testo)
+                    if tipo not in quota.detti_429:
+                        # Una volta per tipo e per giro, il messaggio di Google.
+                        quota.detti_429.add(tipo)
+                        log(f"      · troppe richieste (HTTP 429): {strip_html(messaggio)[:220]}")
+                    if tipo == "giorno":
+                        modelli.remove(modello)
+                        log(f"      · {modello} ha finito le richieste di oggi: lo metto da parte")
+                    else:
+                        if tipo == "minuto":
+                            attesa_minuto = max(attesa_minuto, secondi or 30)
+                        log(f"      · {modello} oltre il limite di richieste, provo il successivo")
                     continue
                 if stato not in SOVRACCARICO:
                     break
                 log(f"      · {modello} sovraccarico (HTTP {stato}), provo il successivo")
+
+            if not modelli:
+                if not quota.esaurita:
+                    quota.esaurita = True
+                    log("")
+                    log("  ! Tutti i modelli hanno finito le richieste di oggi. I candidati")
+                    log("    restanti NON vengono proposti e verranno ripresi al prossimo giro.")
+                    log("")
+                break
+
+            if stato == 429 and attesa_minuto and attese_minuto < MAX_ATTESE_MINUTO:
+                # Tutti i modelli ancora disponibili sono al limite del minuto:
+                # si aspetta quanto dice Google e si riprova, senza contare il
+                # tentativo. Il 15 ottobre 2026, senza questa distinzione, lo
+                # Scout ha scambiato una raffica di limiti al minuto per la
+                # quota del giorno finita e ha lasciato fuori cinque titoli.
+                attese_minuto += 1
+                tentativo -= 1
+                attesa = min(attesa_minuto + 2, 65)
+                log(f"      · limite al minuto su tutti i modelli: aspetto {attesa:.0f}s")
+                time.sleep(attesa)
+                continue
 
             if stato in SOVRACCARICO:
                 # Sovraccarichi tutti: si aspetta un poco e si riprova una volta.
@@ -1949,7 +2006,9 @@ SINOSSI:
                 log(f"      · d'ora in poi uso {modello}")
 
             if stato == 429:
-                # Qui si arriva solo se anche l'ultimo modello era oltre il limite.
+                # Qui si arriva se anche l'ultimo modello era oltre un limite di
+                # cui il messaggio non dice la durata, o se le attese al minuto
+                # sono finite: si torna alla vecchia regola dei 429 di fila.
                 attesa = quota.rate_limited(suggerita)
                 if quota.esaurita or tentativo == tentativi:
                     break
@@ -2052,15 +2111,18 @@ def prova_classificatore():
 # Programma principale
 # --------------------------------------------------------------------------
 
-def codice_uscita(non_classificati, quota):
+def codice_uscita(non_classificati, quota, verdetti):
     """
-    0: tutto classificato. 2: qualche candidato senza verdetto, ma il
-    classificatore a tratti rispondeva — riprovare piu' tardi ha senso, e il
-    workflow lo fa. 3: il classificatore e' stato dato per fuori servizio
-    (quota finita o silenzio prolungato) — riprovare dopo venti minuti
-    rileggerebbe le pagine degli editori per niente.
+    0: tutto classificato, oppure il classificatore ha risposto almeno in
+    parte. In quel caso i candidati rimasti indietro si riprendono al giro
+    dopo, e un'email di errore ogni settimana per cinque titoli su quaranta
+    (e' successo il 15 ottobre 2026) farebbe smettere di leggerle.
+    Errore solo se il classificatore non ha dato nemmeno un verdetto:
+    2 se a tratti rispondeva — riprovare piu' tardi ha senso, e il workflow
+    lo fa — e 3 se e' stato dato per fuori servizio, perche' riprovare dopo
+    venti minuti rileggerebbe le pagine degli editori per niente.
     """
-    if not non_classificati:
+    if not non_classificati or verdetti:
         return 0
     return 3 if quota.esaurita else 2
 
@@ -2285,6 +2347,7 @@ def main():
     nuovi = []
     non_classificati = []
     per_regola = []   # proposti dal ripiego a regole, a classificatore muto
+    verdetti = 0      # candidati a cui il classificatore ha risposto
     quota = Quota()
     log(f"\nClassifico {len(superstiti)} candidati...")
     inizio = time.time()
@@ -2349,6 +2412,8 @@ def main():
             c["_dubbio_nazionalita"] = True
 
         esito = classifica(c, chiave, modelli, quota)
+        if not esito.get("_non_classificato"):
+            verdetti += 1
 
         if esito.get("_non_classificato"):
             # Se la quota e' finita o il classificatore manca del tutto,
@@ -2443,7 +2508,7 @@ def main():
     if args.dry_run:
         log("(dry-run: non scrivo nulla)")
         print(json.dumps(nuovi, ensure_ascii=False, indent=2)[:3000])
-        return codice_uscita(non_classificati, quota)
+        return codice_uscita(non_classificati, quota, verdetti)
 
     if len(scarti) != scarti_prima:
         scrivi_scarti(scarti)
@@ -2490,7 +2555,7 @@ def main():
         # Modalita' di ripiego, senza Supabase: si scrive il vecchio file.
         if not nuovi:
             log("Niente da aggiungere.")
-            return codice_uscita(non_classificati, quota)
+            return codice_uscita(non_classificati, quota, verdetti)
         tutti = esistenti + nuovi
         CANDIDATES_FILE.write_text(
             json.dumps(tutti, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -2500,10 +2565,15 @@ def main():
 
     if non_classificati:
         log("\n" + "=" * 60)
-        log(f"ATTENZIONE: il classificatore non ha risposto per {len(non_classificati)} "
-            "candidati, che NON sono stati proposti.")
-        log("Il giro esce con errore apposta, perche' GitHub lo segnali per email.")
-    return codice_uscita(non_classificati, quota)
+        if verdetti:
+            log(f"{len(non_classificati)} candidati sono rimasti senza verdetto e verranno "
+                f"ripresi al prossimo giro. Il classificatore ha risposto per gli altri "
+                f"{verdetti}: nessun errore.")
+        else:
+            log(f"ATTENZIONE: il classificatore non ha risposto per {len(non_classificati)} "
+                "candidati, che NON sono stati proposti.")
+            log("Il giro esce con errore apposta, perche' GitHub lo segnali per email.")
+    return codice_uscita(non_classificati, quota, verdetti)
 
 
 if __name__ == "__main__":
