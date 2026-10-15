@@ -97,7 +97,7 @@
       <div>
         <h1>Marenero</h1>
         <div class="by">Demetrio Salvi • Aculei Edizioni • 2026</div>
-        <div class="tags"><span class="tag genre">urban fantasy</span><span class="tag">Esordio: sì</span></div>
+        <div class="tags"><span class="tag genre">urban fantasy</span><span class="tag">Esordio: no</span></div>
         <div class="dati"><div>ISBN: 979-1282465168</div></div>
       </div>
     </div>
@@ -111,7 +111,7 @@ Da lì, precipita in un mondo “di sotto”, oscuro e tremendo, popolato da sir
     <div class="nota" id="condNota" role="status" hidden></div>
     <script>
 (function(){
-  var D = {"url": "https://www.fantasyitalianuoveproposte.it/libri/marenero/", "immagine": "https://nncnhlbaqnfqtjwembii.supabase.co/storage/v1/object/public/copertine/instagram/marenero.jpg", "nomeFile": "marenero.jpg", "didascalia": "«Marenero» di Demetrio Salvi\nAculei Edizioni, 2026\nUn esordio.\n\nLa scheda completa è nel catalogo di Fantasy Italia — Nuove Proposte:\nwww.fantasyitalianuoveproposte.it/libri/marenero/\n\n#fantasyitaliano #fantasy #librifantasy #libridaleggere #bookstagramitalia #esordio"};
+  var D = {"url": "https://www.fantasyitalianuoveproposte.it/libri/marenero/", "immagine": "https://nncnhlbaqnfqtjwembii.supabase.co/storage/v1/object/public/copertine/instagram/marenero.jpg", "nomeFile": "marenero.jpg", "didascalia": "«Marenero» di Demetrio Salvi\nAculei Edizioni, 2026\n\nLa scheda completa è nel catalogo di Fantasy Italia — Nuove Proposte:\nwww.fantasyitalianuoveproposte.it/libri/marenero/\n\n#fantasyitaliano #fantasy #librifantasy #libridaleggere #bookstagramitalia"};
   var nota = document.getElementById('condNota');
   function avvisa(t){ nota.textContent = t; nota.hidden = !t; }
   var link = document.getElementById('condLink');
@@ -132,7 +132,7 @@ Da lì, precipita in un mondo “di sotto”, oscuro e tremendo, popolato da sir
     if(!file){
       ig.disabled = true; avvisa('Preparo l’immagine…');
       try{
-        var r = await fetch(D.immagine);
+        var r = await fetch(D.immagine, { cache: 'no-cache' });
         if(!r.ok) throw new Error('HTTP ' + r.status);
         file = new File([await r.blob()], D.nomeFile, { type: 'image/jpeg' });
       }catch(e){

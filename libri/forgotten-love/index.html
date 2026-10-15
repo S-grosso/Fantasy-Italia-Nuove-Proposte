@@ -131,7 +131,7 @@ Il suo cammino lo porterà fuori dalle mura di Gaahard, dove dovrà affrontare l
     if(!file){
       ig.disabled = true; avvisa('Preparo l’immagine…');
       try{
-        var r = await fetch(D.immagine);
+        var r = await fetch(D.immagine, { cache: 'no-cache' });
         if(!r.ok) throw new Error('HTTP ' + r.status);
         file = new File([await r.blob()], D.nomeFile, { type: 'image/jpeg' });
       }catch(e){
