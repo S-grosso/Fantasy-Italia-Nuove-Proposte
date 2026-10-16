@@ -91,7 +91,7 @@
   .row{display:flex;gap:10px;flex-wrap:wrap}
   .field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:180px}
   .field label{font-size:13px;color:var(--muted)}
-  input[type="text"], input[type="url"], input[type="number"], textarea, select{background:#0f1016;color:var(--ink);border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:14px;width:100%}
+  input[type="text"], input[type="url"], input[type="email"], input[type="number"], textarea, select{background:#0f1016;color:var(--ink);border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:14px;width:100%}
   textarea{height:140px;resize:vertical}
   .hint{color:var(--muted);font-size:12px}
   .right{margin-left:auto}
@@ -229,7 +229,7 @@
     <div class="muted" style="margin-bottom:12px">
       Hai scritto un romanzo fantasy italiano che non trovi in catalogo, o ne conosci uno?
       Segnalalo qui. Le proposte le leggo una per una: non compaiono da sole nel catalogo,
-      e se qualcosa non torna ti scrivo all'indirizzo che lasci.
+      e se lasci la tua email e qualcosa non torna, ti scrivo.
     </div>
 
     <!-- Come per i Contatti, onsubmit="return false" e' la rete di sicurezza
@@ -267,11 +267,28 @@
           <label for="p_link">Pagina dell'editore o del negozio</label>
           <input id="p_link" type="url" maxlength="500" placeholder="https://...">
         </div>
+      </div>
+
+      <div class="row">
         <div class="field">
-          <label for="p_contatto">La tua email *</label>
+          <label for="p_amazon">Pagina Amazon</label>
+          <input id="p_amazon" type="url" maxlength="500" placeholder="https://www.amazon.it/...">
+        </div>
+        <div class="field">
+          <label for="p_contatto">La tua email</label>
           <input id="p_contatto" type="email" maxlength="160" placeholder="nome@email.it"
-                 autocomplete="email" required>
-          <div class="hint">Serve solo per risponderti. Non finisce nel catalogo e non è pubblica.</div>
+                 autocomplete="email">
+          <div class="hint">Facoltativa: serve solo se vuoi che ti risponda. Non finisce nel catalogo e non è pubblica.</div>
+        </div>
+      </div>
+
+      <!-- La quarta di copertina e la pagina Amazon vanno direttamente nella
+           scheda proposta: chi modera non deve ricopiarle a mano. -->
+      <div class="row">
+        <div class="field">
+          <label for="p_quarta">Quarta di copertina</label>
+          <textarea id="p_quarta" maxlength="4000"
+                    placeholder="Il testo sul retro del libro, o la presentazione dell'editore."></textarea>
         </div>
       </div>
 
@@ -853,13 +870,16 @@
       anno:     ($('#p_anno').value     || '').trim(),
       isbn:     ($('#p_isbn').value     || '').trim(),
       link:     ($('#p_link').value     || '').trim(),
+      amazon:   ($('#p_amazon').value   || '').trim(),
+      quarta:   ($('#p_quarta').value   || '').trim(),
       contatto: ($('#p_contatto').value || '').trim(),
       note:     ($('#p_note').value     || '').trim(),
       sito:     ($('#p_sito').value     || '').trim()
     };
 
-    if(!dati.titolo || !dati.autore || !dati.editore || !dati.contatto){
-      avvisoProposta('error', 'Servono titolo, autore, editore e la tua email.');
+    // L'email e' facoltativa: chi propone puo' non volerla lasciare.
+    if(!dati.titolo || !dati.autore || !dati.editore){
+      avvisoProposta('error', 'Servono almeno titolo, autore ed editore.');
       return;
     }
 

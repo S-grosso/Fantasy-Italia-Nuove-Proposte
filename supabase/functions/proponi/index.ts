@@ -68,12 +68,40 @@ const MAX = {
   editore: 120,
   isbn: 20,
   link: 500,
+  amazon: 500,
   contatto: 160,
   note: 1000,
+  // La quarta di copertina e' il testo piu' lungo: quelle in catalogo
+  // stanno sotto i duemila caratteri, il doppio lascia margine.
+  quarta: 4000,
 };
 
 function pulisci(valore: unknown, limite: number): string {
   return String(valore ?? "").replace(/\s+/g, " ").trim().slice(0, limite);
+}
+
+// Come pulisci(), ma tiene gli a capo: una quarta di copertina e' fatta di
+// paragrafi, e ridotta a una riga sola andrebbe ricomposta a mano.
+function pulisciTesto(valore: unknown, limite: number): string {
+  return String(valore ?? "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, limite);
+}
+
+// Un link Amazon vero: amazon.it, amazon.com e simili, o i link brevi
+// amzn.to / amzn.eu che Amazon stesso genera con "Condividi".
+// Dopo "amazon." solo il paese (o co./com. piu' il paese): "amazon.it.truffa.com"
+// non e' Amazon.
+function linkAmazon(valore: string): boolean {
+  try {
+    const host = new URL(valore).hostname.toLowerCase();
+    return /(^|\.)amazon\.(?:[a-z]{2,3}|co\.[a-z]{2}|com\.[a-z]{2})$/.test(host) || /(^|\.)amzn\.(to|eu|com)$/.test(host);
+  } catch {
+    return false;
+  }
 }
 
 function emailPlausibile(valore: string): boolean {
@@ -117,7 +145,8 @@ Deno.serve(async (req: Request) => {
 
   // Un corpo enorme si scarta prima di leggerlo tutto.
   const lunghezza = Number(req.headers.get("content-length") || "0");
-  if (lunghezza > 8192) {
+  // 16 kB: con la quarta di copertina un invio onesto supera gli 8 kB di prima.
+  if (lunghezza > 16384) {
     return risposta(origine, 413, { ok: false, messaggio: "Messaggio troppo lungo." });
   }
 
@@ -142,6 +171,8 @@ Deno.serve(async (req: Request) => {
   const contatto = pulisci(dati.contatto, MAX.contatto);
   const note = pulisci(dati.note, MAX.note);
   const link = pulisci(dati.link, MAX.link);
+  const amazon = pulisci(dati.amazon, MAX.amazon);
+  const quarta = pulisciTesto(dati.quarta, MAX.quarta);
   const isbn = isbnNormalizzato(pulisci(dati.isbn, MAX.isbn));
 
   const annoGrezzo = parseInt(String(dati.anno ?? ""), 10);
@@ -154,11 +185,17 @@ Deno.serve(async (req: Request) => {
   if (!titolo || !autore || !editore) {
     return risposta(origine, 400, { ok: false, messaggio: "Servono almeno titolo, autore ed editore." });
   }
-  if (!emailPlausibile(contatto)) {
-    return risposta(origine, 400, { ok: false, messaggio: "Serve un'email valida per poterti rispondere." });
+  // L'email e' facoltativa (dal 16 ottobre 2026): chi propone puo' non
+  // volerla lasciare, e il moderatore che inserisce titoli trovati da se'
+  // non deve inventarsene una. Se c'e', deve almeno sembrare un indirizzo.
+  if (contatto && !emailPlausibile(contatto)) {
+    return risposta(origine, 400, { ok: false, messaggio: "L'email non sembra valida: controllala, oppure lasciala vuota." });
   }
   if (link && !/^https?:\/\//i.test(link)) {
     return risposta(origine, 400, { ok: false, messaggio: "Il link deve cominciare con http:// o https://" });
+  }
+  if (amazon && !linkAmazon(amazon)) {
+    return risposta(origine, 400, { ok: false, messaggio: "Nel campo Amazon serve un link ad Amazon (amazon.it o un link breve amzn.eu)." });
   }
 
   try {
@@ -180,10 +217,14 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const dalloStessoContatto = await conta(
-      `select=id&source=eq.proposta%20dal%20sito&created_at=gt.${unGiornoFa}` +
-        `&proposer_contact=eq.${encodeURIComponent(contatto)}`,
-    );
+    // Il limite sullo stesso contatto vale solo per chi lo lascia: senza
+    // email resta la soglia complessiva qui sopra, e il campo-esca.
+    const dalloStessoContatto = contatto
+      ? await conta(
+        `select=id&source=eq.proposta%20dal%20sito&created_at=gt.${unGiornoFa}` +
+          `&proposer_contact=eq.${encodeURIComponent(contatto)}`,
+      )
+      : 0;
     if (dalloStessoContatto >= 3) {
       return risposta(origine, 429, {
         ok: false,
@@ -228,10 +269,12 @@ Deno.serve(async (req: Request) => {
       year: anno,
       isbn: isbn,
       store_publisher_url: link,
+      store_amazon_url: amazon,
+      description: quarta,
       status: "candidate",
       source: "proposta dal sito",
       reason: note ? `Nota di chi propone: ${note}` : "",
-      proposer_contact: contatto,
+      proposer_contact: contatto || null,
     };
 
     const scrittura = await fetch(REST, {
@@ -250,7 +293,9 @@ Deno.serve(async (req: Request) => {
 
     return risposta(origine, 200, {
       ok: true,
-      messaggio: "Proposta ricevuta. La leggo io prima che compaia in catalogo, quindi non è immediata: se serve ti scrivo all'indirizzo che hai lasciato.",
+      messaggio: contatto
+        ? "Proposta ricevuta. La leggo io prima che compaia in catalogo, quindi non è immediata: se serve ti scrivo all'indirizzo che hai lasciato."
+        : "Proposta ricevuta. La leggo io prima che compaia in catalogo, quindi non è immediata.",
     });
   } catch (errore) {
     console.error("errore inatteso", errore);
