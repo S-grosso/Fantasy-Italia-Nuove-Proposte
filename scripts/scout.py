@@ -1562,6 +1562,7 @@ RIPIEGO_ESCLUSI = (
     "librogame", "libro-game", "gioco di ruolo", "rivista", "poesi",
 )
 RIPIEGO_TRADUZIONI = ("traduzione", "tradotto", "traduttore", "traduttrice")
+RIPIEGO_HORROR = ("horror", "gotico", "weird")
 
 
 def ripiego_a_regole(cand):
@@ -1578,6 +1579,11 @@ def ripiego_a_regole(cand):
     dichiarate = [c for c in etichette
                   if any(g in c for g in RIPIEGO_GENERI) and "fantascienza" not in c]
     if not dichiarate:
+        return None
+    # Horror con un sottogenere fantasy ("genere: Gotico, sottogenere: Dark
+    # Fantasy"): il genere principale dice che lo scopo e' far paura. Il 15
+    # ottobre 2026 i titoli cosi' sono stati scartati tutti in moderazione.
+    if any(c.startswith("genere: ") and any(h in c for h in RIPIEGO_HORROR) for c in etichette):
         return None
 
     intestazione = (cand.get("titolo", "") + " " + " ".join(etichette)).lower()
@@ -1612,9 +1618,17 @@ CRITERI DI AMMISSIONE (tutti necessari):
 2. È FANTASY IN SENSO STRETTO: contiene un elemento magico o soprannaturale
    STRUTTURALE, non decorativo. Sono fantasy: high/epic fantasy, dark fantasy,
    urban fantasy, fantasy storico, romantasy e fantasy romance, science fantasy
-   (fantascienza CON magia esplicita), horror soprannaturale con struttura fantasy.
+   (fantascienza CON magia esplicita).
    NON sono fantasy: fantascienza senza magia, thriller, giallo, romance senza
    elemento soprannaturale, realismo magico puramente letterario.
+   NON è fantasy nemmeno l'HORROR, anche quando contiene fantasmi, demoni,
+   vampiri, maledizioni, possessioni, patti con la Morte o altri elementi
+   soprannaturali: un romanzo il cui scopo principale è far paura (horror,
+   gotico, weird, folk horror) SI SCARTA. Lo si ammette solo se l'editore lo
+   qualifica esplicitamente come fantasy (dark fantasy, urban fantasy...),
+   oppure se il soprannaturale è il sistema di un mondo — una magia con le sue
+   regole, popoli e creature di un mondo immaginario — e non soltanto la
+   minaccia che genera paura. Nel dubbio fra horror e dark fantasy, SCARTA.
 3. L'AUTORE è ITALIANO. Questo criterio è STRINGENTE:
    - Se l'autore ha un nome palesemente straniero (es. "Lucy Jane Wood",
      "Sarah J. Maas"), l'opera è una TRADUZIONE: SCARTA, anche se l'editore
@@ -2046,8 +2060,10 @@ SINOSSI:
 
 def prova_classificatore():
     """
-    Tre casi di cui si conosce la risposta giusta: un romanzo fantasy di un
-    autore italiano, un libro illustrato per bambini, una traduzione. Serve
+    Quattro casi di cui si conosce la risposta giusta: un romanzo fantasy di un
+    autore italiano, un libro illustrato per bambini, una traduzione e un
+    horror soprannaturale di un autore italiano (il 15 ottobre 2026 erano
+    passati come dark fantasy, e il moderatore li ha scartati tutti). Serve
     a verificare il classificatore da GitHub Actions, dove sta la chiave,
     prima di affidargli il giro vero. Non tocca il database.
     """
@@ -2077,6 +2093,17 @@ def prova_classificatore():
             "sinossi": ("In un'accademia magica dove ogni prova puo' essere l'ultima, una "
                         "giovane studentessa sfida le regole per salvare chi ama. "
                         "Il bestseller internazionale finalmente in italiano."),
+        }),
+        (False, {
+            "titolo": "La casa sul lago nero", "autore": "Giulia Ferraresi",
+            "editore": "Spirito Libero Edizioni", "categorie": ["genere: Horror", "sottogenere: Gotico"],
+            "paratesto": "Un horror gotico che vi terra' svegli la notte, dalla penna di un'autrice italiana.",
+            "sinossi": ("Quando Marta eredita la villa della nonna sulle rive di un lago, "
+                        "scopre che la casa non e' mai rimasta vuota. Di notte i corridoi "
+                        "si riempiono di passi, una bambina morta un secolo prima chiede di "
+                        "giocare e un'antica maledizione reclama un'altra vittima. Per "
+                        "spezzarla Marta dovra' affrontare lo spirito che abita la cantina, "
+                        "prima che la casa si prenda anche lei."),
         }),
     ]
 
