@@ -1960,7 +1960,17 @@ SINOSSI:
                 break
             stato, attesa_minuto = None, 0
             for modello in list(modelli):
-                stato, testo, suggerita = chiama_gemini(chiave, modello, PROMPT, scheda)
+                try:
+                    stato, testo, suggerita = chiama_gemini(chiave, modello, PROMPT, scheda)
+                except requests.Timeout:
+                    # Un modello che non risponde in tempo e' come uno
+                    # sovraccarico: si prova il successivo. Prima l'errore
+                    # usciva dal giro dei modelli e si riprovava lo stesso,
+                    # come nella prova del 16 ottobre 2026, quando due casi su
+                    # quattro sono rimasti senza verdetto cosi'.
+                    stato, testo, suggerita = 504, "", None
+                    log(f"      · {modello} non risponde entro {GEMINI_TIMEOUT}s, provo il successivo")
+                    continue
                 if stato == 429:
                     # Su Gemini il limite di richieste e' di ciascun modello,
                     # non della chiave: uno puo' rifiutare e il successivo
