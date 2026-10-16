@@ -14,7 +14,7 @@ formato 4:5, il piu' alto che Instagram mostra per intero nel feed.
 
 Un'immagine si rifa' solo quando cambia qualcosa che vi compare, o il
 disegno stesso: l'impronta di quei dati sta in social_firma. Cosi' lo
-script gira ogni sei ore senza ricaricare niente se niente e' cambiato.
+script gira ogni quattro ore senza ricaricare niente se niente e' cambiato.
 
 Uso:
     python scripts/immagini_social.py                         # quelle da fare

@@ -1,10 +1,11 @@
 name: Pagine libro e copertine
 
 on:
-  # Ogni sei ore: una scheda approvata ha la sua pagina entro il giro dopo.
+  # Ogni quattro ore (dal 16 ottobre 2026; prima sei): una scheda approvata
+  # o corretta ha pagina e immagine per Instagram entro il giro dopo.
   # Nel frattempo il link funziona lo stesso, grazie al ripiego di 404.html.
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "0 */4 * * *"
   # Avviabile a mano dalla tab Actions, subito dopo un'approvazione
   workflow_dispatch:
 

@@ -421,7 +421,7 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
 
     const m = messaggioKit(kitLibro);
 
-    // La pagina statica del libro arriva entro sei ore dall'approvazione.
+    // La pagina statica del libro arriva entro quattro ore dall'approvazione.
     // Il link funziona anche prima, grazie al ripiego del 404, ma le
     // anteprime di WhatsApp e dei social leggono la pagina vera: condiviso
     // troppo presto, il primo messaggio uscirebbe senza copertina e con
@@ -435,7 +435,7 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
       if(!esiste){
         kitPaginaVerificata = true;
         $('#btnKitScrivi').textContent = 'Scrivi comunque';
-        avvisoKit('La pagina statica del libro non è ancora pronta, e con lei l\u2019immagine per Instagram: si generano entro sei ore, '
+        avvisoKit('La pagina statica del libro non è ancora pronta, e con lei l\u2019immagine per Instagram: si generano entro quattro ore, '
           + 'oppure subito lanciando «Pagine libro e copertine» da GitHub Actions. '
           + 'Il link funziona già, ma nelle chat l\u2019anteprima uscirebbe senza copertina.');
         return;
