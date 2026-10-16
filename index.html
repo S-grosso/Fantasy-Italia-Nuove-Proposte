@@ -25,6 +25,8 @@
   .wrap{max-width:1100px;margin:0 auto;padding:12px 16px}
   .wrap-col{display:flex;flex-direction:column;gap:8px}
   .topbar{display:flex;align-items:center;gap:10px}
+  .topbar h1 a{color:inherit;text-decoration:none}
+  .topbar h1 a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
   h1{font-size:20px;margin:0;letter-spacing:.2px;flex:1}
   .adminBadge{font-size:12px;border:1px solid var(--border);padding:6px 9px;border-radius:999px;color:#cfe;opacity:.9}
   .adminToggle{background:#132033;border:1px solid var(--border);color:#dfe;padding:8px 12px;border-radius:10px;cursor:pointer}
@@ -183,7 +185,7 @@
 <header>
   <div class="wrap wrap-col">
     <div class="topbar">
-      <h1>Fantasy Italia — Nuove proposte</h1>
+      <h1><a id="titoloSito" href="/">Fantasy Italia — Nuove proposte</a></h1>
       <span id="adminBadge" class="adminBadge" style="display:none"></span>
       <button id="adminToggle" class="adminToggle" title="Accedi/Esci dalla sessione amministratore">Accedi admin</button>
     </div>
@@ -1871,6 +1873,19 @@ ${testo}`;
     showTab('catalogo');
   }
   window.addEventListener('hashchange', handleRoute);
+
+  // Il titolo in alto riporta al catalogo, come su qualunque sito. E' un
+  // link vero, cosi' "apri in una nuova scheda" funziona; il clic normale
+  // resta nella pagina, senza ricaricarla. Con la scheda di un libro aperta
+  // basta chiuderla: e' il dialogo stesso a rimettere a posto l'indirizzo.
+  $('#titoloSito')?.addEventListener('click', ev => {
+    if(ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+    ev.preventDefault();
+    if(dlgLibro && dlgLibro.open) dlgLibro.close();
+    else if(location.pathname !== '/' || location.hash) history.pushState(null, '', '/');
+    showTab('catalogo');
+    window.scrollTo({ top: 0 });
+  });
   $$('#navPublic button, #navAdmin button').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const tab=btn.getAttribute('data-tab');
