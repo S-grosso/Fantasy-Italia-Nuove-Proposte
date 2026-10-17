@@ -97,7 +97,7 @@
       <div>
         <h1>Dammi un fiume di sangue</h1>
         <div class="by">Carlo Vicenzi • Gainsworth Publishing • 2025</div>
-        <div class="tags"><span class="tag genre">dark epic fantasy</span><span class="tag">Esordio: no</span></div>
+        <div class="tags"><span class="tag genre">dark epic fantasy</span><span class="tag">Esordio: no</span><span class="tag label">Finalista Premio Italia</span></div>
         <div class="dati"><div>ISBN: 978-8899437480</div></div>
       </div>
     </div>
@@ -140,7 +140,7 @@ Fratello e sorella che lottano per riportare l&#x27;ordine in un mondo che somig
         if(!r.ok) throw new Error('HTTP ' + r.status);
         file = new File([await r.blob()], D.nomeFile, { type: 'image/jpeg' });
       }catch(e){
-        avvisa('L’immagine per Instagram non è ancora pronta: viene preparata entro sei ore dalla pubblicazione della scheda.');
+        avvisa('L’immagine per Instagram non è ancora pronta: viene preparata entro quattro ore dalla pubblicazione della scheda.');
         return;
       }finally{
         ig.disabled = false;

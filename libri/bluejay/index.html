@@ -135,7 +135,7 @@ Perché l&#x27;arte non si limita a dare forma alla vita. Può riscriverla. E il
         if(!r.ok) throw new Error('HTTP ' + r.status);
         file = new File([await r.blob()], D.nomeFile, { type: 'image/jpeg' });
       }catch(e){
-        avvisa('L’immagine per Instagram non è ancora pronta: viene preparata entro sei ore dalla pubblicazione della scheda.');
+        avvisa('L’immagine per Instagram non è ancora pronta: viene preparata entro quattro ore dalla pubblicazione della scheda.');
         return;
       }finally{
         ig.disabled = false;

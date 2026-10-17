@@ -97,7 +97,7 @@
       <div>
         <h1>Sonata per la morte di un dio</h1>
         <div class="by">Giacomo Arzani • Acheron Books • 2025</div>
-        <div class="tags"><span class="tag genre">epic fantasy</span><span class="tag">Esordio: sì</span></div>
+        <div class="tags"><span class="tag genre">epic fantasy</span><span class="tag">Esordio: sì</span><span class="tag label">Finalista Premio Italia</span></div>
         <div class="dati"><div>ISBN: 979-1254981108</div></div>
       </div>
     </div>
@@ -132,7 +132,7 @@
         if(!r.ok) throw new Error('HTTP ' + r.status);
         file = new File([await r.blob()], D.nomeFile, { type: 'image/jpeg' });
       }catch(e){
-        avvisa('L’immagine per Instagram non è ancora pronta: viene preparata entro sei ore dalla pubblicazione della scheda.');
+        avvisa('L’immagine per Instagram non è ancora pronta: viene preparata entro quattro ore dalla pubblicazione della scheda.');
         return;
       }finally{
         ig.disabled = false;
