@@ -70,6 +70,8 @@ const MAX = {
   link: 500,
   amazon: 500,
   contatto: 160,
+  genere: 60,
+  instagram: 40,
   note: 1000,
   // La quarta di copertina e' il testo piu' lungo: quelle in catalogo
   // stanno sotto i duemila caratteri, il doppio lascia margine.
@@ -102,6 +104,17 @@ function linkAmazon(valore: string): boolean {
   } catch {
     return false;
   }
+}
+
+// Un nome utente Instagram: lettere, cifre, punti e trattini bassi, fino a
+// 30 caratteri. Si accetta con o senza la @, con o senza l'indirizzo del
+// profilo davanti, e si salva nudo.
+function profiloInstagram(valore: string): string {
+  const nudo = valore.trim()
+    .replace(/^(https?:\/\/)?(www\.)?instagram\.com\//i, "")
+    .replace(/^@/, "")
+    .replace(/[\/?#].*$/, "");
+  return /^[A-Za-z0-9._]{1,30}$/.test(nudo) ? nudo : "";
 }
 
 function emailPlausibile(valore: string): boolean {
@@ -173,6 +186,10 @@ Deno.serve(async (req: Request) => {
   const link = pulisci(dati.link, MAX.link);
   const amazon = pulisci(dati.amazon, MAX.amazon);
   const quarta = pulisciTesto(dati.quarta, MAX.quarta);
+  const genere = pulisci(dati.genere, MAX.genere);
+  const esordio = pulisci(dati.esordio, 3).toLowerCase();
+  const vuoleTag = pulisci(dati.tag_instagram, 3).toLowerCase();
+  const instagram = profiloInstagram(pulisci(dati.instagram, MAX.instagram));
   const isbn = isbnNormalizzato(pulisci(dati.isbn, MAX.isbn));
 
   const annoGrezzo = parseInt(String(dati.anno ?? ""), 10);
@@ -193,6 +210,21 @@ Deno.serve(async (req: Request) => {
   }
   if (link && !/^https?:\/\//i.test(link)) {
     return risposta(origine, 400, { ok: false, messaggio: "Il link deve cominciare con http:// o https://" });
+  }
+  // Esordio, sottogenere e tag su Instagram sono obbligatori dal 17 ottobre
+  // 2026: sono i tre punti su cui il moderatore perdeva piu' tempo a capire
+  // le proposte.
+  if (esordio !== "si" && esordio !== "no") {
+    return risposta(origine, 400, { ok: false, messaggio: "Indica se è un romanzo d'esordio." });
+  }
+  if (!genere) {
+    return risposta(origine, 400, { ok: false, messaggio: "Indica il sottogenere." });
+  }
+  if (vuoleTag !== "si" && vuoleTag !== "no") {
+    return risposta(origine, 400, { ok: false, messaggio: "Indica se vuoi essere taggato su Instagram." });
+  }
+  if (vuoleTag === "si" && !instagram) {
+    return risposta(origine, 400, { ok: false, messaggio: "Scrivi il profilo Instagram da taggare, per esempio @nomeprofilo." });
   }
   if (amazon && !linkAmazon(amazon)) {
     return risposta(origine, 400, { ok: false, messaggio: "Nel campo Amazon serve un link ad Amazon (amazon.it o un link breve amzn.eu)." });
@@ -271,6 +303,9 @@ Deno.serve(async (req: Request) => {
       store_publisher_url: link,
       store_amazon_url: amazon,
       description: quarta,
+      is_debut: esordio === "si",
+      genre: genere,
+      instagram: vuoleTag === "si" ? instagram : null,
       status: "candidate",
       source: "proposta dal sito",
       reason: note ? `Nota di chi propone: ${note}` : "",

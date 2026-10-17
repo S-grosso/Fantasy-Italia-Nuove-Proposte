@@ -190,6 +190,10 @@
         <input id="f_isbn" type="text" inputmode="numeric"></div>
       <div class="field" style="max-width:220px"><label for="f_genre">Genere</label>
         <input id="f_genre" type="text" placeholder="dark fantasy, romantasy…"></div>
+      <!-- Chi taggare quando si condivide il libro su Instagram: lo lascia chi
+           propone dal modulo, o lo scrivi tu. Non e' pubblico. -->
+      <div class="field" style="max-width:220px"><label for="f_instagram">Instagram da taggare</label>
+        <input id="f_instagram" type="text" placeholder="@nomeprofilo" autocomplete="off"></div>
     </div>
 
     <div class="field"><label for="f_cover">URL copertina</label>
@@ -661,6 +665,7 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
     $('#f_cover').value     = v('cover_url');
     $('#f_amz').value       = v('store_amazon_url');
     $('#f_store').value     = v('store_publisher_url');
+    $('#f_instagram').value = b && b.instagram ? '@' + b.instagram : '';
     $('#f_desc').value      = v('description');
     $('#f_featured').checked = !!(b && b.featured);
     $('#f_debut').value = b && b.is_debut === true ? 'si'
@@ -768,6 +773,8 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
       cover_url: $('#f_cover').value.trim(),
       store_amazon_url: $('#f_amz').value.trim(),
       store_publisher_url: $('#f_store').value.trim(),
+      // Si salva senza la @, come fa il modulo pubblico.
+      instagram: $('#f_instagram').value.trim().replace(/^@/, '') || null,
       description: $('#f_desc').value.trim(),
       is_debut: deb === 'si' ? true : deb === 'no' ? false : null,
       featured: $('#f_featured').checked,

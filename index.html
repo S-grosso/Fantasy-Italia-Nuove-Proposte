@@ -102,6 +102,12 @@
   input[type="text"], input[type="url"], input[type="email"], input[type="number"], textarea, select{background:#0f1016;color:var(--ink);border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:14px;width:100%}
   textarea{height:140px;resize:vertical}
   .hint{color:var(--muted);font-size:12px}
+  /* Le domande a scelta del modulo proposte: etichetta come quelle dei campi,
+     scelte affiancate e alte quanto un campo, cosi' la riga resta allineata. */
+  .etichetta{font-size:13px;color:var(--muted)}
+  .scelte{display:flex;gap:20px;align-items:center;min-height:38px}
+  .scelte label{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--ink);cursor:pointer}
+  #p_genere_altro{margin-top:6px}
   .right{margin-left:auto}
   .muted{color:var(--muted)}
   .small{font-size:12px}
@@ -271,6 +277,42 @@
         </div>
       </div>
 
+      <!-- Esordio, sottogenere e tag su Instagram sono obbligatori: sono i
+           punti su cui chi modera perdeva piu' tempo a capire le proposte.
+           Le voci del sottogenere sono quelle piu' usate in catalogo, in inglese
+           come le scrive il moderatore e in ordine alfabetico; "Altro" apre un
+           campo libero. -->
+      <div class="row">
+        <div class="field" style="max-width:260px">
+          <span class="etichetta" id="p_esordio_titolo">Romanzo d'esordio? *</span>
+          <div class="scelte" role="radiogroup" aria-labelledby="p_esordio_titolo">
+            <label><input type="radio" name="p_esordio" value="si" required> Sì</label>
+            <label><input type="radio" name="p_esordio" value="no"> No</label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="p_genere">Sottogenere *</label>
+          <select id="p_genere" required>
+            <option value="" disabled selected>Scegli il sottogenere</option>
+            <option value="cozy fantasy">Cozy fantasy</option>
+            <option value="dark fantasy">Dark fantasy</option>
+            <option value="epic fantasy">Epic fantasy</option>
+            <option value="grimdark">Grimdark</option>
+            <option value="high fantasy">High fantasy</option>
+            <option value="historical fantasy">Historical fantasy</option>
+            <option value="low fantasy">Low fantasy</option>
+            <option value="mythic fantasy">Mythic fantasy</option>
+            <option value="romantasy">Romantasy</option>
+            <option value="science fantasy">Science fantasy</option>
+            <option value="steampunk fantasy">Steampunk fantasy</option>
+            <option value="urban fantasy">Urban fantasy</option>
+            <option value="young adult fantasy">Young adult fantasy</option>
+            <option value="altro">Altro…</option>
+          </select>
+          <input id="p_genere_altro" type="text" maxlength="60" placeholder="Scrivi il sottogenere" hidden>
+        </div>
+      </div>
+
       <div class="row">
         <div class="field">
           <label for="p_link">Pagina dell'editore o del negozio</label>
@@ -288,6 +330,21 @@
           <input id="p_contatto" type="email" maxlength="160" placeholder="nome@email.it"
                  autocomplete="email">
           <div class="hint">Facoltativa: serve solo se vuoi che ti risponda. Non finisce nel catalogo e non è pubblica.</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field" style="max-width:340px">
+          <span class="etichetta" id="p_tag_titolo">Vuoi essere taggato su Instagram quando condividiamo il libro? *</span>
+          <div class="scelte" role="radiogroup" aria-labelledby="p_tag_titolo">
+            <label><input type="radio" name="p_tag" value="si" required> Sì</label>
+            <label><input type="radio" name="p_tag" value="no"> No</label>
+          </div>
+        </div>
+        <div class="field" id="p_instagram_campo" hidden>
+          <label for="p_instagram">Profilo Instagram da taggare *</label>
+          <input id="p_instagram" type="text" maxlength="40" placeholder="@nomeprofilo" autocomplete="off">
+          <div class="hint">Il nome che compare dopo la @, oppure il link al profilo.</div>
         </div>
       </div>
 
@@ -881,6 +938,12 @@
       link:     ($('#p_link').value     || '').trim(),
       amazon:   ($('#p_amazon').value   || '').trim(),
       quarta:   ($('#p_quarta').value   || '').trim(),
+      esordio:  ($('input[name="p_esordio"]:checked') || {}).value || '',
+      genere:   $('#p_genere').value === 'altro'
+                  ? ($('#p_genere_altro').value || '').trim()
+                  : ($('#p_genere').value || ''),
+      tag_instagram: ($('input[name="p_tag"]:checked') || {}).value || '',
+      instagram: ($('#p_instagram').value || '').trim(),
       contatto: ($('#p_contatto').value || '').trim(),
       note:     ($('#p_note').value     || '').trim(),
       sito:     ($('#p_sito').value     || '').trim()
@@ -889,6 +952,12 @@
     // L'email e' facoltativa: chi propone puo' non volerla lasciare.
     if(!dati.titolo || !dati.autore || !dati.editore){
       avvisoProposta('error', 'Servono almeno titolo, autore ed editore.');
+      return;
+    }
+    // Il browser li controlla gia' (required), ma i campi che compaiono a
+    // comando si ricontrollano qui: un "Altro" senza testo passerebbe.
+    if(!dati.esordio || !dati.genere || !dati.tag_instagram || (dati.tag_instagram === 'si' && !dati.instagram)){
+      avvisoProposta('error', 'Mancano esordio, sottogenere o la scelta sul tag Instagram.');
       return;
     }
 
@@ -926,7 +995,22 @@
   $('#propostaForm')?.addEventListener('reset', () => {
     const box = $('#propostaStato');
     if(box){ box.className = 'notice'; box.textContent = ''; }
+    // Dopo lo svuotamento i campi a comparsa tornano nascosti.
+    setTimeout(aggiornaCampiAComparsa, 0);
   });
+
+  // "Altro" nel sottogenere e "Si'" al tag su Instagram aprono un campo, che
+  // diventa obbligatorio solo quando e' visibile.
+  function aggiornaCampiAComparsa(){
+    const altro = $('#p_genere')?.value === 'altro';
+    const campoAltro = $('#p_genere_altro');
+    if(campoAltro){ campoAltro.hidden = !altro; campoAltro.required = altro; }
+    const tag = ($('input[name="p_tag"]:checked') || {}).value === 'si';
+    const campoIg = $('#p_instagram_campo');
+    if(campoIg){ campoIg.hidden = !tag; $('#p_instagram').required = tag; }
+  }
+  $('#p_genere')?.addEventListener('change', aggiornaCampiAComparsa);
+  $$('input[name="p_tag"]').forEach(r => r.addEventListener('change', aggiornaCampiAComparsa));
 
   /* ==== Catalogo (SOLO GitHub) ==== */
   function tagEl(text, cls){ const t=document.createElement('span'); t.className=cls||'tag'; t.textContent=text; return t; }
