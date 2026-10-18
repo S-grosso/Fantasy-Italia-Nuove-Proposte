@@ -142,9 +142,11 @@ Eredità della migrazione a Supabase. Decisa dal moderatore il 18 ottobre 2026 e
 
 Verificato in locale: la home carica il catalogo, i tab pubblici funzionano, nessun errore in console; `catalogo-admin.html` si apre senza errori.
 
-Resta, fuori da questa voce:
-- in `index.html`, il vecchio codice di moderazione (`modCard`, `persistApprovedEdit`, la lettura delle bozze nel browser e il blocco commentato in `renderModeration`), che non viene più chiamato da quando la moderazione vive in `catalogo-admin.html`. Ci sono anche gli ultimi due commenti che parlano di "esportare il JSON su GitHub";
-- in `news-admin.html`, il riquadro gemello "Importazione una tantum" ("Importa da news.json").
+- [x] **Fatto anche il seguito** (18 ottobre 2026), nella stessa sessione:
+  - in `index.html`, il vecchio codice di moderazione che nessuno chiamava più: la sezione `#moderazione` (mai mostrata, perché pulsante e indirizzo portano a `catalogo-admin.html`), `modCard`, `renderModeration` con il blocco commentato, le correzioni locali (`applyApprovedEdits`, `persistApprovedEdit` e affini), lo stato che le reggeva, `touchSession()`, `load()`/`save()` e il CSS usato solo da quelle card. Il catalogo ora riempie `state.remoteBooks` direttamente in `caricaDati()`. Il pulsante "Moderazione" resta e porta al pannello;
+  - in `news-admin.html`, il riquadro "Importazione una tantum" ("Importa da news.json") e il suo codice.
+
+  Verificato in locale: la home carica il catalogo (ricerca, titolo del sito e scheda libro compresi), i tab pubblici funzionano, nessun errore in console; `news-admin.html` si apre e mostra gli articoli. Nel browser di prova l'evento `close` dei `<dialog>` non scatta, nemmeno su un dialogo vuoto, quindi la chiusura della scheda libro va riprovata sul sito pubblicato: l'indirizzo deve tornare alla home.
 
 ### 4.10 Aggiornamenti di manutenzione — fatto
 - [x] **Fatto** (20 settembre 2026). `actions/checkout@v5` e `actions/setup-python@v6` in entrambi i workflow: chiude l'avviso su Node 20.

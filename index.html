@@ -47,9 +47,6 @@
   /* 300px invece di 260: sotto quella soglia i due pulsanti negozio non
      stanno affiancati accanto alla copertina. */
   .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
-  /* In Moderazione le card sono editor completi: servono a larghezza piena */
-  #gridModeration.grid{grid-template-columns:1fr}
-  #gridModeration .card{max-width:900px}
   .card{position:relative;background:#10121a;border:1px solid var(--border);border-radius:12px;padding:10px;display:flex;gap:10px;align-items:flex-start;min-height:140px}
   .badge{position:absolute;top:8px;left:8px;background:#0f2;color:#061;font-size:11px;padding:4px 6px;border-radius:6px;border:1px solid #063}
   img.cover{display:block;border-radius:8px;border:1px solid var(--border);height:160px;width:auto;object-fit:cover;background:#080a0f}
@@ -67,9 +64,6 @@
   /* Il filtro "Solo esordi": un interruttore, acceso ha il colore dell'etichetta. */
   #filterDebut{height:38px;white-space:nowrap}
   #filterDebut[aria-pressed="true"]{color:var(--accent);border-color:var(--accent)}
-  .tag.auto{color:#8fd9a8;border-color:#2d6b45}
-  .tag.warn{color:#ffc46b;border-color:#8a6420}
-  .tag .rem{cursor:pointer;font-weight:700;opacity:.8}
   /* I due pulsanti negozio sommano 208px: su schermo stretto non stanno
      accanto alla copertina. Vanno a capo invece di uscire dalla card. */
   .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:nowrap}
@@ -478,21 +472,6 @@
     </div>
   </section>
 
-  <!-- Moderazione -->
-  <section id="moderazione" class="tab" style="display:none">
-    <div class="toolbar">
-      <div class="field" style="max-width:260px">
-        <label>Mostra</label>
-        <select id="moderationFilter">
-          <option value="pending" selected>Da approvare</option>
-          <option value="approved">Approvati</option>
-        </select>
-      </div>
-      <a class="btn right" href="catalogo-admin.html">Gestisci il catalogo →</a>
-    </div>
-    <div id="gridModeration" class="grid"></div>
-  </section>
-
   <!-- Contatti -->
   <section id="contatti" class="tab" style="display:none">
     <div class="muted" style="margin-bottom:12px">Compila il modulo per inviarci richieste, segnalazioni o proposte legate a Fantasy Italia — Nuove proposte.</div>
@@ -609,23 +588,12 @@
     + '&status=eq.approved'
     + '&order=featured.desc,year.desc';
 
-  const APPROVED_EDITS_KEY = 'fi_books_approved_edits_v1';
-
   /* ==== Stato ==== */
   const state = {
-    remoteBooksBase: [],
     remoteBooks: [],
     remoteNews: [],
-    pendingBooks: load('fi_books_pending_v1', []),  // bozze locali (editabili)
-    autoCandidates: [],                             // candidati trovati dallo Scout
-    autoRejected: load('fi_auto_rejected_v1', []),  // candidati che hai scartato: non li rivedi più
-    approvedEdits: load(APPROVED_EDITS_KEY, {}),
     user: null            // utente Supabase, null se non autenticato
   };
-
-  if(!state.approvedEdits || typeof state.approvedEdits!=='object' || Array.isArray(state.approvedEdits)){
-    state.approvedEdits={};
-  }
 
   // pulizia vecchie cache che creavano conflitto
   localStorage.removeItem('fi_books_site_v38');
@@ -640,14 +608,7 @@
   // sovrascrivere i dati del database senza che tu te ne accorga.
   localStorage.removeItem('fi_books_pending_v1');
   localStorage.removeItem('fi_auto_rejected_v1');
-  localStorage.removeItem(APPROVED_EDITS_KEY);
-  state.pendingBooks = [];
-  state.autoRejected = [];
-  state.approvedEdits = {};
-
-  /* ==== Helpers ==== */
-  function load(key, fb){ try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):fb; }catch(_){return fb;} }
-  function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+  localStorage.removeItem('fi_books_approved_edits_v1');
 
   /* ==== Admin: autenticazione Supabase ==== */
   // Un solo account, verificato dal server. Il vecchio PBKDF2 nascondeva
@@ -660,10 +621,6 @@
   // legge una variabile tenuta aggiornata dagli eventi di Supabase
   // invece di interrogare il server ogni volta.
   function sessionIsValid(){ return !!state.user; }
-
-  // Supabase rinnova il token da sé: non serve più prolungare la sessione
-  // a mano. La funzione resta per non dover togliere le chiamate sparse.
-  function touchSession(){}
 
   async function aggiornaSessioneAdmin(){
     const { data } = await supa.auth.getSession();
@@ -754,60 +711,6 @@
     if(b.genre===undefined) b.genre=null;
     return b;
   }
-  function cloneBook(b){
-    return {
-      ...b,
-      labels: Array.isArray(b.labels) ? b.labels.slice() : []
-    };
-  }
-  function arraysEqual(a,b){
-    if(!Array.isArray(a)||!Array.isArray(b)) return false;
-    if(a.length!==b.length) return false;
-    for(let i=0;i<a.length;i++){ if(a[i]!==b[i]) return false; }
-    return true;
-  }
-  function applyApprovedEdits(){
-    const edits = state.approvedEdits||{};
-    state.remoteBooks = state.remoteBooksBase.map(base=>{
-      const copy = cloneBook(base);
-      const edit = edits[base.id];
-      if(edit){
-        if(Array.isArray(edit.labels)) copy.labels = edit.labels.slice();
-        if(typeof edit.featured === 'boolean') copy.featured = edit.featured;
-      }
-      return copy;
-    });
-  }
-  // Registra una correzione su un titolo già in catalogo. Vale per le
-  // etichette e per il flag "consigliato": in entrambi i casi la modifica
-  // resta locale finché non esporti il JSON e lo carichi su GitHub.
-  function persistApprovedEdit(bookId, campo, valore){
-    const base = state.remoteBooksBase.find(b=>String(b.id)===String(bookId));
-    const edit = {...(state.approvedEdits[bookId]||{})};
-
-    // Se il valore torna a coincidere con l'originale, l'annotazione si
-    // cancella: così restano memorizzate solo le differenze vere, e togliere
-    // il flag "consigliato" non lascia residui.
-    let uguale = false;
-    if(base){
-      if(campo === 'labels') uguale = arraysEqual(valore, base.labels||[]);
-      else                   uguale = (!!valore === !!base[campo]);
-    }
-    if(uguale) delete edit[campo]; else edit[campo] = valore;
-
-    if(Object.keys(edit).length) state.approvedEdits[bookId] = edit;
-    else delete state.approvedEdits[bookId];
-
-    save(APPROVED_EDITS_KEY, state.approvedEdits);
-    applyApprovedEdits();
-    renderCatalogo();
-    if($('#moderationFilter')?.value === 'approved') renderModeration();
-  }
-
-  function persistApprovedLabels(bookId, labels){
-    const clean = Array.from(new Set((labels||[]).map(l=>String(l).trim()).filter(Boolean)));
-    persistApprovedEdit(bookId, 'labels', clean);
-  }
   function normalizeNews(arr){
     // Accetta sia il formato Supabase (body_html, published_at) sia quello
     // vecchio del JSON (bodyHtml, ts), così il sito funziona anche se un
@@ -842,8 +745,7 @@
       });
       if(!res.ok) throw new Error('HTTP ' + res.status + ' — ' + await res.text());
       const books = await res.json();
-      state.remoteBooksBase = (books||[]).map(x=>cloneBook(normalizeBook(x)));
-      applyApprovedEdits();
+      state.remoteBooks = (books||[]).map(x=>normalizeBook(x));
     }catch(e){
       console.error(e);
       bann.textContent = '⚠️ Il catalogo non risponde. Riprova tra qualche minuto.';
@@ -871,7 +773,7 @@
         '<div class="muted">Non riesco a caricare le notizie.</div>';
     }
 
-    renderCatalogo(); renderNews(); renderModeration();
+    renderCatalogo(); renderNews();
   }
 
   /* ==== Proponi un titolo ==== */
@@ -1084,362 +986,6 @@
     renderCatalogo();
   });
   (function(){ let t; $('#q')?.addEventListener('input', ()=>{ clearTimeout(t); t=setTimeout(renderCatalogo,200); }); })();
-
-  /* ==== Moderazione ==== */
-  function labelPill(text, onRemove){
-    const pill=document.createElement('span'); pill.className='tag label';
-    const t=document.createElement('span'); t.textContent=text;
-    const x=document.createElement('span'); x.className='rem'; x.textContent='×';
-    x.title='Rimuovi etichetta';
-    x.addEventListener('click', ()=>onRemove(text));
-    pill.appendChild(t); pill.appendChild(x);
-    return pill;
-  }
-  // Un campo di testo etichettato, che salva su ogni modifica.
-  // Usato da tutti i campi editabili della card in moderazione.
-  function editField(label, value, onChange, opts){
-    opts = opts || {};
-    const wrap=document.createElement('div');
-    wrap.className='field';
-    if(opts.width) wrap.style.maxWidth=opts.width;
-    const lab=document.createElement('label'); lab.textContent=label;
-    const inp=document.createElement(opts.textarea ? 'textarea' : 'input');
-    if(!opts.textarea) inp.type = opts.type || 'text';
-    if(opts.textarea) inp.style.height='90px';
-    if(opts.placeholder) inp.placeholder=opts.placeholder;
-    inp.value = value==null ? '' : value;
-    inp.addEventListener('input', ()=>onChange(inp.value));
-    wrap.appendChild(lab); wrap.appendChild(inp);
-    return wrap;
-  }
-
-  function modCard(b, mode){
-    const isPending  = mode==='pending';
-    const isApproved = mode==='approved';
-    const isAuto     = mode==='auto';
-    const editabile  = isPending || isAuto;   // le schede già in catalogo no
-    const allowLabelEdit = isPending || isApproved || isAuto;
-
-    const el=document.createElement('div'); el.className='card';
-    if(editabile){
-      el.style.flexDirection='column';
-      // .card ha align-items:flex-start, che in colonna fa collassare i figli:
-      // senza stretch il form non occupa la larghezza della card.
-      el.style.alignItems='stretch';
-    }
-
-    const img=document.createElement('img'); img.className='cover'; img.alt='Copertina';
-    img.src=b.coverUrl||placeholderCover();
-    const meta=document.createElement('div'); meta.className='meta';
-
-    // Salva la modifica dove serve: le bozze nel localStorage, i candidati
-    // automatici solo in memoria (vivono nel JSON su GitHub finché non li accetti).
-    function persist(){
-      if(isPending) save('fi_books_pending_v1', state.pendingBooks);
-    }
-
-    const h3=document.createElement('h3'); h3.textContent=b.title||'(Senza titolo)';
-    const by=document.createElement('div'); by.className='by';
-    by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • ');
-    meta.appendChild(h3); meta.appendChild(by);
-
-    // Provenienza e confidenza: solo per i candidati dello Scout
-    if(isAuto){
-      const info=document.createElement('div'); info.className='tags';
-      info.appendChild(tagEl('trovato: '+(b._source||'?'),'tag auto'));
-      if(b._confidence==='bassa'){
-        info.appendChild(tagEl('⚠ da verificare','tag warn'));
-      }
-      meta.appendChild(info);
-      if(b._reason){
-        const why=document.createElement('div'); why.className='small muted';
-        why.style.marginTop='4px'; why.textContent=b._reason;
-        meta.appendChild(why);
-      }
-    }
-
-    // ---- Etichette (premi) ----
-    const labelsWrap=document.createElement('div'); labelsWrap.className='tags';
-    function currentLabels(){ return Array.isArray(b.labels)?b.labels.slice():[]; }
-    function refreshLabels(){
-      labelsWrap.innerHTML='';
-      const labels=currentLabels();
-      if(!labels.length){ labelsWrap.appendChild(tagEl('Nessuna etichetta','tag')); return; }
-      labels.forEach(l=>{
-        if(allowLabelEdit){
-          labelsWrap.appendChild(labelPill(l, (lab)=>{
-            const next=currentLabels().filter(x=>x!==lab);
-            b.labels = next;
-            if(isApproved){ persistApprovedLabels(b.id, next); }
-            else { persist(); refreshLabels(); }
-          }));
-        }else{
-          labelsWrap.appendChild(tagEl(l,'tag label'));
-        }
-      });
-    }
-    refreshLabels();
-    meta.appendChild(labelsWrap);
-
-    if(allowLabelEdit){
-      const addRow=document.createElement('div'); addRow.className='row';
-      const addField=document.createElement('input'); addField.type='text';
-      addField.placeholder='Nuova etichetta (es. Vincitore Premio Italia)';
-      addField.style.minWidth='200px';
-      const addBtn=document.createElement('button'); addBtn.className='btn small';
-      addBtn.textContent='Aggiungi';
-      addBtn.addEventListener('click', ()=>{
-        const v=(addField.value||'').trim(); if(!v) return;
-        const labels=currentLabels();
-        if(labels.includes(v)) { addField.value=''; return; }
-        labels.push(v); b.labels = labels; addField.value='';
-        if(isApproved){ persistApprovedLabels(b.id, labels); }
-        else { persist(); refreshLabels(); }
-      });
-      addRow.appendChild(addField); addRow.appendChild(addBtn);
-      meta.appendChild(addRow);
-    }
-
-    if(isApproved){
-      // "Consigliato" modificabile anche sui titoli già pubblicati: prima
-      // si poteva mettere solo in fase di bozza, e non c'era modo di toglierlo.
-      const cLab=document.createElement('label');
-      cLab.className='small muted';
-      cLab.style.display='inline-flex'; cLab.style.alignItems='center';
-      cLab.style.gap='6px'; cLab.style.marginTop='10px';
-      const cChk=document.createElement('input');
-      cChk.type='checkbox'; cChk.checked=!!b.featured;
-      cChk.addEventListener('change', ()=>{
-        persistApprovedEdit(b.id, 'featured', !!cChk.checked);
-      });
-      cLab.appendChild(cChk); cLab.append(' Consigliato');
-      meta.appendChild(cLab);
-
-      const note=document.createElement('div'); note.className='small muted';
-      note.textContent='Titolo già in catalogo. Le modifiche restano in locale finché non esporti il JSON.';
-      meta.appendChild(note);
-      el.appendChild(img); el.appendChild(meta);
-      const badge=document.createElement('div'); badge.className='badge';
-      badge.textContent='Consigliato';
-      if(!b.featured) badge.style.display='none';
-      el.appendChild(badge);
-      return el;
-    }
-
-    // ================= EDITOR COMPLETO (bozze + candidati) =================
-    const form=document.createElement('div');
-    form.style.width='100%'; form.style.marginTop='10px';
-
-    const r1=document.createElement('div'); r1.className='row';
-    r1.appendChild(editField('Titolo *', b.title, v=>{
-      b.title=v; h3.textContent=v||'(Senza titolo)'; persist();
-    }));
-    r1.appendChild(editField('Autore *', b.author, v=>{
-      b.author=v; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • '); persist();
-    }));
-    form.appendChild(r1);
-
-    const r2=document.createElement('div'); r2.className='row';
-    r2.appendChild(editField('Editore *', b.publisher, v=>{
-      b.publisher=v; by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • '); persist();
-    }));
-    r2.appendChild(editField('Anno *', b.year, v=>{
-      b.year=parseInt(v,10)||b.year;
-      by.textContent=[b.author,b.publisher,b.year].filter(Boolean).join(' • '); persist();
-    }, {type:'number', width:'110px'}));
-    r2.appendChild(editField('Collana', b.series, v=>{ b.series=v; persist(); }, {width:'160px'}));
-    form.appendChild(r2);
-
-    const r3=document.createElement('div'); r3.className='row';
-    r3.appendChild(editField('ISBN', b.isbn, v=>{ b.isbn=v; persist(); }, {width:'200px'}));
-    r3.appendChild(editField('Genere', b.genre, v=>{
-      b.genre=v.trim()||null; persist();
-    }, {placeholder:'dark fantasy, romantasy…', width:'200px'}));
-    form.appendChild(r3);
-
-    // Copertina: con anteprima che si aggiorna mentre scrivi
-    const r4=document.createElement('div'); r4.className='row';
-    r4.appendChild(editField('URL copertina', b.coverUrl, v=>{
-      b.coverUrl=v.trim();
-      img.src = b.coverUrl || placeholderCover();
-      persist();
-    }, {type:'url', placeholder:'https://.../cover.jpg'}));
-    form.appendChild(r4);
-
-    const r5=document.createElement('div'); r5.className='row';
-    r5.appendChild(editField('Store Amazon', b.storeAmazonUrl, v=>{
-      b.storeAmazonUrl=v.trim(); persist();
-    }, {type:'url', placeholder:'https://amazon.it/...'}));
-    r5.appendChild(editField('Store editore', b.storePublisherUrl, v=>{
-      b.storePublisherUrl=v.trim(); persist();
-    }, {type:'url', placeholder:'https://shop.editore.it/...'}));
-    form.appendChild(r5);
-
-    // Se lo Scout ha messo un link di RICERCA Amazon invece del prodotto,
-    // conviene aprirlo, trovare il libro, e incollare l'URL definitivo sopra.
-    if(b.storeAmazonUrl && b.storeAmazonUrl.includes('/s?k=')){
-      const avviso=document.createElement('div'); avviso.className='small muted';
-      avviso.style.marginTop='-4px'; avviso.style.marginBottom='6px';
-      const a=document.createElement('a');
-      a.href=b.storeAmazonUrl; a.target='_blank'; a.rel='noopener';
-      a.style.color='#9fc8ff'; a.textContent='cerca su Amazon →';
-      avviso.append('Link di ricerca, non del prodotto: ', a,
-                    ' e incolla qui sopra l\'URL definitivo.');
-      form.appendChild(avviso);
-    }
-
-    const r6=document.createElement('div'); r6.className='row';
-    r6.appendChild(editField('Sinossi', b.description, v=>{
-      b.description=v; persist();
-    }, {textarea:true}));
-    form.appendChild(r6);
-
-    // Esordio + Consigliato
-    const r7=document.createElement('div'); r7.className='row';
-    r7.style.alignItems='center';
-
-    const dWrap=document.createElement('div'); dWrap.className='field';
-    dWrap.style.maxWidth='200px';
-    const dLab=document.createElement('label'); dLab.textContent='Romanzo d\'esordio?';
-    const dSel=document.createElement('select');
-    [['unknown','Non specificato'],['yes','Sì'],['no','No']].forEach(([v,t])=>{
-      const o=document.createElement('option'); o.value=v; o.textContent=t; dSel.appendChild(o);
-    });
-    dSel.value=(b.isDebut===true?'yes':b.isDebut===false?'no':'unknown');
-    dSel.addEventListener('change',()=>{
-      const v=dSel.value;
-      b.isDebut=(v==='yes')?true:(v==='no')?false:null;
-      persist();
-    });
-    dWrap.appendChild(dLab); dWrap.appendChild(dSel);
-    r7.appendChild(dWrap);
-
-    const fLab=document.createElement('label');
-    fLab.className='small muted';
-    fLab.style.display='inline-flex'; fLab.style.alignItems='center';
-    fLab.style.gap='6px'; fLab.style.marginTop='18px';
-    const fChk=document.createElement('input'); fChk.type='checkbox'; fChk.checked=!!b.featured;
-    fChk.addEventListener('change', ()=>{ b.featured=!!fChk.checked; persist(); });
-    fLab.appendChild(fChk); fLab.append(' Consigliato');
-    r7.appendChild(fLab);
-    form.appendChild(r7);
-
-    // ---- Azioni ----
-    const acts=document.createElement('div'); acts.className='actions';
-    acts.style.flexWrap='wrap';
-
-    if(isAuto){
-      const ok=document.createElement('button'); ok.className='btn primary';
-      ok.textContent='Accetta e metti in bozze';
-      ok.addEventListener('click', ()=>{
-        if(!b.title || !b.author || !b.publisher){
-          alert('Titolo, autore ed editore sono obbligatori.'); return;
-        }
-        const nuovo={...b, status:'approved', _local:true, ts:Date.now()};
-        // Nuovo id nel formato del catalogo: quello del candidato (c...) è
-        // effimero e potrebbe collidere con un futuro run dello Scout.
-        nuovo.id = 'b'+Date.now().toString(36);
-        delete nuovo._auto; delete nuovo._confidence;
-        delete nuovo._reason; delete nuovo._source;
-        state.pendingBooks.push(nuovo);
-        save('fi_books_pending_v1', state.pendingBooks);
-
-        state.autoRejected.push(b.id);   // non riproporlo più
-        save('fi_auto_rejected_v1', state.autoRejected);
-        state.autoCandidates = state.autoCandidates.filter(x=>x.id!==b.id);
-        renderModeration();
-      });
-
-      const no=document.createElement('button'); no.className='btn danger small';
-      no.textContent='Scarta';
-      no.addEventListener('click', ()=>{
-        state.autoRejected.push(b.id);
-        save('fi_auto_rejected_v1', state.autoRejected);
-        state.autoCandidates = state.autoCandidates.filter(x=>x.id!==b.id);
-        renderModeration();
-      });
-
-      acts.appendChild(ok); acts.appendChild(no);
-    }
-
-    if(isPending){
-      const approve=document.createElement('button'); approve.className='btn primary';
-      approve.textContent=(b.status==='approved')?'✓ Pronta per l\'export':'Approva (per export)';
-      approve.addEventListener('click', ()=>{
-        b.status=(b.status==='approved')?'pending':'approved';
-        approve.textContent=(b.status==='approved')?'✓ Pronta per l\'export':'Approva (per export)';
-        save('fi_books_pending_v1', state.pendingBooks);
-      });
-      const remove=document.createElement('button'); remove.className='btn danger small';
-      remove.textContent='Elimina bozza';
-      remove.addEventListener('click', ()=>{
-        if(!confirm('Eliminare questa bozza?')) return;
-        state.pendingBooks = state.pendingBooks.filter(x=>x.id!==b.id);
-        save('fi_books_pending_v1', state.pendingBooks);
-        renderModeration();
-      });
-      acts.appendChild(approve); acts.appendChild(remove);
-    }
-
-    form.appendChild(acts);
-
-    // Layout: copertina e intestazione in alto, form sotto
-    const top=document.createElement('div');
-    top.style.display='flex'; top.style.gap='10px'; top.style.width='100%';
-    top.appendChild(img); top.appendChild(meta);
-    el.appendChild(top);
-    el.appendChild(form);
-    return el;
-  }
-  function renderModeration(){
-    const grid=$('#gridModeration'); grid.innerHTML='';
-    // La moderazione vive ora in catalogo-admin.html, su Supabase.
-    // Questa sezione leggeva candidates.json e salvava nel browser:
-    // due mondi separati che non si parlavano piu'.
-    grid.innerHTML = '<div class="muted">La moderazione si è spostata: '
-      + '<a href="catalogo-admin.html" style="color:#9fc8ff">'
-      + 'apri la gestione del catalogo →</a></div>';
-    return;
-    /* codice superato, lasciato per riferimento:
-    const f=$('#moderationFilter').value;
-
-    if(f==='approved'){
-      const list=state.remoteBooks.slice();
-      if(!list.length){ grid.innerHTML='<div class="muted">Nessun titolo approvato.</div>'; return; }
-      list.forEach(b=>grid.appendChild(modCard(b,'approved')));
-      return;
-    }
-
-    // "Da approvare" = candidati dello Scout + bozze scritte a mano.
-    // I candidati automatici vengono prima: sono la novità da vagliare.
-    const auto  = state.autoCandidates.slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
-    const mani  = state.pendingBooks.slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
-
-    if(!auto.length && !mani.length){
-      grid.innerHTML='<div class="muted">Nessuna bozza in attesa.</div>';
-      return;
-    }
-
-    if(auto.length){
-      const h=document.createElement('div');
-      h.style.gridColumn='1/-1'; h.className='small muted';
-      h.innerHTML='<b>Trovati dallo Scout</b> — approva per spostarli tra le bozze, '
-                + 'poi esporta il catalogo come sempre.';
-      grid.appendChild(h);
-      auto.forEach(b=>grid.appendChild(modCard(b,'auto')));
-    }
-
-    if(mani.length){
-      const h=document.createElement('div');
-      h.style.gridColumn='1/-1'; h.className='small muted';
-      h.style.marginTop='10px';
-      h.innerHTML='<b>Bozze tue</b>';
-      grid.appendChild(h);
-      mani.forEach(b=>grid.appendChild(modCard(b,'pending')));
-    }
-    */
-  }
-  $('#moderationFilter')?.addEventListener('change', renderModeration);
 
   /* ==== Notizie ==== */
   function renderNews(){
@@ -1951,8 +1497,10 @@ ${testo}`;
   $$('#navPublic button, #navAdmin button').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const tab=btn.getAttribute('data-tab');
-      if(tab==='moderazione'){ if(!sessionIsValid()){ alert('Area riservata: accedi come admin.'); return; } touchSession(); }
-      if(tab==='moderazione'){ location.href = 'catalogo-admin.html'; return; }
+      if(tab==='moderazione'){
+        if(!sessionIsValid()){ alert('Area riservata: accedi come admin.'); return; }
+        location.href = 'catalogo-admin.html'; return;
+      }
       if(tab==='notizie') renderNews();
 
       // La sezione si chiama Articoli: l'indirizzo lo dice, ma #notizie

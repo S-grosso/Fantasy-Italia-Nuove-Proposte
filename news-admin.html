@@ -109,14 +109,6 @@
     <div class="card">
       <div id="elenco"><div class="muted">Caricamento…</div></div>
     </div>
-    <div class="card">
-      <div class="small muted" style="margin-bottom:10px">
-        <b>Importazione una tantum.</b> Copia su Supabase le notizie che
-        stanno ancora nel vecchio <code>news.json</code> su GitHub,
-        conservando id e date. Si può rilanciare senza creare doppioni.
-      </div>
-      <button id="btnImporta" class="btn small">Importa da news.json</button>
-    </div>
   </section>
 
   <!-- ============ EDITOR ============ -->
@@ -170,10 +162,6 @@
      ============================================================ */
   const SUPABASE_URL = 'https://nncnhlbaqnfqtjwembii.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_0prYsjRCftybZ7uQ7tTryA_D5N2r9kQ';
-
-  // Il vecchio file da cui importare, una volta sola
-  const NEWS_JSON = 'https://raw.githubusercontent.com/S-grosso/'
-                  + 'Fantasy-Italia-Nuove-Proposte/main/data/news.json';
 
   const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -274,8 +262,7 @@
       return;
     }
     if(!data.length){
-      box.innerHTML = '<div class="muted">Nessun articolo. '
-                    + 'Creane uno o importa quelli vecchi.</div>';
+      box.innerHTML = '<div class="muted">Nessun articolo. Creane uno.</div>';
       return;
     }
 
@@ -577,42 +564,6 @@
     avvisa('Articolo eliminato.');
     articoloCorrente = null;
     mostra('elenco'); caricaElenco();
-  });
-
-  /* ---------------- importazione una tantum ---------------- */
-  $('#btnImporta').addEventListener('click', async ()=>{
-    if(!confirm('Importare le notizie dal vecchio news.json su GitHub?')) return;
-    $('#btnImporta').disabled = true;
-
-    try{
-      const res = await fetch(NEWS_JSON + '?v=' + Date.now(), {cache:'no-store'});
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      const vecchie = await res.json();
-
-      const righe = (vecchie || [])
-        .filter(n => n && n.id)
-        .map(n => ({
-          id: n.id,
-          title: n.title || '(senza titolo)',
-          body_html: ripulisciHtml(n.bodyHtml || n.body || ''),
-          // il vecchio formato salva la data in millisecondi
-          published_at: new Date(n.ts || Date.now()).toISOString(),
-          status: 'published'
-        }));
-
-      if(!righe.length){ avvisa('Nessuna notizia da importare.', 'err'); return; }
-
-      // upsert: rilanciare l'importazione aggiorna, non duplica
-      const { error } = await supa.from('news').upsert(righe);
-      if(error) throw error;
-
-      avvisa(`Importate ${righe.length} notizie, con id e date originali.`);
-      caricaElenco();
-    }catch(e){
-      avvisa('Importazione non riuscita: ' + e.message, 'err');
-    }finally{
-      $('#btnImporta').disabled = false;
-    }
   });
 
   /* ---------------- avvio ---------------- */
