@@ -73,6 +73,17 @@
      :not(.hidden) perche' .hidden, definita prima, deve comunque vincere. */
   .kit:not(.hidden){display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
   .kit .avviso{flex-basis:100%;font-size:12px;color:var(--warn);line-height:1.45}
+  /* Anteprima del carosello: tre miniature affiancate, che su schermo
+     stretto scorrono di lato invece di diventare francobolli. */
+  .carosello:not(.hidden){display:block;margin:0 0 14px;padding:12px;
+        border:1px solid var(--border);border-radius:12px;background:#12141c}
+  .carosello-immagini{display:flex;gap:8px;overflow-x:auto}
+  .carosello-immagini figure{margin:0;flex:0 0 31%;min-width:140px}
+  .carosello-immagini img{width:100%;aspect-ratio:4/5;display:block;
+        border-radius:8px;border:1px solid var(--border)}
+  .carosello-immagini figcaption{font-size:12px;color:var(--muted);margin-top:4px}
+  .carosello .avviso{font-size:12px;color:var(--warn);line-height:1.45;
+        margin-top:8px;white-space:pre-line}
 
   .item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;
         border-bottom:1px solid var(--border)}
@@ -166,7 +177,22 @@
           <div id="kitAvviso" class="avviso hidden"></div>
         </div>
         <div id="erroreCopertina" class="motivo hidden"></div>
+        <!-- Il carosello si prepara con i campi cosi' come sono nell'editor,
+             anche prima di salvare: si puo' ritoccare la frase e rifarlo. -->
+        <div id="caroselloKit" class="kit hidden">
+          <button id="btnCarosello" class="btn small">Carosello Instagram</button>
+        </div>
       </div>
+    </div>
+
+    <div id="caroselloAnteprima" class="carosello hidden">
+      <div id="caroselloImmagini" class="carosello-immagini"></div>
+      <div id="caroselloAvvisi" class="avviso"></div>
+      <div class="actions" style="margin-top:10px">
+        <button id="btnCaroselloInvia" class="btn small ok">Scarica le immagini</button>
+        <button id="btnCaroselloChiudi" class="btn small">Chiudi l'anteprima</button>
+      </div>
+      <div id="caroselloEsito" class="small muted" style="margin-top:8px"></div>
     </div>
 
     <div class="row">
@@ -237,11 +263,16 @@
     </div>
     <div class="field"><label for="f_incipit">Le prime righe</label>
       <textarea id="f_incipit" maxlength="600"></textarea></div>
-    <div class="field">
+    <!-- Compare solo quando c'e' un incipit. Dalle proposte del modulo arriva
+         gia' spuntato (lo dichiara chi propone); serve per gli incipit che
+         scrivi tu, e per togliere il consenso se l'autore lo ritira: senza,
+         la slide delle prime righe non si prepara. -->
+    <div class="field hidden" id="campoConsenso">
       <label style="display:inline-flex;align-items:center;gap:8px;color:var(--ink);font-size:15px">
         <input id="f_incipit_consenso" type="checkbox" style="width:auto">
         Consenso a pubblicare l'estratto (dell'autore o dell'editore)
       </label>
+      <div class="small muted">Dalle proposte del modulo arriva già spuntato. Toglilo solo se il consenso viene ritirato.</div>
     </div>
 
     <div class="row">
@@ -281,6 +312,9 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Il disegno del carosello Instagram sta in un file a parte, incluso solo
+     qui: nessuna pagina pubblica lo richiama. -->
+<script src="carosello-admin.js"></script>
 <script>
 (function(){
   'use strict';
@@ -651,6 +685,91 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
     });
   }
 
+  /* ---------------- carosello Instagram ----------------
+     Il disegno sta in carosello-admin.js; qui solo il pulsante, l'anteprima
+     e i dati presi dall'editor. */
+  let caroselloImmagini = [];
+  let caroselloDati = null;
+
+  function chiudiCarosello(){
+    if(window.CaroselloInstagram) CaroselloInstagram.libera(caroselloImmagini);
+    caroselloImmagini = []; caroselloDati = null;
+    $('#caroselloImmagini').innerHTML = '';
+    $('#caroselloEsito').textContent = '';
+    $('#caroselloAnteprima').classList.add('hidden');
+  }
+
+  // Solo per le schede gia' salvate: serve almeno un id per dare un nome ai
+  // file, e una scheda vuota non ha niente da mostrare.
+  function mostraCarosello(b){
+    chiudiCarosello();
+    $('#caroselloKit').classList.toggle('hidden', !b);
+  }
+
+  function datiCarosello(){
+    const b = libro || {};
+    return {
+      titolo: $('#f_title').value.trim(),
+      autore: $('#f_author').value.trim(),
+      editore: $('#f_publisher').value.trim(),
+      anno: $('#f_year').value.trim(),
+      copertina: $('#f_cover').value.trim(),
+      socialUrl: b.social_url || '',
+      pitch: $('#f_pitch').value.trim(),
+      affini: $('#f_affini').value.trim(),
+      incipit: $('#f_incipit').value.trim(),
+      consenso: $('#f_incipit_consenso').checked,
+      esordio: $('#f_debut').value === 'si',
+      instagram: $('#f_instagram').value.trim().replace(/^@/, ''),
+      slug: b.slug || '',
+      nomeBase: b.slug || ('scheda-' + b.id)
+    };
+  }
+
+  $('#btnCarosello').addEventListener('click', async ()=>{
+    if(!window.CaroselloInstagram){
+      avvisa('Il generatore del carosello non si è caricato: ricarica la pagina.', 'err');
+      return;
+    }
+    const btn = $('#btnCarosello');
+    btn.disabled = true; btn.textContent = 'Preparo le immagini…';
+    try{
+      const dati = datiCarosello();
+      const { immagini, avvisi } = await CaroselloInstagram.prepara(dati);
+      chiudiCarosello();
+      caroselloImmagini = immagini; caroselloDati = dati;
+
+      const box = $('#caroselloImmagini');
+      immagini.forEach((im, i) => {
+        const fig = document.createElement('figure');
+        const img = document.createElement('img');
+        img.src = im.url; img.alt = im.etichetta;
+        const cap = document.createElement('figcaption');
+        cap.textContent = (i + 1) + '. ' + im.etichetta;
+        fig.append(img, cap);
+        box.appendChild(fig);
+      });
+      $('#caroselloAvvisi').textContent = avvisi.join('\n');
+      const invia = $('#btnCaroselloInvia');
+      invia.disabled = !immagini.length;
+      invia.textContent = CaroselloInstagram.puoCondividere(immagini) ? 'Condividi' : 'Scarica le immagini';
+      $('#caroselloAnteprima').classList.remove('hidden');
+      $('#caroselloAnteprima').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }catch(e){
+      console.error('Carosello:', e);
+      avvisa('Non sono riuscito a preparare il carosello: ' + e.message, 'err');
+    }finally{
+      btn.disabled = false; btn.textContent = 'Carosello Instagram';
+    }
+  });
+
+  $('#btnCaroselloInvia').addEventListener('click', async ()=>{
+    if(!caroselloImmagini.length) return;
+    const esito = await CaroselloInstagram.consegna(caroselloImmagini, CaroselloInstagram.didascalia(caroselloDati));
+    $('#caroselloEsito').textContent = esito.testo;
+  });
+  $('#btnCaroselloChiudi').addEventListener('click', chiudiCarosello);
+
   /* ---------------- editor ---------------- */
   function disegnaEtichette(){
     const box = $('#etichette');
@@ -706,6 +825,7 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
     $('#f_affini').value    = v('letture_affini');
     $('#f_incipit').value   = v('incipit');
     $('#f_incipit_consenso').checked = !!(b && b.incipit_consenso);
+    aggiornaCampoConsenso();
     $('#f_featured').checked = !!(b && b.featured);
     $('#f_debut').value = b && b.is_debut === true ? 'si'
                         : b && b.is_debut === false ? 'no' : '';
@@ -745,6 +865,7 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
       cont.classList.add('hidden');
     }
     mostraKit(b);
+    mostraCarosello(b);
 
     const errCop = $('#erroreCopertina');
     if(b && b.cover_error){
@@ -775,6 +896,12 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
     mostra('editor');
     window.scrollTo({top:0});
   }
+
+  // La casella del consenso ha senso solo accanto a un estratto.
+  function aggiornaCampoConsenso(){
+    $('#campoConsenso').classList.toggle('hidden', !$('#f_incipit').value.trim());
+  }
+  $('#f_incipit').addEventListener('input', aggiornaCampoConsenso);
 
   $('#f_cover').addEventListener('input', ()=>{
     $('#anteprima').src = $('#f_cover').value.trim();
