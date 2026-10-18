@@ -181,6 +181,22 @@
         <input id="f_publisher" type="text"></div>
       <div class="field" style="max-width:110px"><label for="f_year">Anno</label>
         <input id="f_year" type="number" inputmode="numeric"></div>
+      <div class="field" style="max-width:130px"><label for="f_month">Mese</label>
+        <select id="f_month">
+          <option value="">—</option>
+          <option value="1">Gennaio</option>
+          <option value="2">Febbraio</option>
+          <option value="3">Marzo</option>
+          <option value="4">Aprile</option>
+          <option value="5">Maggio</option>
+          <option value="6">Giugno</option>
+          <option value="7">Luglio</option>
+          <option value="8">Agosto</option>
+          <option value="9">Settembre</option>
+          <option value="10">Ottobre</option>
+          <option value="11">Novembre</option>
+          <option value="12">Dicembre</option>
+        </select></div>
       <div class="field" style="max-width:170px"><label for="f_series">Collana</label>
         <input id="f_series" type="text"></div>
     </div>
@@ -209,6 +225,24 @@
 
     <div class="field"><label for="f_desc">Quarta di copertina</label>
       <textarea id="f_desc"></textarea></div>
+
+    <!-- Materiali per il carosello Instagram. Non sono pubblici: il ruolo
+         anonimo non legge queste colonne. Stessi limiti del modulo, perche'
+         sono quelli che le immagini reggono. -->
+    <div class="row">
+      <div class="field"><label for="f_pitch">Il libro in una frase</label>
+        <input id="f_pitch" type="text" maxlength="160"></div>
+      <div class="field"><label for="f_affini">Per chi ha amato</label>
+        <input id="f_affini" type="text" maxlength="200" placeholder="Due o tre titoli"></div>
+    </div>
+    <div class="field"><label for="f_incipit">Le prime righe</label>
+      <textarea id="f_incipit" maxlength="600"></textarea></div>
+    <div class="field">
+      <label style="display:inline-flex;align-items:center;gap:8px;color:var(--ink);font-size:15px">
+        <input id="f_incipit_consenso" type="checkbox" style="width:auto">
+        Consenso a pubblicare l'estratto (dell'autore o dell'editore)
+      </label>
+    </div>
 
     <div class="row">
       <div class="field" style="max-width:210px">
@@ -667,6 +701,11 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
     $('#f_store').value     = v('store_publisher_url');
     $('#f_instagram').value = b && b.instagram ? '@' + b.instagram : '';
     $('#f_desc').value      = v('description');
+    $('#f_month').value     = v('release_month');
+    $('#f_pitch').value     = v('pitch');
+    $('#f_affini').value    = v('letture_affini');
+    $('#f_incipit').value   = v('incipit');
+    $('#f_incipit_consenso').checked = !!(b && b.incipit_consenso);
     $('#f_featured').checked = !!(b && b.featured);
     $('#f_debut').value = b && b.is_debut === true ? 'si'
                         : b && b.is_debut === false ? 'no' : '';
@@ -761,6 +800,7 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
       return null;
     }
     const deb = $('#f_debut').value;
+    const incipit = $('#f_incipit').value.trim();
     return {
       id: libro ? libro.id : 'b' + Date.now().toString(36),
       title: titolo,
@@ -776,6 +816,13 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
       // Si salva senza la @, come fa il modulo pubblico.
       instagram: $('#f_instagram').value.trim().replace(/^@/, '') || null,
       description: $('#f_desc').value.trim(),
+      release_month: parseInt($('#f_month').value, 10) || null,
+      pitch: $('#f_pitch').value.trim() || null,
+      letture_affini: $('#f_affini').value.trim() || null,
+      incipit: incipit || null,
+      // Come nella funzione 'proponi': senza incipit il consenso resta NULL,
+      // perche' un "no" su un estratto che non c'e' non vuol dire niente.
+      incipit_consenso: incipit ? $('#f_incipit_consenso').checked : null,
       is_debut: deb === 'si' ? true : deb === 'no' ? false : null,
       featured: $('#f_featured').checked,
       labels: etichette,

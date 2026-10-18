@@ -108,6 +108,11 @@
   .scelte{display:flex;gap:20px;align-items:center;min-height:38px}
   .scelte label{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--ink);cursor:pointer}
   #p_genere_altro{margin-top:6px}
+  /* .field e .row dichiarano display:flex, che scavalca l'attributo hidden:
+     senza questa regola i campi a comparsa (profilo Instagram, consenso
+     all'estratto) restavano sempre visibili. Limitata al modulo per non
+     toccare il comportamento del resto della pagina. */
+  #propostaForm [hidden]{display:none}
   .right{margin-left:auto}
   .muted{color:var(--muted)}
   .small{font-size:12px}
@@ -271,6 +276,26 @@
           <label for="p_anno">Anno</label>
           <input id="p_anno" type="number" min="1900" max="2100" placeholder="2026">
         </div>
+        <!-- Il mese serve alla pagina mensile delle uscite e alla newsletter:
+             il catalogo fino a ottobre 2026 registrava solo l'anno. -->
+        <div class="field" style="max-width:170px">
+          <label for="p_mese">Mese di uscita</label>
+          <select id="p_mese">
+            <option value="">Non so</option>
+            <option value="1">Gennaio</option>
+            <option value="2">Febbraio</option>
+            <option value="3">Marzo</option>
+            <option value="4">Aprile</option>
+            <option value="5">Maggio</option>
+            <option value="6">Giugno</option>
+            <option value="7">Luglio</option>
+            <option value="8">Agosto</option>
+            <option value="9">Settembre</option>
+            <option value="10">Ottobre</option>
+            <option value="11">Novembre</option>
+            <option value="12">Dicembre</option>
+          </select>
+        </div>
         <div class="field" style="max-width:220px">
           <label for="p_isbn">ISBN</label>
           <input id="p_isbn" type="text" maxlength="20" placeholder="978-...">
@@ -356,6 +381,48 @@
           <label for="p_quarta">Quarta di copertina</label>
           <textarea id="p_quarta" maxlength="4000"
                     placeholder="Il testo sul retro del libro, o la presentazione dell'editore."></textarea>
+        </div>
+      </div>
+
+      <!-- Frase, letture affini e prime righe servono a presentare il libro
+           sui social di Fantasy Italia. Restano nel pannello di moderazione:
+           il sito pubblico non le legge. I limiti sono quelli che le
+           immagini reggono, per questo il contatore. -->
+      <div class="row">
+        <div class="field">
+          <label for="p_pitch">Il libro in una frase</label>
+          <input id="p_pitch" type="text" maxlength="160"
+                 placeholder="Per esempio: una ladra di ricordi deve rubare il passato di un re">
+          <div class="hint" data-contatore="p_pitch"></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="p_affini">Per quali lettori è? Indica due o tre libri amati dal tuo lettore ideale</label>
+          <input id="p_affini" type="text" maxlength="200"
+                 placeholder="Per esempio: La Torre Nera, Il nome del vento">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="p_incipit">Le prime righe del romanzo</label>
+          <textarea id="p_incipit" maxlength="600"
+                    placeholder="L'inizio del primo capitolo, così come è stampato."></textarea>
+          <div class="hint" data-contatore="p_incipit"></div>
+        </div>
+      </div>
+
+      <!-- Il consenso compare solo quando ci sono le prime righe: chi non le
+           incolla non deve chiedersi se va spuntato. La funzione 'proponi'
+           rifiuta comunque un incipit senza consenso. -->
+      <div class="row" id="p_consenso_campo" hidden>
+        <div class="field">
+          <label class="scelte" style="min-height:0;align-items:flex-start;gap:8px">
+            <input id="p_consenso" type="checkbox" style="width:auto;margin-top:3px">
+            <span>Confermo di essere l'autore o di avere il consenso dell'editore a pubblicare questo estratto sui canali di Fantasy Italia *</span>
+          </label>
         </div>
       </div>
 
@@ -939,6 +1006,11 @@
       link:     ($('#p_link').value     || '').trim(),
       amazon:   ($('#p_amazon').value   || '').trim(),
       quarta:   ($('#p_quarta').value   || '').trim(),
+      mese:     $('#p_mese').value || '',
+      pitch:    ($('#p_pitch').value    || '').trim(),
+      letture_affini: ($('#p_affini').value || '').trim(),
+      incipit:  ($('#p_incipit').value  || '').trim(),
+      incipit_consenso: $('#p_consenso').checked ? 'si' : '',
       esordio:  ($('input[name="p_esordio"]:checked') || {}).value || '',
       genere:   $('#p_genere').value === 'altro'
                   ? ($('#p_genere_altro').value || '').trim()
@@ -959,6 +1031,10 @@
     // comando si ricontrollano qui: un "Altro" senza testo passerebbe.
     if(!dati.esordio || !dati.genere || !dati.tag_instagram || (dati.tag_instagram === 'si' && !dati.instagram)){
       avvisoProposta('error', 'Mancano esordio, sottogenere o la scelta sul tag Instagram.');
+      return;
+    }
+    if(dati.incipit && !dati.incipit_consenso){
+      avvisoProposta('error', 'Per inviare le prime righe conferma di avere il diritto di pubblicarle.');
       return;
     }
 
@@ -1009,9 +1085,28 @@
     const tag = ($('input[name="p_tag"]:checked') || {}).value === 'si';
     const campoIg = $('#p_instagram_campo');
     if(campoIg){ campoIg.hidden = !tag; $('#p_instagram').required = tag; }
+    const conIncipit = !!($('#p_incipit')?.value || '').trim();
+    const campoConsenso = $('#p_consenso_campo');
+    if(campoConsenso){ campoConsenso.hidden = !conIncipit; $('#p_consenso').required = conIncipit; }
+    aggiornaContatori();
   }
   $('#p_genere')?.addEventListener('change', aggiornaCampiAComparsa);
   $$('input[name="p_tag"]').forEach(r => r.addEventListener('change', aggiornaCampiAComparsa));
+  $('#p_incipit')?.addEventListener('input', aggiornaCampiAComparsa);
+  $('#p_pitch')?.addEventListener('input', aggiornaContatori);
+
+  // Il contatore legge il limite dal maxlength del campo, cosi' c'e' un
+  // numero solo da cambiare. Mostra quanti caratteri restano, che e' la
+  // domanda di chi scrive una frase "al massimo di 160".
+  function aggiornaContatori(){
+    $$('[data-contatore]').forEach(box => {
+      const campo = document.getElementById(box.dataset.contatore);
+      if(!campo) return;
+      const resto = campo.maxLength - campo.value.length;
+      box.textContent = resto === 1 ? 'Resta 1 carattere' : `Restano ${resto} caratteri`;
+    });
+  }
+  aggiornaContatori();
 
   /* ==== Catalogo (SOLO GitHub) ==== */
   function tagEl(text, cls){ const t=document.createElement('span'); t.className=cls||'tag'; t.textContent=text; return t; }

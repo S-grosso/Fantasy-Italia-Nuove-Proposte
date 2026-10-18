@@ -76,6 +76,11 @@ const MAX = {
   // La quarta di copertina e' il testo piu' lungo: quelle in catalogo
   // stanno sotto i duemila caratteri, il doppio lascia margine.
   quarta: 4000,
+  // Frase, letture affini e incipit finiscono nel carosello Instagram: i
+  // limiti sono quelli che l'impaginazione regge, non solo un tetto.
+  pitch: 160,
+  affini: 200,
+  incipit: 600,
 };
 
 function pulisci(valore: unknown, limite: number): string {
@@ -158,8 +163,9 @@ Deno.serve(async (req: Request) => {
 
   // Un corpo enorme si scarta prima di leggerlo tutto.
   const lunghezza = Number(req.headers.get("content-length") || "0");
-  // 16 kB: con la quarta di copertina un invio onesto supera gli 8 kB di prima.
-  if (lunghezza > 16384) {
+  // 24 kB: quarta, incipit e note al massimo, con apostrofi tipografici e
+  // lettere accentate che pesano due o tre byte, superano i 16 kB di prima.
+  if (lunghezza > 24576) {
     return risposta(origine, 413, { ok: false, messaggio: "Messaggio troppo lungo." });
   }
 
@@ -191,6 +197,19 @@ Deno.serve(async (req: Request) => {
   const vuoleTag = pulisci(dati.tag_instagram, 3).toLowerCase();
   const instagram = profiloInstagram(pulisci(dati.instagram, MAX.instagram));
   const isbn = isbnNormalizzato(pulisci(dati.isbn, MAX.isbn));
+  const pitch = pulisci(dati.pitch, MAX.pitch);
+  const affini = pulisci(dati.letture_affini, MAX.affini);
+  // L'incipit tiene gli a capo come la quarta: i capoversi fanno parte del
+  // testo, e nella slide delle prime righe vanno rispettati.
+  const incipit = pulisciTesto(dati.incipit, MAX.incipit);
+  const consenso = pulisci(dati.incipit_consenso, 3).toLowerCase() === "si";
+
+  // Il mese vale solo come numero da 1 a 12: qualunque altra cosa si ignora
+  // invece di rifiutare la proposta, come per l'anno.
+  const meseGrezzo = parseInt(String(dati.mese ?? ""), 10);
+  const mese = Number.isFinite(meseGrezzo) && meseGrezzo >= 1 && meseGrezzo <= 12
+    ? meseGrezzo
+    : null;
 
   const annoGrezzo = parseInt(String(dati.anno ?? ""), 10);
   const annoAttuale = new Date().getFullYear();
@@ -228,6 +247,12 @@ Deno.serve(async (req: Request) => {
   }
   if (amazon && !linkAmazon(amazon)) {
     return risposta(origine, 400, { ok: false, messaggio: "Nel campo Amazon serve un link ad Amazon (amazon.it o un link breve amzn.eu)." });
+  }
+  // Un estratto del romanzo e' un testo protetto: senza la dichiarazione di
+  // chi propone non si potrebbe pubblicarlo, quindi non lo si conserva
+  // nemmeno. Il modulo lo controlla gia', ma il modulo si puo' scavalcare.
+  if (incipit && !consenso) {
+    return risposta(origine, 400, { ok: false, messaggio: "Per inviare le prime righe conferma di avere il diritto di pubblicarle." });
   }
 
   try {
@@ -306,6 +331,13 @@ Deno.serve(async (req: Request) => {
       is_debut: esordio === "si",
       genre: genere,
       instagram: vuoleTag === "si" ? instagram : null,
+      release_month: mese,
+      pitch: pitch || null,
+      letture_affini: affini || null,
+      incipit: incipit || null,
+      // NULL senza incipit: un "no" registrato su un estratto che non
+      // esiste direbbe una cosa falsa.
+      incipit_consenso: incipit ? true : null,
       status: "candidate",
       source: "proposta dal sito",
       reason: note ? `Nota di chi propone: ${note}` : "",
