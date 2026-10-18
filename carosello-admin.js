@@ -449,6 +449,198 @@
     return c;
   }
 
+  /* ---------------- carosello del mese ----------------
+     Un post per gli esordi (o le uscite) di un mese: prima tutte le
+     copertine insieme, poi una slide per libro con la frase e "Per chi ha
+     amato". Formato post, 1080x1350. */
+
+  const MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio',
+                'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+
+  function titoloMese(o){
+    return (o.soloEsordi ? 'Esordi di ' : 'Uscite di ') + MESI[o.mese - 1] + ' ' + o.anno;
+  }
+
+  // Colonne per riga della griglia, secondo quante copertine ci sono: righe
+  // piene e, quando non si puo', l'ultima piu' corta e centrata (5 = 3+2).
+  function righeGriglia(n){
+    const colonne = n <= 3 ? n : n === 4 ? 2 : n <= 6 ? 3 : n <= 8 ? 4 : n === 9 ? 3 : 4;
+    const righe = [];
+    for(let i = 0; i < n; i += colonne) righe.push(Math.min(colonne, n - i));
+    return righe;
+  }
+
+  // Una copertina intera in un riquadro, con ombra, angoli arrotondati e filo
+  // come nella card. Restituisce il rettangolo occupato.
+  function copertinaIn(ctx, img, x, y, w, h, raggio){
+    const s = Math.min(w / img.width, h / img.height);
+    const cw = Math.round(img.width * s), ch = Math.round(img.height * s);
+    const cx = Math.round(x + (w - cw) / 2), cy = Math.round(y + (h - ch) / 2);
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 12;
+    rettangoloTondo(ctx, cx, cy, cw, ch, raggio); ctx.fillStyle = FONDO; ctx.fill();
+    ctx.restore();
+    ctx.save();
+    rettangoloTondo(ctx, cx, cy, cw, ch, raggio); ctx.clip();
+    ctx.drawImage(img, cx, cy, cw, ch);
+    ctx.restore();
+    rettangoloTondo(ctx, cx + 1, cy + 1, cw - 2, ch - 2, raggio);
+    ctx.strokeStyle = BORDO; ctx.lineWidth = 2; ctx.stroke();
+    return { x: cx, y: cy, w: cw, h: ch };
+  }
+
+  // L'immagine d'insieme. Lo sfondo e' neutro con un alone d'accento: le
+  // copertine di un mese hanno colori diversi, e sfocarne una sola farebbe
+  // sembrare il post dedicato a quel libro.
+  // totale: i titoli del mese, che possono essere piu' delle copertine
+  // disegnabili (una copertina esterna senza CORS resta fuori dalla griglia).
+  function slideInsieme(copertine, o, totale){
+    const { c, ctx } = nuovaTela();
+    ctx.fillStyle = FONDO; ctx.fillRect(0, 0, L, A);
+    const alone = ctx.createRadialGradient(CENTRO, A * 0.4, 50, CENTRO, A * 0.4, 760);
+    alone.addColorStop(0, 'rgba(122,166,255,0.16)');
+    alone.addColorStop(1, 'rgba(122,166,255,0)');
+    ctx.fillStyle = alone; ctx.fillRect(0, 0, L, A);
+    const limite = marchio(ctx) - 28;
+
+    // Il titolo sotto la griglia: "Esordi di ottobre 2026" e quanti sono.
+    const n = totale;
+    const titolo = rigaCheSta(ctx, titoloMese(o), 700, 66, 40, UTILE);
+    const sotto = n + (o.soloEsordi ? (n === 1 ? ' romanzo d\'esordio' : ' romanzi d\'esordio') : (n === 1 ? ' romanzo' : ' romanzi'))
+      + ' nel catalogo';
+    const altoTitoli = altezzaRiga(titolo.misura) + 10 + altezzaRiga(30);
+    let y = limite - altoTitoli;
+    ctx.textAlign = 'center';
+    ctx.font = font(700, titolo.misura); ctx.fillStyle = INCHIOSTRO;
+    ctx.fillText(titolo.t, CENTRO, y);
+    ctx.font = font(400, 30); ctx.fillStyle = ACCENTO;
+    ctx.fillText(sotto, CENTRO, y + altezzaRiga(titolo.misura) + 10);
+
+    // La griglia prende lo spazio sopra. Tutte le copertine hanno lo stesso
+    // riquadro, in proporzione 2:3: quelle piu' larghe o piu' strette ci
+    // stanno dentro intere, senza tagli.
+    if(!copertine.length) return c;
+    const righe = righeGriglia(copertine.length);
+    const colonne = Math.max(...righe);
+    const SPAZIO = copertine.length <= 3 ? 40 : 28;
+    const altoGriglia = y - 60 - MARGINE;
+    const w = Math.min((UTILE - SPAZIO * (colonne - 1)) / colonne,
+                       (altoGriglia - SPAZIO * (righe.length - 1)) / righe.length * 2 / 3,
+                       copertine.length === 1 ? 560 : 1000);
+    const h = w * 3 / 2;
+    let gy = MARGINE + (altoGriglia - (h * righe.length + SPAZIO * (righe.length - 1))) / 2;
+    let k = 0;
+    for(const quante of righe){
+      let gx = CENTRO - (w * quante + SPAZIO * (quante - 1)) / 2;
+      for(let i = 0; i < quante; i++, k++){
+        if(copertine[k]) copertinaIn(ctx, copertine[k], gx, gy, w, h, copertine.length <= 3 ? 14 : 10);
+        gx += w + SPAZIO;
+      }
+      gy += h + SPAZIO;
+    }
+    return c;
+  }
+
+  // Una slide per libro: la copertina intera in alto e, sotto, la frase e
+  // "Per chi ha amato", poi titolo e autore piccoli. Senza la frase, titolo e
+  // autore prendono il suo posto, in grande.
+  function slideLibroDelMese(copertina, b){
+    const { c, ctx } = nuovaTela();
+    sfondo(ctx, copertina, 0.80);
+    const limite = marchio(ctx) - 28;
+    const STACCO = 30;
+    const blocchi = [];   // [righe, misura, peso, colore, interlinea]
+    let alto = 0;
+    const aggiungi = (blocco, peso, colore) => {
+      if(!blocco || !blocco.righe.length) return;
+      if(blocchi.length) alto += STACCO;
+      blocchi.push([blocco, peso, colore]);
+      alto += blocco.alto;
+    };
+
+    const affini = b.letture_affini ? 'Per chi ha amato: ' + b.letture_affini : '';
+    if(b.pitch){
+      aggiungi(adatta(ctx, b.pitch, { peso: 700, max: 52, min: 34, larghezza: UTILE, altezza: 4 * altezzaRiga(52), maxRighe: 4, bilancia: true }), 700, INCHIOSTRO);
+      if(affini) aggiungi(adatta(ctx, affini, { peso: 400, max: 32, min: 24, larghezza: UTILE, altezza: 3 * altezzaRiga(32), maxRighe: 3 }), 400, 'affini');
+      const firma = rigaCheSta(ctx, [b.title, b.author].filter(Boolean).join(' · '), 400, 26, 20, UTILE);
+      aggiungi({ righe: [{ t: firma.t }], misura: firma.misura, alto: altezzaRiga(firma.misura) }, 400, SPENTO);
+    } else {
+      aggiungi(adatta(ctx, b.title || '', { peso: 700, max: 56, min: 36, larghezza: UTILE, altezza: 3 * altezzaRiga(56), maxRighe: 3, bilancia: true }), 700, INCHIOSTRO);
+      if(b.author){
+        const a = rigaCheSta(ctx, b.author, 400, 34, 24, UTILE);
+        aggiungi({ righe: [{ t: a.t }], misura: a.misura, alto: altezzaRiga(a.misura) }, 400, SPENTO);
+      }
+      if(affini) aggiungi(adatta(ctx, affini, { peso: 400, max: 32, min: 24, larghezza: UTILE, altezza: 3 * altezzaRiga(32), maxRighe: 3 }), 400, 'affini');
+    }
+
+    let y = limite - alto;
+    if(copertina){
+      const spazio = y - 50 - MARGINE;
+      copertinaIn(ctx, copertina, MARGINE, MARGINE, UTILE, Math.min(spazio, 820), 14);
+    }
+
+    ctx.textAlign = 'center';
+    blocchi.forEach(([blocco, peso, colore], i) => {
+      if(i) y += STACCO;
+      ctx.font = font(peso, blocco.misura);
+      blocco.righe.forEach((r, j) => {
+        const PREFISSO = 'Per chi ha amato:';
+        if(colore === 'affini' && j === 0 && r.t.startsWith(PREFISSO)){
+          // Come nel gancio: il prefisso nel colore d'accento, i titoli in grigio.
+          const x0 = CENTRO - ctx.measureText(r.t).width / 2;
+          ctx.textAlign = 'left';
+          ctx.fillStyle = ACCENTO; ctx.fillText(PREFISSO, x0, y);
+          ctx.fillStyle = SPENTO; ctx.fillText(r.t.slice(PREFISSO.length), x0 + ctx.measureText(PREFISSO).width, y);
+          ctx.textAlign = 'center';
+        } else {
+          ctx.fillStyle = colore === 'affini' ? SPENTO : colore;
+          ctx.fillText(r.t, CENTRO, y);
+        }
+        y += altezzaRiga(blocco.misura);
+      });
+    });
+    return c;
+  }
+
+  // libri: schede approvate del mese (title, author, cover_url, pitch,
+  // letture_affini, instagram, slug). o: { anno, mese, soloEsordi }.
+  async function preparaMese(libri, o){
+    const avvisi = [];
+    try{ await caricaCaratteri(); }
+    catch(e){ avvisi.push('Il carattere DejaVu Sans non si è caricato: le immagini usano un carattere di ripiego, controllale prima di pubblicarle.'); }
+    if(!libri.length) return { immagini: [], avvisi: ['Nessun titolo per ' + titoloMese(o).toLowerCase() + '.'] };
+    if(libri.length === 1 && o.soloEsordi) avvisi.push('Un esordio solo: l\'immagine d\'insieme è una copertina sola. Togliendo «solo esordi» si fa il carosello di tutte le uscite del mese.');
+    // Instagram accetta al massimo 20 immagini per carosello: l'insieme piu' 19 libri.
+    if(libri.length > 19){
+      avvisi.push('Più di 19 titoli: Instagram accetta 20 immagini per carosello, quindi le slide dei singoli libri si fermano al diciannovesimo.');
+    }
+    if(libri.length > 12) avvisi.push('Più di 12 copertine nell\'immagine d\'insieme: diventano piccole, controllale.');
+
+    const copertine = await Promise.all(libri.map(async b => {
+      if(!b.cover_url) return null;
+      try{ return await caricaImmagine(b.cover_url); }
+      catch(e){ avvisi.push('Copertina non utilizzabile per «' + b.title + '» (' + dominio(b.cover_url) + ').'); return null; }
+    }));
+    const senzaFrase = libri.filter(b => !b.pitch).map(b => '«' + b.title + '»');
+    if(senzaFrase.length) avvisi.push('Senza «Il libro in una frase» (nella slide compaiono titolo e autore): ' + senzaFrase.join(', ') + '.');
+
+    const slide = [['insieme', titoloMese(o), slideInsieme(copertine.filter(Boolean), o, libri.length)]];
+    libri.slice(0, 19).forEach((b, i) => {
+      slide.push([b.slug || ('libro-' + (i + 1)), b.title || 'Libro ' + (i + 1), slideLibroDelMese(copertine[i], b)]);
+    });
+    const base = (o.soloEsordi ? 'esordi-' : 'uscite-') + o.anno + '-' + String(o.mese).padStart(2, '0');
+    return { immagini: await esporta(slide, base), avvisi };
+  }
+
+  // La didascalia del mese: un titolo per riga, con il profilo da taggare
+  // quando c'e', perche' ogni autore taggato puo' ricondividere il post.
+  function didascaliaMese(libri, o){
+    const righe = [titoloMese(o) + ' nel catalogo di Fantasy Italia — Nuove Proposte:', ''];
+    libri.forEach(b => righe.push('«' + (b.title || '') + '»' + (b.author ? ' di ' + b.author : '') + (b.instagram ? ' @' + b.instagram : '')));
+    righe.push('', 'Tutte le schede: ' + SITO + '/libri/', '', IG_ETICHETTE + (o.soloEsordi ? ' #esordio' : ''));
+    return righe.join('\n');
+  }
+
   /* ---------------- immagini di partenza ----------------
      Con fetch in modalita' CORS invece di <img crossOrigin>: il requisito e'
      lo stesso (senza il permesso del dominio il canvas resterebbe "sporco" e
@@ -646,5 +838,5 @@
     (immagini || []).forEach(i => URL.revokeObjectURL(i.url));
   }
 
-  window.CaroselloInstagram = { prepara, consegna, didascalia, puoCondividere, libera };
+  window.CaroselloInstagram = { prepara, consegna, didascalia, puoCondividere, libera, preparaMese, didascaliaMese };
 })();

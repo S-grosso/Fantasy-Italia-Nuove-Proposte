@@ -146,6 +146,50 @@
       </div>
     </div>
 
+    <!-- Carosello del mese: gli esordi (o tutte le uscite) di un mese in un
+         post Instagram. Prima si filtra, per vedere quali titoli entrano;
+         solo allora compare il pulsante che prepara le immagini. -->
+    <div class="card" id="boxMese">
+      <div class="row" style="align-items:flex-end">
+        <div class="field" style="max-width:110px"><label for="meseAnno">Anno</label>
+          <input id="meseAnno" type="number" inputmode="numeric"></div>
+        <div class="field" style="max-width:160px"><label for="meseMese">Mese</label>
+          <select id="meseMese">
+            <option value="1">Gennaio</option>
+            <option value="2">Febbraio</option>
+            <option value="3">Marzo</option>
+            <option value="4">Aprile</option>
+            <option value="5">Maggio</option>
+            <option value="6">Giugno</option>
+            <option value="7">Luglio</option>
+            <option value="8">Agosto</option>
+            <option value="9">Settembre</option>
+            <option value="10">Ottobre</option>
+            <option value="11">Novembre</option>
+            <option value="12">Dicembre</option>
+          </select></div>
+        <div class="field" style="max-width:150px">
+          <label style="display:inline-flex;align-items:center;gap:8px;color:var(--ink);font-size:15px;padding-bottom:9px">
+            <input id="meseSoloEsordi" type="checkbox" checked style="width:auto"> Solo esordi
+          </label></div>
+        <div class="field" style="max-width:120px">
+          <button id="btnMeseFiltra" class="btn small" style="margin-bottom:4px">Filtra</button></div>
+      </div>
+      <div id="meseRisultato" class="small muted"></div>
+      <div id="meseAzioni" class="actions hidden">
+        <button id="btnMeseCarosello" class="btn small ok">Carosello del mese</button>
+      </div>
+      <div id="meseAnteprima" class="carosello hidden" style="margin-top:12px">
+        <div id="meseImmagini" class="carosello-immagini"></div>
+        <div id="meseAvvisi" class="avviso"></div>
+        <div class="actions" style="margin-top:10px">
+          <button id="btnMeseInvia" class="btn small ok">Scarica le immagini</button>
+          <button id="btnMeseChiudi" class="btn small">Chiudi l'anteprima</button>
+        </div>
+        <div id="meseEsito" class="small muted" style="margin-top:8px"></div>
+      </div>
+    </div>
+
     <div class="card">
       <div id="elenco"><div class="muted">Caricamento…</div></div>
     </div>
@@ -747,16 +791,7 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
       chiudiCarosello();
       caroselloImmagini = immagini; caroselloDati = dati;
 
-      const box = $('#caroselloImmagini');
-      immagini.forEach((im, i) => {
-        const fig = document.createElement('figure');
-        const img = document.createElement('img');
-        img.src = im.url; img.alt = im.etichetta;
-        const cap = document.createElement('figcaption');
-        cap.textContent = (i + 1) + '. ' + im.etichetta;
-        fig.append(img, cap);
-        box.appendChild(fig);
-      });
+      mostraMiniature($('#caroselloImmagini'), immagini);
       $('#caroselloAvvisi').textContent = avvisi.join('\n');
       const invia = $('#btnCaroselloInvia');
       invia.disabled = !immagini.length;
@@ -777,6 +812,115 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
     $('#caroselloEsito').textContent = esito.testo;
   });
   $('#btnCaroselloChiudi').addEventListener('click', chiudiCarosello);
+
+  // Le miniature dell'anteprima, numerate nell'ordine del carosello: servono
+  // al carosello della scheda e a quello del mese.
+  function mostraMiniature(box, immagini){
+    box.innerHTML = '';
+    immagini.forEach((im, i) => {
+      const fig = document.createElement('figure');
+      const img = document.createElement('img');
+      img.src = im.url; img.alt = im.etichetta;
+      const cap = document.createElement('figcaption');
+      cap.textContent = (i + 1) + '. ' + im.etichetta;
+      fig.append(img, cap);
+      box.appendChild(fig);
+    });
+  }
+
+  /* ---------------- carosello del mese ----------------
+     Si filtra prima, cosi' si vede quali titoli entrano nel post (e quali
+     non hanno ancora la frase); poi il pulsante prepara le immagini. Il
+     disegno sta in carosello-admin.js, come per la singola scheda. */
+  let meseLibri = [], meseOpzioni = null, meseImmagini = [];
+
+  $('#meseAnno').value = new Date().getFullYear();
+  $('#meseMese').value = String(new Date().getMonth() + 1);
+
+  function chiudiAnteprimaMese(){
+    if(window.CaroselloInstagram) CaroselloInstagram.libera(meseImmagini);
+    meseImmagini = [];
+    $('#meseImmagini').innerHTML = '';
+    $('#meseEsito').textContent = '';
+    $('#meseAnteprima').classList.add('hidden');
+  }
+
+  // Cambiando anno, mese o filtro il risultato di prima non vale piu':
+  // il pulsante del carosello sparisce finche' non si filtra di nuovo.
+  function azzeraMese(){
+    meseLibri = []; meseOpzioni = null;
+    $('#meseRisultato').innerHTML = '';
+    $('#meseAzioni').classList.add('hidden');
+    chiudiAnteprimaMese();
+  }
+  ['#meseAnno', '#meseMese', '#meseSoloEsordi'].forEach(s => $(s).addEventListener('change', azzeraMese));
+
+  $('#btnMeseFiltra').addEventListener('click', async ()=>{
+    azzeraMese();
+    const o = {
+      anno: parseInt($('#meseAnno').value, 10),
+      mese: parseInt($('#meseMese').value, 10),
+      soloEsordi: $('#meseSoloEsordi').checked
+    };
+    if(!o.anno || !o.mese){ avvisa('Scegli anno e mese.', 'err'); return; }
+    let q = supa.from('books')
+      .select('id,slug,title,author,cover_url,pitch,letture_affini,instagram,is_debut')
+      .eq('status', 'approved').eq('year', o.anno).eq('release_month', o.mese)
+      .order('title');
+    if(o.soloEsordi) q = q.eq('is_debut', true);
+    const { data, error } = await q;
+    if(error){ avvisa('Non riesco a leggere le schede: ' + error.message, 'err'); return; }
+
+    meseLibri = data || []; meseOpzioni = o;
+    const box = $('#meseRisultato');
+    if(!meseLibri.length){
+      box.textContent = 'Nessun titolo pubblicato con questo mese di uscita.';
+      return;
+    }
+    box.textContent = meseLibri.length + (meseLibri.length === 1 ? ' titolo:' : ' titoli:');
+    meseLibri.forEach(b => {
+      const r = document.createElement('div');
+      r.style.marginTop = '4px';
+      r.textContent = '«' + b.title + '» — ' + (b.author || 'autore mancante')
+        + (b.pitch ? '' : ' · senza frase');
+      box.appendChild(r);
+    });
+    $('#meseAzioni').classList.remove('hidden');
+  });
+
+  $('#btnMeseCarosello').addEventListener('click', async ()=>{
+    if(!window.CaroselloInstagram){
+      avvisa('Il generatore del carosello non si è caricato: ricarica la pagina.', 'err');
+      return;
+    }
+    if(!meseLibri.length) return;
+    const btn = $('#btnMeseCarosello');
+    btn.disabled = true; btn.textContent = 'Preparo le immagini…';
+    try{
+      const { immagini, avvisi } = await CaroselloInstagram.preparaMese(meseLibri, meseOpzioni);
+      chiudiAnteprimaMese();
+      meseImmagini = immagini;
+      mostraMiniature($('#meseImmagini'), immagini);
+      $('#meseAvvisi').textContent = avvisi.join('\n');
+      const invia = $('#btnMeseInvia');
+      invia.disabled = !immagini.length;
+      invia.textContent = CaroselloInstagram.puoCondividere(immagini) ? 'Condividi' : 'Scarica le immagini';
+      $('#meseAnteprima').classList.remove('hidden');
+      $('#meseAnteprima').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }catch(e){
+      console.error('Carosello del mese:', e);
+      avvisa('Non sono riuscito a preparare il carosello del mese: ' + e.message, 'err');
+    }finally{
+      btn.disabled = false; btn.textContent = 'Carosello del mese';
+    }
+  });
+
+  $('#btnMeseInvia').addEventListener('click', async ()=>{
+    if(!meseImmagini.length) return;
+    const esito = await CaroselloInstagram.consegna(meseImmagini, CaroselloInstagram.didascaliaMese(meseLibri, meseOpzioni));
+    $('#meseEsito').textContent = esito.testo;
+  });
+  $('#btnMeseChiudi').addEventListener('click', chiudiAnteprimaMese);
 
   /* ---------------- editor ---------------- */
   function disegnaEtichette(){
