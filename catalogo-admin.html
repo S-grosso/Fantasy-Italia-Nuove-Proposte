@@ -197,18 +197,6 @@
       <div id="elenco"><div class="muted">Caricamento…</div></div>
     </div>
 
-    <div class="card" id="boxImporta">
-      <div class="small muted" style="margin-bottom:10px">
-        <b>Importazione una tantum.</b> Copia su Supabase i libri di
-        <code>catalogo.json</code>, conservando gli id. Si può rilanciare
-        senza creare doppioni.<br><br>
-        <b>Attenzione:</b> se hai correzioni non ancora esportate (etichette
-        o “consigliato” modificati nel vecchio pannello), esporta e carica
-        il JSON <i>prima</i> di importare, altrimenti le perdi.
-      </div>
-      <button id="btnImporta" class="btn small">Importa da catalogo.json</button>
-      <button id="btnImportaCand" class="btn small">Importa candidati Scout</button>
-    </div>
   </section>
 
   <!-- ============ EDITOR ============ -->
@@ -379,9 +367,6 @@
      non e' pubblico a chi non ha effettuato l'accesso. */
   const SUPABASE_URL = 'https://nncnhlbaqnfqtjwembii.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_0prYsjRCftybZ7uQ7tTryA_D5N2r9kQ';
-
-  const CATALOGO_JSON = 'https://raw.githubusercontent.com/S-grosso/'
-                      + 'Fantasy-Italia-Nuove-Proposte/main/data/catalogo.json';
 
   const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   const $  = s => document.querySelector(s);
@@ -1264,108 +1249,6 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
     mostra('elenco'); carica();
   });
 
-  /* ---------------- importazione una tantum ---------------- */
-  $('#btnImporta').addEventListener('click', async ()=>{
-    if(!confirm('Importare i libri da catalogo.json?\n\n'
-      + 'Se hai correzioni non ancora esportate dal vecchio pannello, '
-      + 'annulla ed esportale prima.')) return;
-
-    $('#btnImporta').disabled = true;
-    try{
-      const res = await fetch(CATALOGO_JSON + '?v=' + Date.now(), {cache:'no-store'});
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      const vecchi = await res.json();
-
-      const righe = (vecchi || []).filter(b => b && b.title).map(b => ({
-        // Gli id esistenti vanno conservati. Qualche scheda vecchia ne
-        // e' priva: gliene diamo uno stabile derivato dal titolo.
-        id: b.id || ('b' + Math.abs([...(b.title||'')]
-              .reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0, 0)).toString(36)),
-        title: b.title,
-        author: b.author || '',
-        publisher: b.publisher || '',
-        year: parseInt(b.year, 10) || null,
-        series: b.series || '',
-        isbn: b.isbn || '',
-        genre: b.genre || null,
-        cover_url: b.coverUrl || '',
-        // Il campo storeUrl e' la vecchia forma di storeAmazonUrl
-        store_amazon_url: b.storeAmazonUrl || b.storeUrl || '',
-        store_publisher_url: b.storePublisherUrl || '',
-        description: b.description || '',
-        is_debut: typeof b.isDebut === 'boolean' ? b.isDebut : null,
-        featured: !!b.featured,
-        labels: Array.isArray(b.labels) ? b.labels : [],
-        status: 'approved'
-      }));
-
-      if(!righe.length){ avvisa('Nessun libro da importare.', 'err'); return; }
-
-      const { error } = await supa.from('books').upsert(righe);
-      if(error) throw error;
-
-      avvisa(`Importati ${righe.length} libri, con gli id originali.`);
-      $$('#filtri button').forEach(x=>x.classList.remove('on'));
-      $('#filtri button[data-f="approved"]').classList.add('on');
-      filtro = 'approved';
-      carica();
-    }catch(e){
-      avvisa('Importazione non riuscita: ' + e.message, 'err');
-    }finally{
-      $('#btnImporta').disabled = false;
-    }
-  });
-
-/* --- recupero dei candidati rimasti in candidates.json --- */
-  const CANDIDATI_JSON = 'https://raw.githubusercontent.com/S-grosso/'
-                       + 'Fantasy-Italia-Nuove-Proposte/main/data/candidates.json';
-
-  $('#btnImportaCand').addEventListener('click', async ()=>{
-    if(!confirm('Importare i candidati trovati dallo Scout?')) return;
-    $('#btnImportaCand').disabled = true;
-    try{
-      const res = await fetch(CANDIDATI_JSON + '?v=' + Date.now(), {cache:'no-store'});
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      const cand = await res.json();
-
-      const righe = (cand || []).filter(c => c && c.title).map(c => ({
-        id: c.id || ('c' + Date.now().toString(36) + Math.random().toString(36).slice(2,6)),
-        title: c.title,
-        author: c.author || '',
-        publisher: c.publisher || '',
-        year: parseInt(c.year, 10) || null,
-        series: c.series || '',
-        isbn: c.isbn || '',
-        genre: c.genre || null,
-        cover_url: c.coverUrl || '',
-        store_amazon_url: c.storeAmazonUrl || '',
-        store_publisher_url: c.storePublisherUrl || '',
-        description: c.description || '',
-        is_debut: typeof c.isDebut === 'boolean' ? c.isDebut : null,
-        featured: false,
-        labels: Array.isArray(c.labels) ? c.labels : [],
-        status: 'candidate',
-        source: c._source || null,
-        confidence: c._confidence || null,
-        reason: c._reason || null
-      }));
-
-      if(!righe.length){ avvisa('Nessun candidato da importare.', 'err'); return; }
-      const { error } = await supa.from('books').upsert(righe);
-      if(error) throw error;
-
-      avvisa(`Importati ${righe.length} candidati.`);
-      $$('#filtri button').forEach(x=>x.classList.remove('on'));
-      $('#filtri button[data-f="candidate"]').classList.add('on');
-      filtro = 'candidate';
-      carica();
-    }catch(e){
-      avvisa('Importazione non riuscita: ' + e.message, 'err');
-    }finally{
-      $('#btnImportaCand').disabled = false;
-    }
-  });
-  
   /* ---------------- avvio ---------------- */
   if(SUPABASE_KEY.startsWith('INCOLLA')){
     avvisa('Manca la publishable key: aprí questo file e sostituiscila '

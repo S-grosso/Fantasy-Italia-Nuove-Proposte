@@ -25,7 +25,7 @@ In ordine. Ogni voce rimanda al suo paragrafo nella sezione 4.
 1. **Il primo giro vero dello Scout con tutte le correzioni**, lunedì 19 ottobre (4.18): limite al minuto e al giorno distinti, modello lento o sovraccarico che fa passare al successivo, ripiego a regole, regola sull'horror, email solo a classificatore fermo. Da leggere nel registro: quante proposte, da quali editori, quante da scartare; quante chiamate a Google Books restano a vuoto. La prova del classificatore del 17 ottobre ha dato 4 verdetti giusti su 4, horror compreso.
 2. **Pagine editore e autore** (4.5), solo per chi ha almeno due titoli.
 3. **Il mese di uscita** (4.19), che serve alla pagina mensile e alla newsletter.
-4. Poi, in sessioni brevi: le fonti Zona 42 e Astro dello Scout (4.18, correzioni B e C), backup del catalogo anche da `pagine.yml` (4.12), feed RSS (4.7), la pulizia di `index.html` in una sessione a sé (4.9), la PWA da decidere (4.11), `e_admin()` (4.15), il campo genere (4.6).
+4. Poi, in sessioni brevi: le fonti Zona 42 e Astro dello Scout (4.18, correzioni B e C), backup del catalogo anche da `pagine.yml` (4.12), feed RSS (4.7), la PWA da decidere (4.11), `e_admin()` (4.15), il campo genere (4.6).
 
 ---
 
@@ -130,13 +130,21 @@ La pagina mensile delle uscite, prevista qui in origine, non si può fare: il ca
 ### 4.8 Newsletter
 Iscrizione sul sito e invio mensile (Brevo, fornitore europeo con piano gratuito: https://www.brevo.com/it/). Contenuto composto in gran parte dal database: nuovi ingressi, articolo del mese, scadenze dei concorsi. È l'unico canale di proprietà e la base su cui, più avanti, si vendono spazi.
 
-### 4.9 Pulizie
-Eredità della migrazione a Supabase, tutte in `index.html` salvo dove indicato. Da fare in una sessione a sé, separata dalle modifiche funzionali.
-- Testi e nomi che raccontano un'architettura che non esiste più: "Caricamento catalogo da GitHub…", la funzione `loadFromGitHub()`, e soprattutto il messaggio d'errore "Non riesco a caricare i JSON da GitHub. Controlla gli URL Raw in **Impostazioni**" — che compare quando è Supabase a non rispondere e rimanda a campi che in Impostazioni non ci sono più.
-- Codice morto: il download di `data/candidates.json` da raw.githubusercontent (fermo a 16 candidati di un flusso superato), l'editor notizie locale con "esporta e carica su GitHub". Il pulsante "Esporta catalogo" è stato tolto l'11 ottobre 2026: compariva solo da amministratore e scaricava il catalogo nel formato precedente a Supabase; la copia di sicurezza la scrive lo Scout in `data/catalogo.json` (4.12).
-- La sezione **"Impostazioni"** di `index.html` (pulsante nella barra da amministratore, sezione `#impostazioni`, il suo codice e la rotta nell'indirizzo): rimanda ai due pannelli e offre "Ricarica i dati" ed "Esci", cose che i pannelli fanno già. Segnalata dal moderatore il 18 ottobre 2026.
-- In `catalogo-admin.html`, il riquadro **"Importazione una tantum"** in fondo all'elenco ("Importa da catalogo.json", "Importa candidati Scout") e il suo codice: servivano al passaggio a Supabase, oggi lo Scout scrive direttamente nel database. Segnalato dal moderatore il 18 ottobre 2026.
-- File residui in radice: `Index.txt` (vecchia copia di `index.html`), `fantasy-italia-nuove-proposte.json` (10 titoli in formato pre-Supabase) e `post.html`, pagina che mostrava un articolo da sola e che dal 4.2 è superata dalle pagine statiche: non è collegata da nessuna parte. Dal 7 ottobre anche `logo_store.png`, il vecchio logo Amazon con il fondo colorato, sostituito da `logo-amazon.png` (4.21).
+### 4.9 Pulizie — fatto
+Eredità della migrazione a Supabase. Decisa dal moderatore il 18 ottobre 2026 e fatta in una sessione a sé, senza modifiche funzionali.
+
+- [x] **Fatto** (18 ottobre 2026). Tolti:
+  - in `index.html`, la sezione **"Impostazioni"**: pulsante nella barra da amministratore, sezione `#impostazioni`, il suo codice (anche i gestori di pulsanti già spariti dalla pagina) e la rotta `#impostazioni`, che ora porta al catalogo. Per uscire dalla sessione resta "Esci admin" in alto;
+  - in `index.html`, i testi e i nomi che raccontavano l'architettura su GitHub: `loadFromGitHub()` ora si chiama `caricaDati()`, e il messaggio d'errore che rimandava a Impostazioni ora dice che il catalogo non risponde e di riprovare. Via anche gli indirizzi dei vecchi JSON (`state.settings`), con le chiavi `fi_settings_site_v39` e `fi_news_pending_v1` che il sito ora cancella dal browser;
+  - in `index.html`, il download di `data/candidates.json` e l'editor notizie locale con "esporta e carica su GitHub". Nella barra degli articoli, da amministratore, resta "Gestisci le notizie →";
+  - in `catalogo-admin.html`, il riquadro "Importazione una tantum" con i pulsanti "Importa da catalogo.json" e "Importa candidati Scout" e il loro codice;
+  - i file residui in radice `Index.txt`, `fantasy-italia-nuove-proposte.json`, `post.html` e `logo_store.png`, che nessuna pagina, script o workflow richiamava.
+
+Verificato in locale: la home carica il catalogo, i tab pubblici funzionano, nessun errore in console; `catalogo-admin.html` si apre senza errori.
+
+Resta, fuori da questa voce:
+- in `index.html`, il vecchio codice di moderazione (`modCard`, `persistApprovedEdit`, la lettura delle bozze nel browser e il blocco commentato in `renderModeration`), che non viene più chiamato da quando la moderazione vive in `catalogo-admin.html`. Ci sono anche gli ultimi due commenti che parlano di "esportare il JSON su GitHub";
+- in `news-admin.html`, il riquadro gemello "Importazione una tantum" ("Importa da news.json").
 
 ### 4.10 Aggiornamenti di manutenzione — fatto
 - [x] **Fatto** (20 settembre 2026). `actions/checkout@v5` e `actions/setup-python@v6` in entrambi i workflow: chiude l'avviso su Node 20.

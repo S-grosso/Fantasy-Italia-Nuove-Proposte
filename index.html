@@ -215,7 +215,6 @@
       </nav>
       <nav id="navAdmin" style="display:none">
         <button data-tab="moderazione">Moderazione</button>
-        <button data-tab="impostazioni">Impostazioni</button>
       </nav>
     </div>
   </div>
@@ -455,27 +454,8 @@
   <!-- Notizie (lista) -->
   <section id="notizie" class="tab" style="display:none">
     <div id="newsAdminBar" class="toolbar" style="display:none">
-      <div class="field" style="flex:1"><label>Titolo</label><input id="news_title" type="text" placeholder="Titolo della notizia"></div>
       <div class="right" style="display:flex;gap:8px">
         <a class="btn" href="news-admin.html">Gestisci le notizie →</a>
-      </div>
-    </div>
-    <div id="newsEditor" style="display:none" hidden>
-      <div class="toolbar" style="margin-bottom:6px">
-        <button class="btn small" data-cmd="bold">Grassetto</button>
-        <button class="btn small" data-cmd="italic">Corsivo</button>
-        <button class="btn small" data-cmd="underline">Sottolineato</button>
-        <button class="btn small" data-cmd="ul">Elenco</button>
-        <button class="btn small" data-cmd="link">Link</button>
-        <button class="btn small" data-cmd="bigger">A+</button>
-        <button class="btn small" data-cmd="smaller">A−</button>
-        <button class="btn small" data-cmd="clear">Svuota</button>
-      </div>
-      <div id="news_body_html" contenteditable="true" style="border:1px solid var(--border);border-radius:10px;padding:10px;min-height:160px"></div>
-      <div class="actions">
-        <button class="btn primary" id="btnSaveNews">Salva bozza notizia</button>
-        <button class="btn" id="btnCancelEdit" style="display:none">Annulla modifica</button>
-        <span class="hint">Le notizie locali non sono pubbliche finché non esporti e carichi su GitHub.</span>
       </div>
     </div>
 
@@ -511,29 +491,6 @@
       <a class="btn right" href="catalogo-admin.html">Gestisci il catalogo →</a>
     </div>
     <div id="gridModeration" class="grid"></div>
-  </section>
-
-  <!-- Impostazioni -->
-  <section id="impostazioni" class="tab" style="display:none">
-    <h3 style="margin-top:0">Impostazioni</h3>
-    <div class="small muted" style="margin-bottom:14px">
-      Catalogo e notizie vivono ora su un database: si modificano dalle
-      due pagine qui sotto, e le modifiche vanno online subito, senza
-      passare da GitHub.
-    </div>
-    <div class="row" style="gap:8px">
-      <a class="btn primary" href="catalogo-admin.html">Gestisci il catalogo</a>
-      <a class="btn primary" href="news-admin.html">Gestisci le notizie</a>
-    </div>
-    <div class="toolbar" style="margin-top:16px">
-      <button class="btn" id="btnForceReload">Ricarica i dati</button>
-      <button class="btn danger" id="btnLogout">Esci dalla sessione admin</button>
-    </div>
-    <div class="small muted" style="margin-top:16px;line-height:1.6">
-      Una copia di sicurezza del catalogo viene salvata su GitHub a ogni
-      esecuzione dello Scout, in <code>data/catalogo.json</code>: se il
-      database non fosse raggiungibile, i dati sarebbero comunque lì.
-    </div>
   </section>
 
   <!-- Contatti -->
@@ -629,8 +586,7 @@
   const $  = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
 
-  /* ==== Config Solo GitHub ==== */
-  const DEFAULT_GITHUB_BASE = 'https://raw.githubusercontent.com/S-grosso/Fantasy-Italia-Nuove-Proposte/main/data/';
+  /* ==== Configurazione ==== */
   // Le notizie ora vivono su Supabase, non più in un file JSON su GitHub:
   // così puoi pubblicare da qualunque dispositivo senza caricare nulla.
   // Questa è l'API REST: chiede solo gli articoli in stato 'published',
@@ -653,35 +609,19 @@
     + '&status=eq.approved'
     + '&order=featured.desc,year.desc';
 
-  const DEFAULTS = {
-    adminsUrl:     DEFAULT_GITHUB_BASE + 'admins.json',
-    catalogUrl:    DEFAULT_GITHUB_BASE + 'catalogo.json',
-    newsUrl:       NEWS_ENDPOINT,
-    candidatesUrl: DEFAULT_GITHUB_BASE + 'candidates.json'
-  };
-
   const APPROVED_EDITS_KEY = 'fi_books_approved_edits_v1';
 
   /* ==== Stato ==== */
   const state = {
-    settings: load('fi_settings_site_v39', DEFAULTS),
     remoteBooksBase: [],
     remoteBooks: [],
     remoteNews: [],
     pendingBooks: load('fi_books_pending_v1', []),  // bozze locali (editabili)
-    autoCandidates: [],                             // candidati trovati dallo Scout (da GitHub)
+    autoCandidates: [],                             // candidati trovati dallo Scout
     autoRejected: load('fi_auto_rejected_v1', []),  // candidati che hai scartato: non li rivedi più
-    pendingNews:  load('fi_news_pending_v1', []),  // bozze locali
     approvedEdits: load(APPROVED_EDITS_KEY, {}),
     user: null            // utente Supabase, null se non autenticato
   };
-  // Le impostazioni salvate da versioni precedenti non conoscono candidatesUrl:
-  // senza questa migrazione il sito prova a fetchare "undefined" (404) e i
-  // candidati non compaiono mai in Moderazione.
-  for(const k of Object.keys(DEFAULTS)){
-    if(!state.settings[k]) state.settings[k] = DEFAULTS[k];
-  }
-  save('fi_settings_site_v39', state.settings);
 
   if(!state.approvedEdits || typeof state.approvedEdits!=='object' || Array.isArray(state.approvedEdits)){
     state.approvedEdits={};
@@ -690,6 +630,10 @@
   // pulizia vecchie cache che creavano conflitto
   localStorage.removeItem('fi_books_site_v38');
   localStorage.removeItem('fi_news_site_v38');
+  // Indirizzi dei vecchi JSON su GitHub e bozze dell'editor notizie locale:
+  // il sito non li usa più.
+  localStorage.removeItem('fi_settings_site_v39');
+  localStorage.removeItem('fi_news_pending_v1');
 
   // Dopo la migrazione, bozze e correzioni locali sono superate: adesso
   // il catalogo vero sta su Supabase. Se restassero, continuerebbero a
@@ -704,15 +648,6 @@
   /* ==== Helpers ==== */
   function load(key, fb){ try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):fb; }catch(_){return fb;} }
   function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
-  function withBust(url){
-    try{ const u=new URL(url, location.href); u.searchParams.set('v', String(Date.now())); return u.toString(); }
-    catch(_){ return url + (url.includes('?')?'&':'?') + 'v=' + Date.now(); }
-  }
-  async function fetchJson(url){
-    const res = await fetch(withBust(url), {cache:'no-store'});
-    if(!res.ok) throw new Error('HTTP '+res.status+' @ '+url);
-    return res.json();
-  }
 
   /* ==== Admin: autenticazione Supabase ==== */
   // Un solo account, verificato dal server. Il vecchio PBKDF2 nascondeva
@@ -793,7 +728,6 @@
     if(sessionIsValid()) esciAdmin();
     else apriLogin();
   });
-  $('#btnLogout')?.addEventListener('click', esciAdmin);
   
   function applyAdminUI(){
     const on=sessionIsValid();
@@ -802,7 +736,6 @@
     $('#adminBadge').textContent = on ? (state.user.email || 'Admin') : '';
     $('#adminToggle').textContent = on ? 'Esci admin' : 'Accedi admin';
     $('#newsAdminBar').style.display = on ? 'flex' : 'none';
-    $('#newsEditor').style.display   = on ? '' : 'none';
   }
 
   /* ==== Normalizzazioni ==== */
@@ -892,8 +825,8 @@
     return 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="160" viewBox="0 0 120 160"><rect width="100%" height="100%" fill="#0b0e13"/><rect x="10" y="10" width="100" height="140" rx="8" ry="8" fill="#0f141d" stroke="#1d2230"/><text x="60" y="83" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="14" fill="#5e657a">Copertina</text></svg>');
   }
 
-  /* ==== Caricamento da GitHub (unica fonte pubblica) ==== */
-  async function loadFromGitHub(){
+  /* ==== Caricamento da Supabase (unica fonte pubblica) ==== */
+  async function caricaDati(){
     const bann=$('#banner'); bann.style.display='none';
 
     // Il catalogo si carica per conto suo: se le notizie danno errore,
@@ -913,15 +846,14 @@
       applyApprovedEdits();
     }catch(e){
       console.error(e);
-      bann.innerHTML = '⚠️ Non riesco a caricare i JSON da GitHub. Controlla gli URL Raw in <b>Impostazioni</b>.';
+      bann.textContent = '⚠️ Il catalogo non risponde. Riprova tra qualche minuto.';
       bann.style.display='block';
       $('#gridCatalogo').innerHTML='<div class="muted">Errore nel caricamento del catalogo.</div>';
       $('#gridNews').innerHTML='<div class="muted">Errore nel caricamento delle notizie.</div>';
     }
 
     // Notizie da Supabase, con la chiave nell'intestazione invece che
-    // nell'indirizzo: è il modo che Supabase documenta e che non soffre
-    // della riscrittura dei parametri fatta da withBust().
+    // nell'indirizzo: è il modo che Supabase documenta.
     try{
       const res = await fetch(NEWS_ENDPOINT, {
         cache: 'no-store',
@@ -939,43 +871,8 @@
         '<div class="muted">Non riesco a caricare le notizie.</div>';
     }
 
-    // I candidati dello Scout sono un extra: se il file non esiste ancora
-    // (primo avvio, o Action mai eseguita) il sito deve funzionare lo stesso.
-    try{
-      const cands = await fetchJson(state.settings.candidatesUrl);
-      const respinti = new Set(state.autoRejected||[]);
-      state.autoCandidates = (cands||[])
-        .filter(c => !respinti.has(c.id))
-        .map(c => normalizeBook(c));
-    }catch(_){
-      state.autoCandidates = [];  // nessun candidato: normale, non è un errore
-    }
-
     renderCatalogo(); renderNews(); renderModeration();
   }
-
-  /* ==== Impostazioni ==== */
-  $('#btnSaveUrls')?.addEventListener('click', ()=>{
-    state.settings.adminsUrl=$('#adminsUrl').value.trim()||state.settings.adminsUrl;
-    state.settings.catalogUrl=$('#catalogUrl').value.trim()||state.settings.catalogUrl;
-    state.settings.newsUrl=$('#newsUrl').value.trim()||state.settings.newsUrl;
-    if(!state.settings.candidatesUrl) state.settings.candidatesUrl = DEFAULTS.candidatesUrl;
-    save('fi_settings_site_v39', state.settings);
-    alert('URL salvati. Ricarico i dati da GitHub.');
-    loadFromGitHub();
-  });
-  $('#btnForceReload')?.addEventListener('click', ()=>{ loadFromGitHub(); });
-  $('#btnClearLocal')?.addEventListener('click', ()=>{
-    localStorage.removeItem('fi_books_pending_v1');
-    localStorage.removeItem('fi_news_pending_v1');
-    localStorage.removeItem(APPROVED_EDITS_KEY);
-    state.pendingBooks=[]; state.pendingNews=[];
-    state.approvedEdits={};
-    applyApprovedEdits();
-    renderCatalogo();
-    renderModeration();
-    alert('Bozze locali rimosse.');
-  });
 
   /* ==== Proponi un titolo ==== */
   // Il modulo scrive davvero, ma non sulla tabella: passa dalla Edge
@@ -1108,7 +1005,7 @@
   }
   aggiornaContatori();
 
-  /* ==== Catalogo (SOLO GitHub) ==== */
+  /* ==== Catalogo ==== */
   function tagEl(text, cls){ const t=document.createElement('span'); t.className=cls||'tag'; t.textContent=text; return t; }
   function bookCard(b){
     const el=document.createElement('div'); el.className='card';
@@ -1544,8 +1441,7 @@
   }
   $('#moderationFilter')?.addEventListener('change', renderModeration);
 
-  /* ==== Notizie (SOLO GitHub per il pubblico) ==== */
-  function sanitizeHtml(html){ return (html||'').replace(/<script/gi,'&lt;script'); }
+  /* ==== Notizie ==== */
   function renderNews(){
     const grid=$('#gridNews'); grid.innerHTML='';
     const list=state.remoteNews.slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
@@ -1641,41 +1537,6 @@
   function backToNews(e){ e?.preventDefault(); history.pushState(null,'','/#articoli'); showTab('notizie'); }
   $('#btnBackTop')?.addEventListener('click', backToNews);
   $('#btnBackBottom')?.addEventListener('click', backToNews);
-
-  // Editor notizie (bozze locali, non pubbliche)
-  $$('#newsEditor [data-cmd]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const ed=$('#news_body_html'); ed.focus();
-      const cmd=btn.getAttribute('data-cmd');
-      if(cmd==='bold') document.execCommand('bold', false, null);
-      else if(cmd==='italic') document.execCommand('italic', false, null);
-      else if(cmd==='underline') document.execCommand('underline', false, null);
-      else if(cmd==='ul') document.execCommand('insertUnorderedList', false, null);
-      else if(cmd==='link'){ const url=prompt('Inserisci URL (https://...)'); if(url && /^https?:/i.test(url)) document.execCommand('createLink', false, url); }
-      else if(cmd==='bigger'||cmd==='smaller'){ const sel=window.getSelection(); if(!sel||!sel.rangeCount) return; const range=sel.getRangeAt(0); const span=document.createElement('span'); span.style.fontSize=(cmd==='bigger'?'1.15em':'0.9em'); range.surroundContents(span); }
-      else if(cmd==='clear'){ ed.innerHTML=''; }
-    });
-  });
-  (function hookSaveNews(){
-    const btn=$('#btnSaveNews'); if(!btn) return;
-    btn.addEventListener('click', (ev)=>{
-      ev.preventDefault(); ev.stopPropagation();
-      if(!sessionIsValid()){ alert('Solo admin.'); return; }
-      const title=($('#news_title').value||'').trim();
-      const html=sanitizeHtml($('#news_body_html').innerHTML||'');
-      if(!title){ alert('Titolo obbligatorio.'); return; }
-      if(!html){ alert('Inserisci un testo.'); return; }
-      const item={ id:'n'+Date.now().toString(36), title, bodyHtml:html, ts:Date.now(), _local:true };
-      state.pendingNews.push(item); save('fi_news_pending_v1', state.pendingNews);
-      $('#news_title').value=''; $('#news_body_html').innerHTML='';
-      alert('Bozza notizia salvata. Per pubblicarla, esporta e carica su GitHub.');
-    }, true);
-  })();
-   $('#btnExportNews')?.addEventListener('click', ()=>{
-    const merged=[...state.remoteNews, ...state.pendingNews].sort((a,b)=>(b.ts||0)-(a.ts||0));
-    const blob=new Blob([JSON.stringify(merged,null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='news.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  });
 
   /* ==== Scheda del libro in rilievo ==== */
   // La sinossi completa arriva già con il catalogo, quindi la scheda si apre
@@ -2063,7 +1924,6 @@ ${testo}`;
       else { alert('Area riservata: accedi come admin.'); showTab('catalogo'); }
       return;
     }
-    if(hash==='impostazioni'){ if(sessionIsValid()){ showTab('impostazioni'); } else { alert('Area riservata: accedi come admin.'); showTab('catalogo'); } return; }
     showTab('catalogo');
   }
   window.addEventListener('hashchange', handleRoute);
@@ -2091,7 +1951,7 @@ ${testo}`;
   $$('#navPublic button, #navAdmin button').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const tab=btn.getAttribute('data-tab');
-      if(tab==='moderazione'||tab==='impostazioni'){ if(!sessionIsValid()){ alert('Area riservata: accedi come admin.'); return; } touchSession(); }
+      if(tab==='moderazione'){ if(!sessionIsValid()){ alert('Area riservata: accedi come admin.'); return; } touchSession(); }
       if(tab==='moderazione'){ location.href = 'catalogo-admin.html'; return; }
       if(tab==='notizie') renderNews();
 
@@ -2122,7 +1982,7 @@ ${testo}`;
     await aggiornaSessioneAdmin();
     supa.auth.onAuthStateChange(()=>aggiornaSessioneAdmin());
 
-    await loadFromGitHub();   // unica fonte per la vista pubblica
+    await caricaDati();   // unica fonte per la vista pubblica
     handleRoute();
     apriSchedaDaIndirizzo();
     apriArticoloDaIndirizzo();
