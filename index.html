@@ -2077,6 +2077,14 @@ ${testo}`;
     ev.preventDefault();
     if(dlgLibro && dlgLibro.open) dlgLibro.close();
     else if(location.pathname !== '/' || location.hash) history.pushState(null, '', '/');
+    // Tornare alla home vuol dire ripartire dal catalogo intero: prima la
+    // ricerca e i filtri restavano com'erano, e il catalogo sembrava fatto
+    // dei soli titoli trovati.
+    const cerca = $('#q');
+    if(cerca) cerca.value = '';
+    if($('#filterYear')) $('#filterYear').value = 'all';
+    $('#filterDebut')?.setAttribute('aria-pressed', 'false');
+    renderCatalogo();
     showTab('catalogo');
     window.scrollTo({ top: 0 });
   });

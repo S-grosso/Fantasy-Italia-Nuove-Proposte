@@ -176,8 +176,11 @@
           <button id="btnMeseFiltra" class="btn small" style="margin-bottom:4px">Filtra</button></div>
       </div>
       <div id="meseRisultato" class="small muted"></div>
-      <div id="meseAzioni" class="actions hidden">
+      <div id="meseAzioni" class="actions hidden" style="align-items:center">
         <button id="btnMeseCarosello" class="btn small ok">Carosello del mese</button>
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink)">
+          <input id="meseVerticale" type="checkbox" style="width:auto"> Formato storia/Reel
+        </label>
       </div>
       <div id="meseAnteprima" class="carosello hidden" style="margin-top:12px">
         <div id="meseImmagini" class="carosello-immagini"></div>
@@ -673,7 +676,11 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
         f.className = 'tag appr'; f.textContent = 'consigliato';
         tags.appendChild(f);
       }
-      if(b.confidence === 'bassa'){
+      // "da verificare" e' un invito a controllare prima di decidere: su una
+      // scheda gia' pubblicata o scartata la decisione e' presa, e il
+      // contrassegno restava solo perche' lo Scout l'aveva proposta con
+      // confidenza bassa. La provenienza resta leggibile nell'editor.
+      if(b.confidence === 'bassa' && (b.status === 'candidate' || b.status === 'draft')){
         const c = document.createElement('span');
         c.className = 'tag cand'; c.textContent = 'da verificare';
         tags.appendChild(c);
@@ -897,7 +904,8 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
     const btn = $('#btnMeseCarosello');
     btn.disabled = true; btn.textContent = 'Preparo le immagini…';
     try{
-      const { immagini, avvisi } = await CaroselloInstagram.preparaMese(meseLibri, meseOpzioni);
+      const o = { ...meseOpzioni, verticale: $('#meseVerticale').checked };
+      const { immagini, avvisi } = await CaroselloInstagram.preparaMese(meseLibri, o);
       chiudiAnteprimaMese();
       meseImmagini = immagini;
       mostraMiniature($('#meseImmagini'), immagini);

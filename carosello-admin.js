@@ -494,18 +494,27 @@
   // sembrare il post dedicato a quel libro.
   // totale: i titoli del mese, che possono essere piu' delle copertine
   // disegnabili (una copertina esterna senza CORS resta fuori dalla griglia).
+  // Dove si disegna, secondo il formato: nel post la tela 4:5 meno i margini;
+  // in storie e Reel la zona sicura, con lo stesso margine ai due lati
+  // perche' qui tutto e' centrato e a destra ci sono le icone dei Reel.
+  function areaMese(o){
+    if(o.verticale) return { H: A_VERTICALE, zona: ZONA_VERTICALE, larghezza: L - 2 * ZONA_VERTICALE.destra };
+    return { H: A, zona: ZONA_POST, larghezza: UTILE };
+  }
+
   function slideInsieme(copertine, o, totale){
-    const { c, ctx } = nuovaTela();
-    ctx.fillStyle = FONDO; ctx.fillRect(0, 0, L, A);
-    const alone = ctx.createRadialGradient(CENTRO, A * 0.4, 50, CENTRO, A * 0.4, 760);
+    const { H, zona, larghezza } = areaMese(o);
+    const { c, ctx } = nuovaTela(H);
+    ctx.fillStyle = FONDO; ctx.fillRect(0, 0, L, H);
+    const alone = ctx.createRadialGradient(CENTRO, H * 0.4, 50, CENTRO, H * 0.4, 760);
     alone.addColorStop(0, 'rgba(122,166,255,0.16)');
     alone.addColorStop(1, 'rgba(122,166,255,0)');
-    ctx.fillStyle = alone; ctx.fillRect(0, 0, L, A);
-    const limite = marchio(ctx) - 28;
+    ctx.fillStyle = alone; ctx.fillRect(0, 0, L, H);
+    const limite = marchio(ctx, zona.fondo) - 28;
 
     // Il titolo sotto la griglia: "Esordi di ottobre 2026" e quanti sono.
     const n = totale;
-    const titolo = rigaCheSta(ctx, titoloMese(o), 700, 66, 40, UTILE);
+    const titolo = rigaCheSta(ctx, titoloMese(o), 700, 66, 40, larghezza);
     const sotto = n + (o.soloEsordi ? (n === 1 ? ' romanzo d\'esordio' : ' romanzi d\'esordio') : (n === 1 ? ' romanzo' : ' romanzi'))
       + ' nel catalogo';
     const altoTitoli = altezzaRiga(titolo.misura) + 10 + altezzaRiga(30);
@@ -523,12 +532,12 @@
     const righe = righeGriglia(copertine.length);
     const colonne = Math.max(...righe);
     const SPAZIO = copertine.length <= 3 ? 40 : 28;
-    const altoGriglia = y - 60 - MARGINE;
-    const w = Math.min((UTILE - SPAZIO * (colonne - 1)) / colonne,
+    const altoGriglia = y - 60 - zona.alto;
+    const w = Math.min((larghezza - SPAZIO * (colonne - 1)) / colonne,
                        (altoGriglia - SPAZIO * (righe.length - 1)) / righe.length * 2 / 3,
                        copertine.length === 1 ? 560 : 1000);
     const h = w * 3 / 2;
-    let gy = MARGINE + (altoGriglia - (h * righe.length + SPAZIO * (righe.length - 1))) / 2;
+    let gy = zona.alto + (altoGriglia - (h * righe.length + SPAZIO * (righe.length - 1))) / 2;
     let k = 0;
     for(const quante of righe){
       let gx = CENTRO - (w * quante + SPAZIO * (quante - 1)) / 2;
@@ -544,10 +553,12 @@
   // Una slide per libro: la copertina intera in alto e, sotto, la frase e
   // "Per chi ha amato", poi titolo e autore piccoli. Senza la frase, titolo e
   // autore prendono il suo posto, in grande.
-  function slideLibroDelMese(copertina, b){
-    const { c, ctx } = nuovaTela();
+  function slideLibroDelMese(copertina, b, o){
+    // Qui UTILE e' la larghezza del formato scelto: copre quella del post.
+    const { H, zona, larghezza: UTILE } = areaMese(o);
+    const { c, ctx } = nuovaTela(H);
     sfondo(ctx, copertina, 0.80);
-    const limite = marchio(ctx) - 28;
+    const limite = marchio(ctx, zona.fondo) - 28;
     const STACCO = 30;
     const blocchi = [];   // [righe, misura, peso, colore, interlinea]
     let alto = 0;
@@ -575,8 +586,8 @@
 
     let y = limite - alto;
     if(copertina){
-      const spazio = y - 50 - MARGINE;
-      copertinaIn(ctx, copertina, MARGINE, MARGINE, UTILE, Math.min(spazio, 820), 14);
+      const spazio = y - 50 - zona.alto;
+      copertinaIn(ctx, copertina, (L - UTILE) / 2, zona.alto, UTILE, Math.min(spazio, o.verticale ? 1000 : 820), 14);
     }
 
     ctx.textAlign = 'center';
@@ -603,7 +614,8 @@
   }
 
   // libri: schede approvate del mese (title, author, cover_url, pitch,
-  // letture_affini, instagram, slug). o: { anno, mese, soloEsordi }.
+  // letture_affini, instagram, slug). o: { anno, mese, soloEsordi, verticale }:
+  // verticale da' immagini 1080x1920 per storie e Reel, altrimenti 1080x1350.
   async function preparaMese(libri, o){
     const avvisi = [];
     try{ await caricaCaratteri(); }
@@ -626,9 +638,10 @@
 
     const slide = [['insieme', titoloMese(o), slideInsieme(copertine.filter(Boolean), o, libri.length)]];
     libri.slice(0, 19).forEach((b, i) => {
-      slide.push([b.slug || ('libro-' + (i + 1)), b.title || 'Libro ' + (i + 1), slideLibroDelMese(copertine[i], b)]);
+      slide.push([b.slug || ('libro-' + (i + 1)), b.title || 'Libro ' + (i + 1), slideLibroDelMese(copertine[i], b, o)]);
     });
-    const base = (o.soloEsordi ? 'esordi-' : 'uscite-') + o.anno + '-' + String(o.mese).padStart(2, '0');
+    const base = (o.soloEsordi ? 'esordi-' : 'uscite-') + o.anno + '-' + String(o.mese).padStart(2, '0')
+      + (o.verticale ? '-verticale' : '');
     return { immagini: await esporta(slide, base), avvisi };
   }
 
