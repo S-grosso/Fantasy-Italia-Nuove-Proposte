@@ -79,7 +79,9 @@
         border:1px solid var(--border);border-radius:12px;background:#12141c}
   .carosello-immagini{display:flex;gap:8px;overflow-x:auto}
   .carosello-immagini figure{margin:0;flex:0 0 31%;min-width:140px}
-  .carosello-immagini img{width:100%;aspect-ratio:4/5;display:block;
+  /* Niente proporzione fissa: le miniature sono 4:5 per il post e 9:16 per
+     storie e Reel. */
+  .carosello-immagini img{width:100%;height:auto;display:block;
         border-radius:8px;border:1px solid var(--border)}
   .carosello-immagini figcaption{font-size:12px;color:var(--muted);margin-top:4px}
   .carosello .avviso{font-size:12px;color:var(--warn);line-height:1.45;
@@ -181,6 +183,11 @@
              anche prima di salvare: si puo' ritoccare la frase e rifarlo. -->
         <div id="caroselloKit" class="kit hidden">
           <button id="btnCarosello" class="btn small">Carosello Instagram</button>
+          <!-- 1080x1920 per storie e Reel: copertina intera e incipit in due
+               o tre schermate, da montare nell'app di Instagram. -->
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink)">
+            <input id="caroselloVerticale" type="checkbox" style="width:auto"> Formato storia/Reel
+          </label>
         </div>
       </div>
     </div>
@@ -735,7 +742,8 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
     btn.disabled = true; btn.textContent = 'Preparo le immagini…';
     try{
       const dati = datiCarosello();
-      const { immagini, avvisi } = await CaroselloInstagram.prepara(dati);
+      const formato = $('#caroselloVerticale').checked ? 'verticale' : 'post';
+      const { immagini, avvisi } = await CaroselloInstagram.prepara(dati, formato);
       chiudiCarosello();
       caroselloImmagini = immagini; caroselloDati = dati;
 

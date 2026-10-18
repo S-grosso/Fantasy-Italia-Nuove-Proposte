@@ -161,9 +161,11 @@
 
   /* ---------------- disegno ---------------- */
 
-  function nuovaTela(){
+  // L'altezza cambia col formato: 1350 per il post (4:5), 1920 per storie e
+  // Reel (9:16). La larghezza resta 1080 in entrambi.
+  function nuovaTela(altezza){
     const c = document.createElement('canvas');
-    c.width = L; c.height = A;
+    c.width = L; c.height = altezza || A;
     const ctx = c.getContext('2d');
     ctx.textBaseline = 'top';
     ctx.imageSmoothingEnabled = true;
@@ -175,37 +177,43 @@
   // del sito. La sfocatura si ottiene rimpicciolendo e ringrandendo, non con
   // ctx.filter, che Safari non supporta: il carosello si fa anche dal telefono.
   function sfondo(ctx, img, velo){
+    const H = ctx.canvas.height;
     ctx.fillStyle = FONDO;
-    ctx.fillRect(0, 0, L, A);
+    ctx.fillRect(0, 0, L, H);
     if(!img) return;
+    // La miniatura ha le proporzioni della tela, cosi' la sfocatura e' la
+    // stessa nel formato del post e in quello verticale.
+    const pw = 27, ph = Math.round(27 * H / L);
     const piccola = document.createElement('canvas');
-    piccola.width = 27; piccola.height = 34;
+    piccola.width = pw; piccola.height = ph;
     const p = piccola.getContext('2d');
-    const r = Math.max(27 / img.width, 34 / img.height);
-    p.drawImage(img, (27 - img.width * r) / 2, (34 - img.height * r) / 2, img.width * r, img.height * r);
+    const r = Math.max(pw / img.width, ph / img.height);
+    p.drawImage(img, (pw - img.width * r) / 2, (ph - img.height * r) / 2, img.width * r, img.height * r);
     // Un passaggio intermedio rende la sfumatura morbida invece che a quadretti.
     const media = document.createElement('canvas');
-    media.width = 108; media.height = 135;
+    media.width = pw * 4; media.height = ph * 4;
     const mctx = media.getContext('2d');
     mctx.imageSmoothingQuality = 'high';
-    mctx.drawImage(piccola, 0, 0, 108, 135);
-    ctx.drawImage(media, 0, 0, L, A);
+    mctx.drawImage(piccola, 0, 0, media.width, media.height);
+    ctx.drawImage(media, 0, 0, L, H);
     ctx.globalAlpha = velo;
     ctx.fillStyle = FONDO;
-    ctx.fillRect(0, 0, L, A);
+    ctx.fillRect(0, 0, L, H);
     ctx.globalAlpha = 1;
   }
 
   // Il marchio in basso, identico a quello della card: tre righe centrate e
   // un filo sopra. Restituisce dove sta il filo, cioe' il limite del contenuto.
-  function marchio(ctx){
+  // fondo e' dove finisce l'ultima riga: nel formato verticale sta piu' in
+  // alto, fuori dalla fascia che Instagram copre con didascalia e pulsanti.
+  function marchio(ctx, fondo){
     const righe = [
       ['Nel catalogo di', 400, 26, SPENTO],
       ['Fantasy Italia — Nuove proposte', 700, 32, INCHIOSTRO],
       ['fantasyitalianuoveproposte.it', 400, 26, ACCENTO]
     ];
     const alto = righe.reduce((s, r) => s + altezzaRiga(r[2]), 0);
-    let y = A - MARGINE - alto;
+    let y = (fondo || ctx.canvas.height - MARGINE) - alto;
     const filo = y - 28;
     ctx.strokeStyle = BORDO; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(CENTRO - 60, filo); ctx.lineTo(CENTRO + 60, filo); ctx.stroke();
@@ -223,24 +231,30 @@
   // Un ritaglio della copertina e' stato provato (al 60% e poi a tutta
   // larghezza) e scartato: tagliava il titolo stampato e l'illustrazione
   // in punti che nessuno avrebbe scelto.
-  function slideGancio(copertina, d){
-    const { c, ctx } = nuovaTela();
+  // zona: ZONA_POST o ZONA_VERTICALE (definite piu' sotto). Nel formato
+  // verticale il testo e' centrato, quindi il margine della colonna di icone
+  // dei Reel si lascia da entrambi i lati.
+  function slideGancio(copertina, d, zona){
+    const verticale = zona === ZONA_VERTICALE;
+    zona = zona || ZONA_POST;
+    const { c, ctx } = nuovaTela(verticale ? A_VERTICALE : A);
+    const larghezza = verticale ? L - 2 * zona.destra : UTILE;
     // Lo stesso velo della card: provato al 72%, su una copertina chiara lo
     // sfondo diventava grigio medio e "Per chi ha amato" si leggeva male.
     sfondo(ctx, copertina, 0.80);
-    const limite = marchio(ctx) - 28;   // come y_blocco nella card: 56 px sopra il marchio
+    const limite = marchio(ctx, zona.fondo) - 28;   // come y_blocco nella card: 56 px sopra il marchio
     const STACCO = 40;
 
     const affini = d.affini ? 'Per chi ha amato: ' + d.affini : '';
     const bAff = affini
-      ? adatta(ctx, affini, { peso: 400, max: 36, min: 24, larghezza: UTILE, altezza: 3 * altezzaRiga(36), maxRighe: 3 })
+      ? adatta(ctx, affini, { peso: 400, max: 36, min: 24, larghezza, altezza: 3 * altezzaRiga(36), maxRighe: 3 })
       : null;
-    const spazioFrase = limite - MARGINE - (bAff ? bAff.alto + STACCO : 0);
-    const bFrase = adatta(ctx, d.pitch, { peso: 700, max: 76, min: 40, larghezza: UTILE, altezza: spazioFrase, bilancia: true });
+    const spazioFrase = limite - zona.alto - (bAff ? bAff.alto + STACCO : 0);
+    const bFrase = adatta(ctx, d.pitch, { peso: 700, max: 76, min: 40, larghezza, altezza: spazioFrase, bilancia: true });
     const altoTesto = bFrase.alto + (bAff ? bAff.alto + STACCO : 0);
 
     // Il testo sta al centro dello spazio sopra il marchio.
-    let y = MARGINE + (limite - MARGINE - altoTesto) / 2;
+    let y = zona.alto + (limite - zona.alto - altoTesto) / 2;
 
     ctx.textAlign = 'center';
     if(bFrase){
@@ -304,42 +318,134 @@
     return [testo.slice(0, i).trim() + '…', '…' + testo.slice(i).trim()];
   }
 
-  // parte e totale numerano le slide dell'incipit ("1/2"), quando sono due.
-  function slidePrimeRighe(copertina, d, testo, parte, totale){
-    const { c, ctx } = nuovaTela();
+  /* La zona in cui sta il contenuto. Nel post e' tutta la tela meno i
+     margini. Nel formato verticale Instagram copre la fascia alta (nome del
+     profilo), quella bassa (didascalia, pulsanti) e, nei Reel, una colonna
+     di icone a destra: il contenuto resta fuori da queste tre fasce. */
+  const ZONA_POST = { alto: MARGINE, fondo: A - MARGINE, destra: MARGINE, max: 48 };
+  const A_VERTICALE = 1920;
+  const ZONA_VERTICALE = { alto: 250, fondo: A_VERTICALE - 330, destra: 150, max: 58 };
+
+  // parte e totale numerano le slide dell'incipit ("1/2"), quando sono piu' d'una.
+  function slidePrimeRighe(copertina, d, testo, parte, totale, zona){
+    zona = zona || ZONA_POST;
+    const { c, ctx } = nuovaTela(zona === ZONA_POST ? A : A_VERTICALE);
+    const larghezza = L - MARGINE - zona.destra;
+    const destra = L - zona.destra;
     // Velo piu' fitto che nella card: qui c'e' un testo lungo da leggere.
     sfondo(ctx, copertina, 0.88);
-    const filo = marchio(ctx);
+    const filo = marchio(ctx, zona.fondo);
 
     // Titolo e autore piccoli, allineati a destra come la firma di una
     // citazione, sopra il marchio.
-    const autore = d.autore ? rigaCheSta(ctx, d.autore, 400, 26, 20, UTILE) : null;
-    const titolo = rigaCheSta(ctx, d.titolo, 700, 30, 22, UTILE);
+    const autore = d.autore ? rigaCheSta(ctx, d.autore, 400, 26, 20, larghezza) : null;
+    const titolo = rigaCheSta(ctx, d.titolo, 700, 30, 22, larghezza);
     let y = filo - 44 - (autore ? altezzaRiga(autore.misura) : 0) - altezzaRiga(titolo.misura);
     const yFirma = y;
     ctx.textAlign = 'right';
     ctx.font = font(700, titolo.misura); ctx.fillStyle = INCHIOSTRO;
-    ctx.fillText(titolo.t, L - MARGINE, y); y += altezzaRiga(titolo.misura);
-    if(autore){ ctx.font = font(400, autore.misura); ctx.fillStyle = SPENTO; ctx.fillText(autore.t, L - MARGINE, y); }
+    ctx.fillText(titolo.t, destra, y); y += altezzaRiga(titolo.misura);
+    if(autore){ ctx.font = font(400, autore.misura); ctx.fillStyle = SPENTO; ctx.fillText(autore.t, destra, y); }
     ctx.strokeStyle = ACCENTO; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(L - MARGINE - 60, yFirma - 22); ctx.lineTo(L - MARGINE, yFirma - 22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(destra - 60, yFirma - 22); ctx.lineTo(destra, yFirma - 22); ctx.stroke();
 
     // Le virgolette grandi e l'etichetta, in alto a sinistra.
     ctx.textAlign = 'left';
     ctx.font = font(700, 200); ctx.fillStyle = ACCENTO;
-    ctx.fillText('“', MARGINE - 8, MARGINE - 30);
+    ctx.fillText('“', MARGINE - 8, zona.alto - 30);
     ctx.font = font(700, 24);
-    ctx.fillText('LE PRIME RIGHE' + (totale > 1 ? '  ·  ' + parte + '/' + totale : ''), MARGINE + 120, MARGINE + 46);
+    ctx.fillText('LE PRIME RIGHE' + (totale > 1 ? '  ·  ' + parte + '/' + totale : ''), MARGINE + 120, zona.alto + 46);
 
-    const alto = MARGINE + 150;
+    const alto = zona.alto + 150;
     const basso = yFirma - 60;
-    const b = adatta(ctx, testo, { peso: 400, max: 48, min: 24, larghezza: UTILE, altezza: basso - alto, interlinea: 1.5 });
+    const b = adatta(ctx, testo, { peso: 400, max: zona.max, min: 24, larghezza, altezza: basso - alto, interlinea: 1.5 });
     y = alto + (basso - alto - b.alto) / 2;
     ctx.font = font(400, b.misura); ctx.fillStyle = INCHIOSTRO;
     for(const r of b.righe){
       ctx.fillText(r.t, MARGINE, y);
       y += altezzaRiga(b.misura, 1.5) + (r.stacco ? Math.round(b.misura * 0.6) : 0);
     }
+    return c;
+  }
+
+  /* ---------------- formato storia/Reel ---------------- */
+
+  // Nelle storie e nei Reel ogni immagine resta pochi secondi: l'incipit si
+  // divide in parti di circa 200 caratteri, due o tre, che si leggono nel
+  // tempo di una schermata.
+  const INCIPIT_PER_SCHERMATA = 200;
+
+  // Divide il testo in n parti (due o tre), tagliando a fine frase o a fine
+  // paragrafo. Si provano tutte le combinazioni di tagli e vince quella in cui
+  // la parte piu' lunga e' la piu' corta possibile: ogni schermata deve
+  // leggersi in pochi secondi. Scegliendo per ogni taglio il punto piu' vicino
+  // a un terzo del testo, una frase lunga poteva lasciare una parte enorme.
+  // Senza punti fermi si taglia fra due parole, con i puntini.
+  function spezzaInParti(testo, n){
+    if(n < 2) return [testo];
+    const fine = /[.!?…]["»”’)]*(?=\s)|\n+/g;
+    const punti = [];
+    let m;
+    while((m = fine.exec(testo))) punti.push(m.index + m[0].length);
+    // Ogni parte deve avere almeno un po' di testo.
+    const ammessi = punti.filter(i => i >= 40 && i <= testo.length - 40);
+    const combinazioni = n === 2
+      ? ammessi.map(i => [i])
+      : ammessi.flatMap((i, k) => ammessi.slice(k + 1).filter(j => j - i >= 40).map(j => [i, j]));
+    let tagli = null, migliore = Infinity;
+    for(const c of combinazioni){
+      const lunghezze = [0, ...c].map((da, i) => (c[i] ?? testo.length) - da);
+      // La parte piu' lunga decide; a parita', le parti piu' uguali fra loro.
+      const voto = Math.max(...lunghezze) * 1e6 + lunghezze.reduce((s, x) => s + x * x, 0);
+      if(voto < migliore){ migliore = voto; tagli = c; }
+    }
+    if(tagli){
+      return [0, ...tagli].map((da, i) => testo.slice(da, tagli[i] ?? testo.length).trim());
+    }
+    // Ripiego senza frasi: tagli fra due parole, con i puntini a segnare la continuazione.
+    const parti = [];
+    let da = 0;
+    for(let k = 1; k <= n; k++){
+      let a = k === n ? testo.length : testo.lastIndexOf(' ', Math.round(testo.length * k / n));
+      if(a <= da) a = Math.round(testo.length * k / n);
+      parti.push((k > 1 ? '…' : '') + testo.slice(da, a).trim() + (k < n ? '…' : ''));
+      da = a;
+    }
+    return parti;
+  }
+
+  function rettangoloTondo(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // La copertina intera su fondo verticale, come nella card: sfondo sfocato,
+  // ombra morbida, angoli arrotondati e filo, marchio sotto. Larga al massimo
+  // 760 px e centrata, cosi' resta fuori dalla colonna di icone dei Reel.
+  function slideCopertinaVerticale(copertina){
+    const zona = ZONA_VERTICALE;
+    const { c, ctx } = nuovaTela(A_VERTICALE);
+    sfondo(ctx, copertina, 0.80);
+    const filo = marchio(ctx, zona.fondo);
+    const spazio = filo - 70 - zona.alto;
+    const scala = Math.min(760 / copertina.width, spazio / copertina.height);
+    const w = Math.round(copertina.width * scala), h = Math.round(copertina.height * scala);
+    const x = Math.round(CENTRO - w / 2), y = Math.round(zona.alto + (spazio - h) / 2);
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.65)'; ctx.shadowBlur = 44; ctx.shadowOffsetX = 6; ctx.shadowOffsetY = 18;
+    rettangoloTondo(ctx, x, y, w, h, 18); ctx.fillStyle = FONDO; ctx.fill();
+    ctx.restore();
+    ctx.save();
+    rettangoloTondo(ctx, x, y, w, h, 18); ctx.clip();
+    ctx.drawImage(copertina, x, y, w, h);
+    ctx.restore();
+    rettangoloTondo(ctx, x + 1, y + 1, w - 2, h - 2, 18);
+    ctx.strokeStyle = BORDO; ctx.lineWidth = 2; ctx.stroke();
     return c;
   }
 
@@ -375,7 +481,10 @@
 
   // d: titolo, autore, editore, anno, copertina, socialUrl, pitch, affini,
   // incipit, consenso, esordio, instagram, slug, nomeBase.
-  async function prepara(d){
+  // formato: 'post' (1080x1350, il carosello del feed) o 'verticale'
+  // (1080x1920, per storie e Reel: copertina intera e incipit a schermate).
+  async function prepara(d, formato){
+    if(formato === 'verticale') return preparaVerticale(d);
     const avvisi = [];
     try{ await caricaCaratteri(); }
     catch(e){ avvisi.push('Il carattere DejaVu Sans non si è caricato: le immagini usano un carattere di ripiego, controllale prima di pubblicarle.'); }
@@ -422,12 +531,56 @@
     else if(d.incipit) avvisi.push('Manca la slide delle prime righe: l\'incipit c\'è, ma non il consenso a pubblicarlo.');
     else avvisi.push('Manca la slide delle prime righe: la scheda non ha l\'incipit.');
 
-    // Il numero nel nome tiene l'ordine del carosello anche fra i file scaricati.
-    const immagini = await Promise.all(slide.map(async ([tipo, etichetta, c], i) => {
+    return { immagini: await esporta(slide, d.nomeBase), avvisi };
+  }
+
+  // Il numero nel nome tiene l'ordine del carosello anche fra i file scaricati.
+  function esporta(slide, base){
+    return Promise.all(slide.map(async ([tipo, etichetta, c], i) => {
       const blob = await new Promise((ok, ko) => c.toBlob(b => b ? ok(b) : ko(new Error('toBlob')), 'image/png'));
-      return { nome: d.nomeBase + '-' + (i + 1) + '-' + tipo + '.png', etichetta, blob, url: URL.createObjectURL(blob) };
+      return { nome: base + '-' + (i + 1) + '-' + tipo + '.png', etichetta, blob, url: URL.createObjectURL(blob) };
     }));
-    return { immagini, avvisi };
+  }
+
+  async function preparaVerticale(d){
+    const avvisi = [];
+    try{ await caricaCaratteri(); }
+    catch(e){ avvisi.push('Il carattere DejaVu Sans non si è caricato: le immagini usano un carattere di ripiego, controllale prima di pubblicarle.'); }
+
+    let copertina = null;
+    if(d.copertina){
+      try{ copertina = await caricaImmagine(d.copertina); }
+      catch(e){
+        avvisi.push('Manca l\'immagine della copertina: il dominio della copertina (' + dominio(d.copertina) + ') non concede il permesso CORS o non risponde. '
+          + 'Succede alle copertine non ancora migrate sullo Storage; le prime righe hanno lo sfondo neutro.');
+      }
+    } else {
+      avvisi.push('Manca l\'immagine della copertina: la scheda non ne ha l\'indirizzo.');
+    }
+
+    // Lo stesso ordine del post: prima il gancio, che incuriosisce piu' della
+    // sola copertina, poi la copertina come "rivelazione", poi l'incipit.
+    const slide = [];
+    if(d.pitch){
+      slide.push(['gancio', 'Gancio', slideGancio(copertina, d, ZONA_VERTICALE)]);
+      if(!d.affini) avvisi.push('Il gancio è senza «Per chi ha amato»: la scheda non ha le letture affini.');
+    } else {
+      avvisi.push('Manca il gancio: la scheda non ha «Il libro in una frase».');
+    }
+    if(copertina) slide.push(['copertina', 'Copertina', slideCopertinaVerticale(copertina)]);
+    if(d.incipit && d.consenso){
+      const n = Math.min(3, Math.max(1, Math.ceil(d.incipit.length / INCIPIT_PER_SCHERMATA)));
+      const parti = spezzaInParti(d.incipit, n);
+      parti.forEach((testo, i) => {
+        const num = parti.length > 1 ? ' ' + (i + 1) + '/' + parti.length : '';
+        slide.push(['prime-righe' + (num ? '-' + (i + 1) : ''), 'Le prime righe' + num,
+          slidePrimeRighe(copertina, d, testo, i + 1, parti.length, ZONA_VERTICALE)]);
+      });
+    }
+    else if(d.incipit) avvisi.push('Mancano le prime righe: l\'incipit c\'è, ma non il consenso a pubblicarlo.');
+    else avvisi.push('Mancano le prime righe: la scheda non ha l\'incipit.');
+
+    return { immagini: await esporta(slide, d.nomeBase + '-verticale'), avvisi };
   }
 
   // La didascalia da incollare nel post, come quella del sito, con in piu'
