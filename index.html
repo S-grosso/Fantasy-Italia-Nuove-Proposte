@@ -110,6 +110,9 @@
   .right{margin-left:auto}
   .muted{color:var(--muted)}
   .small{font-size:12px}
+  /* L'avvertenza in testa al modulo delle proposte: si deve notare, ma
+     senza il rosso di un errore, perche' non lo e'. */
+  .avvertenza{margin:0 0 12px;padding:10px 14px;border-left:3px solid var(--accent);background:#141a2a;border-radius:8px;font-size:14px;line-height:1.5;color:var(--ink)}
   .banner{background:#142036;border:1px solid #223a66;color:#cfe;border-radius:12px;padding:8px 12px;margin:8px 0;display:none}
   .notice{display:none;border-radius:12px;padding:10px 12px;font-size:13px}
   .notice.show{display:block}
@@ -203,7 +206,7 @@
     <div class="subnav">
        <nav id="navPublic">
         <button data-tab="catalogo" class="active">Catalogo</button>
-        <button data-tab="nuovo">Proponi un titolo</button>
+        <button data-tab="nuovo">Proponi un romanzo</button>
         <button data-tab="notizie">Articoli</button>
         <button data-tab="contatti">Contatti</button>
       </nav>
@@ -237,8 +240,14 @@
     </div>
   </section>
 
-  <!-- Proponi un titolo -->
+  <!-- Proponi un romanzo -->
   <section id="nuovo" class="tab" style="display:none">
+    <!-- Il catalogo raccoglie solo romanzi: dirlo prima dei campi evita di
+         compilare tutto il modulo per un libro che verrebbe scartato. -->
+    <p class="avvertenza">
+      <strong>Solo romanzi.</strong> Il catalogo raccoglie romanzi fantasy: non possiamo accettare
+      romanzi brevi, novelle, racconti, antologie o raccolte di racconti.
+    </p>
     <div class="muted" style="margin-bottom:12px">
       Hai scritto un romanzo fantasy italiano che non trovi in catalogo, o ne conosci uno?
       Segnalalo qui. Le proposte le leggo una per una: non compaiono da sole nel catalogo,
@@ -776,7 +785,7 @@
     renderCatalogo(); renderNews();
   }
 
-  /* ==== Proponi un titolo ==== */
+  /* ==== Proponi un romanzo ==== */
   // Il modulo scrive davvero, ma non sulla tabella: passa dalla Edge
   // Function 'proponi', che valida, scarta i programmi automatici, limita
   // la frequenza e inserisce in stato 'candidate' con la service key. Il
