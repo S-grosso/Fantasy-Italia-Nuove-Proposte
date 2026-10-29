@@ -591,5 +591,41 @@
     "url": "https://www.aculei.it/prodotto/michele-poletti-anatre-taglienti/",
     "motivo": "Si tratta di un romanzo di formazione/narrativa contemporanea privo di elementi fantastici o soprannaturali.",
     "data": "2026-10-26"
+  },
+  {
+    "chiave": "animalidelmondovezzani",
+    "titolo": "Animali del mondo",
+    "autore": "VEZZANI",
+    "editore": "Giunti",
+    "url": "https://giunti.it/products/animali-del-mondo-vezzani-serena-9791259746344",
+    "motivo": "Si tratta di un libro illustrato per l'infanzia con finestrelle e non di un romanzo.",
+    "data": "2026-10-29"
+  },
+  {
+    "chiave": "fattoriavezzani",
+    "titolo": "Fattoria",
+    "autore": "VEZZANI",
+    "editore": "Giunti",
+    "url": "https://giunti.it/products/fattoria-vezzani-serena-9791259746351",
+    "motivo": "Si tratta di un libro cartonato per l'infanzia con finestrelle, non di un romanzo.",
+    "data": "2026-10-29"
+  },
+  {
+    "chiave": "sortilegireplicantiepolveredasparo",
+    "titolo": "Sortilegi, replicanti e polvere da sparo",
+    "autore": "",
+    "editore": "Fucine Editoriali",
+    "url": "https://fucineeditoriali.it/shop/products/sortilegi-replicanti-e-polvere-da-sparo",
+    "motivo": "Si tratta di un'antologia di racconti e non di un romanzo.",
+    "data": "2026-10-29"
+  },
+  {
+    "chiave": "sulphureaebook",
+    "titolo": "Sulphurea Ebook",
+    "autore": "",
+    "editore": "Winter Edizioni",
+    "url": "https://winteredizioni.com/prodotto/sulphurea-ebook/",
+    "motivo": "Si tratta di una raccolta di racconti e l'autore è assente, non un romanzo di un autore italiano confermato.",
+    "data": "2026-10-29"
   }
 ]
