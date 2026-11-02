@@ -126,6 +126,24 @@
     "status": "approved"
   },
   {
+    "id": "pmvxpdro12whx",
+    "title": "La Fiamma di Melior",
+    "author": "Monia Marchese Nim",
+    "publisher": "Independently published",
+    "year": 2026,
+    "series": "",
+    "isbn": "979-8186576440",
+    "coverUrl": "https://nncnhlbaqnfqtjwembii.supabase.co/storage/v1/object/public/copertine/la-fiamma-di-melior.jpg",
+    "description": "Varcare i cancelli dell'Accademia dei Quattro Dei è per Shara il traguardo di una vita. Sebbene lasci le sue madri e i suoi fratelli, è pronta ad abbracciare il futuro, desiderosa di imparare a dominare quel potere che sente scorrere, inquieto e vibrante, nelle proprie vene. In un luogo dove la magia è consacrata dagli Dei e la disciplina è la sola legge, ogni giorno è una scoperta, ogni lezione una sfida.\nMa l'Accademia non è solo studio: è il luogo dove Shara stringerà legami destinati a segnarla per sempre. Al suo fianco troverà compagni che diverranno il suo mondo: Kiwa, il dhampyr dal sorriso solare; Tae Yang, il tiefling enigmatico che nasconde un passato doloroso; e Ayanna, la bellissima despota dal cuore d'oro.\nTra lezioni solenni, esercitazioni magiche e la scoperta di un potere personale più forte di quanto avesse mai osato immaginare, Shara capirà presto che la vera forza non risiede solo nel dominare gli elementi, ma nell'affrontare il proprio destino insieme alle persone che ama.\nTra le aule dell'Accademia e la scintilla che arde nel petto, il cammino verso il domani è appena cominciato.",
+    "storeAmazonUrl": "https://www.amazon.it/Fiamma-Melior-Parte-Uno-LAccademia/dp/B0H8KL2LRP",
+    "storePublisherUrl": "",
+    "isDebut": true,
+    "genre": "dark fantasy",
+    "labels": [],
+    "featured": false,
+    "status": "approved"
+  },
+  {
     "id": "bmv3il7aq",
     "title": "Anomaly",
     "author": "Eleonora Gaggero",
