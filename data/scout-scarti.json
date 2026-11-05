@@ -636,5 +636,14 @@
     "url": "https://anothercoffeestories.com/products/hey-mary",
     "motivo": "Non è un romanzo fantasy, ma un racconto di narrativa introspettiva e sociale privo di elementi magici o soprannaturali.",
     "data": "2026-11-02"
+  },
+  {
+    "chiave": "lalibreriaincantatawillow",
+    "titolo": "La libreria incantata",
+    "autore": "WILLOW",
+    "editore": "Giunti",
+    "url": "https://giunti.it/products/la-libreria-incantata-willow-marnie-9791223274576",
+    "motivo": "Si tratta di un libro pop-up per bambini e l'autore ha un nome straniero.",
+    "data": "2026-11-05"
   }
 ]

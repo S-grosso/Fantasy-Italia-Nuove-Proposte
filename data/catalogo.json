@@ -432,6 +432,24 @@
     "status": "approved"
   },
   {
+    "id": "c36253079351",
+    "title": "Astar – La città di luce",
+    "author": "Giulia Pellegrinotti",
+    "publisher": "Winter Edizioni",
+    "year": 2026,
+    "series": "",
+    "isbn": "979-1282481021",
+    "coverUrl": "https://nncnhlbaqnfqtjwembii.supabase.co/storage/v1/object/public/copertine/astar-la-citta-di-luce.jpg",
+    "description": "Eirin Darach è cresciuta con tre convinzioni: l’amore per la sorella Elora, la sua abilità nell’uso della spada e l’odio verso le Guardie imperiali che le hanno ucciso il padre senza mai pagare per il loro crimine. Ma quando Elora scompare, Eirin per ritrovarla sarà disposta a fare tutto: anche entrare all’Accademia imperiale e diventare uno di quei soldati che disprezza da sempre. Mentre tenta di scoprire cos’è successo a sua sorella, Eirin entra in contatto con i Klefti, un gruppo di ribelli il cui obiettivo è liberare Astar dal giogo plurisecolare della dinastia dei Koryfi, unici detentori della magia di luce. Eirin sa di aver ben altro a cui pensare, deve riuscire a diplomarsi se vuole avere una chance di ritrovare Elora, ma negli occhi color ghiaccio di Gavriel Lednik, il capo dei Klefti, vede riflessa per la prima volta la sua stessa rabbia verso l’ingiustizia del mondo in cui vive. Tra lezioni, allenamenti, nuove conoscenze e strane rivelazioni, Eirin si rende presto conto che la sua personale missione potrebbe intrecciarsi alle sorti di tutto l’impero. E che la realtà che la circonda è ben più complessa di quanto pensava.",
+    "storeAmazonUrl": "https://www.amazon.it/Astar-citt%C3%A0-luce-Giulia-Pellegrinotti/dp/B0GJWJBCN2",
+    "storePublisherUrl": "https://winteredizioni.com/prodotto/astar-libro-1-la-citta-di-luce/",
+    "isDebut": true,
+    "genre": "epic fantasy",
+    "labels": [],
+    "featured": false,
+    "status": "approved"
+  },
+  {
     "id": "bmv9751i5",
     "title": "La regina cambiante",
     "author": "Andreina Grieco",
