@@ -645,5 +645,41 @@
     "url": "https://giunti.it/products/la-libreria-incantata-willow-marnie-9791223274576",
     "motivo": "Si tratta di un libro pop-up per bambini e l'autore ha un nome straniero.",
     "data": "2026-11-05"
+  },
+  {
+    "chiave": "preordinelastrusobookclubdimadamleveljohnmcdillan",
+    "titolo": "Pre – ordine – L’Astruso Book Club di Madam Level",
+    "autore": "John McDillan",
+    "editore": "Winter Edizioni",
+    "url": "https://winteredizioni.com/prodotto/pre-ordine-lastruso-book-club-di-madam-level/",
+    "motivo": "Il libro è classificato dall'editore come thriller psicologico e giallo metaletterario, senza un elemento magico o fantasy strutturale.",
+    "data": "2026-11-09"
+  },
+  {
+    "chiave": "rompersilanima",
+    "titolo": "Rompersi l'anima",
+    "autore": "",
+    "editore": "Another Coffee Stories Editore",
+    "url": "https://anothercoffeestories.com/products/rompersi-lanima",
+    "motivo": "Si tratta di un racconto breve di narrativa introspettiva e sociale, privo di elementi fantasy.",
+    "data": "2026-11-09"
+  },
+  {
+    "chiave": "unanavenelbuiotownsend",
+    "titolo": "Una nave nel buio",
+    "autore": "TOWNSEND",
+    "editore": "Giunti",
+    "url": "https://giunti.it/products/una-nave-nel-buio-townsend-yarrow-9791223277867",
+    "motivo": "L'autore ha un nome palesemente straniero (Townsend), quindi si tratta di una traduzione.",
+    "data": "2026-11-09"
+  },
+  {
+    "chiave": "mysterychristmasboxbywinter",
+    "titolo": "🎄Mystery Christmas Box by Winter🎄",
+    "autore": "",
+    "editore": "Winter Edizioni",
+    "url": "https://winteredizioni.com/prodotto/%f0%9f%8e%84mystery-christmas-box-by-winter%f0%9f%8e%84/",
+    "motivo": "Non è un singolo romanzo, ma un cofanetto/box promozionale contenente più oggetti e libri.",
+    "data": "2026-11-09"
   }
 ]
