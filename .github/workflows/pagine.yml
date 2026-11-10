@@ -4,10 +4,22 @@ on:
   # Ogni quattro ore (dal 16 ottobre 2026; prima sei): una scheda approvata
   # o corretta ha pagina e immagine per Instagram entro il giro dopo.
   # Nel frattempo il link funziona lo stesso, grazie al ripiego di 404.html.
+  # Dal 10 novembre 2026 e' solo una rete di sicurezza: allo scoccare
+  # dell'ora GitHub saltava quasi quattro giri su dieci, e si e' spostato al
+  # minuto 17, meno affollato. Il giro si avvia dal pannello.
   schedule:
-    - cron: "0 */4 * * *"
-  # Avviabile a mano dalla tab Actions, subito dopo un'approvazione
+    - cron: "17 */4 * * *"
+  # Avviabile dal pulsante "Pubblica le pagine" del pannello (funzione
+  # Supabase 'pubblica') o a mano dalla tab Actions
   workflow_dispatch:
+
+# Un giro alla volta: due insieme committerebbero le stesse pagine e il
+# secondo litigherebbe sul push. Quello avviato mentre un altro lavora
+# aspetta in fila invece di annullarlo, perche' puo' contenere
+# un'approvazione arrivata dopo che il primo ha letto il catalogo.
+concurrency:
+  group: pagine
+  cancel-in-progress: false
 
 # Serve per committare le pagine generate
 permissions:

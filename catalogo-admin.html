@@ -87,6 +87,12 @@
   .carosello .avviso{font-size:12px;color:var(--warn);line-height:1.45;
         margin-top:8px;white-space:pre-line}
 
+  /* Pubblica le pagine: pulsante e stato affiancati, che sul telefono
+     vanno uno sotto l'altro. */
+  .pubblica{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .pubblica .stato{flex:1;min-width:200px;line-height:1.5}
+  .pubblica .stato .tag{margin-right:4px}
+
   .item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;
         border-bottom:1px solid var(--border)}
   .item:last-child{border-bottom:none}
@@ -143,6 +149,20 @@
       <div class="actions">
         <button id="btnNuovo" class="btn primary">Nuovo titolo</button>
         <button id="btnRicarica" class="btn small">Ricarica</button>
+      </div>
+    </div>
+
+    <!-- Pubblica le pagine: avvia subito pagine.yml (pagine dei libri,
+         copertine, immagini per Instagram) invece di aspettare il calendario
+         di GitHub, che salta molti giri. Passa dalla funzione 'pubblica',
+         che custodisce il token di GitHub. -->
+    <div class="card" id="boxPubblica">
+      <div class="pubblica">
+        <button id="btnPubblica" class="btn ok">Pubblica le pagine</button>
+        <div class="stato">
+          <div id="pubblicaContatore" class="small"></div>
+          <div id="pubblicaStato" class="small muted"></div>
+        </div>
       </div>
     </div>
 
@@ -405,14 +425,14 @@
     $('#btnEsci').classList.toggle('hidden', !utente);
     if(utente) $('#chiSono').textContent = utente.email;
 
-    if(!utente){ mostra('login'); return; }
+    if(!utente){ clearTimeout(pubblicaTimer); mostra('login'); return; }
 
     // Il token si rinnova da solo quando la scheda torna in primo piano:
     // senza questo controllo, ogni rientro riporterebbe all'elenco
     // cancellando quello che stavi scrivendo.
     if(prima && !opzioni.forza) return;
 
-    mostra('elenco'); carica();
+    mostra('elenco'); carica(); aggiornaPubblica();
   }
 
   $('#btnEntra').addEventListener('click', async ()=>{
@@ -547,7 +567,7 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
         kitPaginaVerificata = true;
         $('#btnKitScrivi').textContent = 'Scrivi comunque';
         avvisoKit('La pagina statica del libro non è ancora pronta, e con lei l\u2019immagine per Instagram: si generano entro quattro ore, '
-          + 'oppure subito lanciando «Pagine libro e copertine» da GitHub Actions. '
+          + 'oppure in due o tre minuti con «Pubblica le pagine», in cima all\'elenco. '
           + 'Il link funziona già, ma nelle chat l\u2019anteprima uscirebbe senza copertina.');
         return;
       }
@@ -587,6 +607,179 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
     }
   });
 
+  /* ---------------- pubblica le pagine ----------------
+     Il pulsante chiede alla funzione 'pubblica' di avviare pagine.yml, poi
+     ne segue lo stato finche' il sito non e' aggiornato. Il token di GitHub
+     resta nella funzione: qui arriva solo l'esito. */
+  const PUBBLICA_OGNI = 8000;           // fra un controllo e l'altro
+  const PUBBLICA_MAX = 20 * 60 * 1000;  // un giro dura due o tre minuti
+  let pubblicaTimer = null;
+  let pubblicaDa = 0;                   // da quando si segue un giro
+  let pubblicaAttesa = null;            // {azione, da}: appena chiesto a GitHub
+  let pubblicaUltimoRiuscito = null;
+  let pubblicaAzione = 'avvia';
+
+  async function chiamaPubblica(azione){
+    const { data, error } = await supa.functions.invoke('pubblica', { body: { azione } });
+    if(!error) return data;
+    // Con un codice di errore il messaggio da mostrare sta nel corpo della
+    // risposta, che il client non legge da solo.
+    try{
+      const corpo = await error.context.json();
+      if(corpo && corpo.messaggio) return corpo;
+    }catch(_){}
+    return { ok:false, messaggio:'Non riesco a raggiungere la funzione di pubblicazione: controlla la connessione e riprova.' };
+  }
+
+  function quando(iso){
+    const d = new Date(iso);
+    const ora = d.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+    return d.toDateString() === new Date().toDateString()
+      ? 'oggi alle ' + ora
+      : d.toLocaleDateString('it-IT', {day:'numeric', month:'long'}) + ' alle ' + ora;
+  }
+
+  function scriviStatoPubblica(testo, etichetta, url){
+    const box = $('#pubblicaStato');
+    box.textContent = '';
+    if(etichetta){
+      const t = document.createElement('span');
+      t.className = 'tag ' + etichetta[0]; t.textContent = etichetta[1];
+      box.appendChild(t);
+    }
+    box.append(testo);
+    if(url){
+      const a = document.createElement('a');
+      a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      a.style.color = '#9fc8ff'; a.textContent = 'dettagli su GitHub';
+      box.append(' ', a);
+    }
+  }
+
+  function pulsantePubblica(occupato, azione){
+    pubblicaAzione = azione || 'avvia';
+    const b = $('#btnPubblica');
+    b.disabled = occupato;
+    b.textContent = occupato ? 'Pubblicazione in corso…'
+      : pubblicaAzione === 'ripubblica' ? 'Riprova la pubblicazione' : 'Pubblica le pagine';
+  }
+
+  // Le schede approvate o corrette dopo la fine dell'ultimo giro riuscito
+  // non hanno ancora la pagina aggiornata.
+  async function contaDaPubblicare(){
+    const box = $('#pubblicaContatore');
+    if(!pubblicaUltimoRiuscito){ box.textContent = ''; return 0; }
+    const { count, error } = await supa.from('books')
+      .select('id', { count:'exact', head:true })
+      .eq('status', 'approved').gt('updated_at', pubblicaUltimoRiuscito);
+    if(error){ box.textContent = ''; return 0; }
+    box.textContent = !count ? 'Nessuna scheda in attesa di pubblicazione.'
+      : (count === 1 ? '1 scheda approvata o corretta' : count + ' schede approvate o corrette')
+        + ' dopo l’ultimo giro.';
+    return count;
+  }
+
+  function seguiAncora(){
+    clearTimeout(pubblicaTimer);
+    pubblicaTimer = setTimeout(aggiornaPubblica, PUBBLICA_OGNI);
+  }
+
+  async function aggiornaPubblica(){
+    clearTimeout(pubblicaTimer);
+    if(!utente) return;
+    const s = await chiamaPubblica('stato');
+    if(!s.ok){
+      // Senza stato il pulsante resta usabile: e' l'avvio che conta.
+      scriviStatoPubblica(s.messaggio, ['scart', 'errore']);
+      pulsantePubblica(false, pubblicaAzione);
+      if(pubblicaDa && Date.now() - pubblicaDa < PUBBLICA_MAX) seguiAncora();
+      return;
+    }
+    if(s.ultimo_riuscito !== pubblicaUltimoRiuscito){
+      pubblicaUltimoRiuscito = s.ultimo_riuscito;
+      contaDaPubblicare();
+    }
+
+    // Appena dopo la richiesta GitHub mostra ancora la situazione di prima:
+    // il giro nuovo entra in elenco dopo qualche secondo, e una
+    // pubblicazione rilanciata risulta fallita finche' non riparte.
+    const a = pubblicaAttesa;
+    const vecchio = a && (a.azione === 'avvia'
+      ? (!s.giro || Date.parse(s.giro.avviato) < a.da - 15000)
+      : (s.fase === 'fallito' && s.passo === 'pubblicazione'));
+    if(vecchio){
+      if(Date.now() - a.da > 3 * 60000){
+        pubblicaAttesa = null; pubblicaDa = 0;
+        scriviStatoPubblica('GitHub non ha ancora fatto partire il giro. Riprova fra qualche minuto.', ['scart', 'fermo']);
+        pulsantePubblica(false, a.azione);
+        return;
+      }
+      scriviStatoPubblica('In partenza su GitHub…', ['cand', 'in corso']);
+      pulsantePubblica(true);
+      seguiAncora();
+      return;
+    }
+    pubblicaAttesa = null;
+
+    const url = (s.pubblicazione && s.pubblicazione.url) || (s.giro && s.giro.url);
+    if(s.fase === 'in_corso'){
+      if(!pubblicaDa) pubblicaDa = Date.now();
+      if(Date.now() - pubblicaDa > PUBBLICA_MAX){
+        pubblicaDa = 0;
+        scriviStatoPubblica('Il giro dura più del solito: guarda su GitHub.', ['scart', 'lento'], url);
+        pulsantePubblica(false);
+        return;
+      }
+      scriviStatoPubblica(s.testo + (s.giro ? ' Partito ' + quando(s.giro.avviato) + '.' : ''), ['cand', 'in corso']);
+      pulsantePubblica(true);
+      seguiAncora();
+      return;
+    }
+
+    pubblicaDa = 0;
+    if(s.fase === 'fatto'){
+      const fine = (s.pubblicazione && s.pubblicazione.finito) || (s.giro && s.giro.finito);
+      scriviStatoPubblica(s.testo + (fine ? ' Ultimo aggiornamento ' + quando(fine) + '.' : ''), ['appr', 'fatto']);
+      pulsantePubblica(false);
+    } else if(s.fase === 'fallito'){
+      const ripubblica = s.passo === 'pubblicazione';
+      scriviStatoPubblica(s.testo + (ripubblica
+        ? ' Tocca «Riprova la pubblicazione».'
+        : ' Riprova; se si ripete, guarda il registro.'), ['scart', 'fallito'], url);
+      pulsantePubblica(false, ripubblica ? 'ripubblica' : 'avvia');
+    } else {
+      scriviStatoPubblica(s.testo);
+      pulsantePubblica(false);
+    }
+  }
+
+  $('#btnPubblica').addEventListener('click', async ()=>{
+    const azione = pubblicaAzione;
+    let domanda = 'Riprovare la pubblicazione sul sito?';
+    if(azione === 'avvia'){
+      const n = await contaDaPubblicare();
+      domanda = 'Pubblicare adesso pagine e copertine?\n\n'
+        + (n ? $('#pubblicaContatore').textContent + '\n' : '')
+        + 'Ci vogliono due o tre minuti.';
+    }
+    if(!confirm(domanda)) return;
+
+    pulsantePubblica(true);
+    scriviStatoPubblica('Avvio…', ['cand', 'in corso']);
+    const r = await chiamaPubblica(azione);
+    // "Gia' in coda" non e' un errore: quel giro comprende anche le
+    // approvazioni di adesso, e lo si segue come se l'avessi avviato tu.
+    if(!r.ok && !r.gia){
+      scriviStatoPubblica(r.messaggio, ['scart', 'non avviato']);
+      pulsantePubblica(false, azione);
+      return;
+    }
+    pubblicaAttesa = r.gia ? null : { azione, da: r.avviato_alle ? Date.parse(r.avviato_alle) : Date.now() };
+    pubblicaDa = Date.now();
+    clearTimeout(pubblicaTimer);
+    pubblicaTimer = setTimeout(aggiornaPubblica, 4000);
+  });
+
   /* ---------------- elenco ---------------- */
   const ETICHETTA_STATO = {
     candidate: ['cand',  'da revisionare'],
@@ -603,11 +796,12 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
       carica();
     });
   });
-  $('#btnRicarica').addEventListener('click', carica);
+  $('#btnRicarica').addEventListener('click', ()=>{ carica(); aggiornaPubblica(); });
 
   async function carica(){
     const box = $('#elenco');
     box.innerHTML = '<div class="muted">Caricamento…</div>';
+    contaDaPubblicare();
 
     // "Copertine KO" non e' uno stato ma un guasto: le schede che lo hanno
     // possono essere in catalogo come fra le bozze, quindi si filtra sulla
