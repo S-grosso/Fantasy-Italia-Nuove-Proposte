@@ -681,5 +681,32 @@
     "url": "https://winteredizioni.com/prodotto/%f0%9f%8e%84mystery-christmas-box-by-winter%f0%9f%8e%84/",
     "motivo": "Non è un singolo romanzo, ma un cofanetto/box promozionale contenente più oggetti e libri.",
     "data": "2026-11-09"
+  },
+  {
+    "chiave": "classicsgliincredibiliunanormalefamigliadisupereroidisney",
+    "titolo": "Classics Gli Incredibili. Una \"normale\" famiglia di supereroi",
+    "autore": "DISNEY",
+    "editore": "Giunti",
+    "url": "https://giunti.it/products/classics-gli-incredibili-una-normale-famiglia-di-supereroi-disney-walt-9788852257452",
+    "motivo": "Si tratta di un libro per l'infanzia basato su una proprietà intellettuale Disney, non di un romanzo fantasy di un autore italiano.",
+    "data": "2026-11-16"
+  },
+  {
+    "chiave": "classicsratatouilledisney",
+    "titolo": "Classics Ratatouille",
+    "autore": "DISNEY",
+    "editore": "Giunti",
+    "url": "https://giunti.it/products/classics-ratatouille-disney-walt-9788852257438",
+    "motivo": "Si tratta di un adattamento illustrato per bambini (prime letture) e l'autore/marchio (Disney) non è un autore italiano.",
+    "data": "2026-11-16"
+  },
+  {
+    "chiave": "classicsupdisney",
+    "titolo": "Classics Up",
+    "autore": "DISNEY",
+    "editore": "Giunti",
+    "url": "https://giunti.it/products/classics-up-disney-walt-9788852257421",
+    "motivo": "Si tratta di un adattamento illustrato per bambini/primi lettori di un marchio aziendale non italiano (Disney).",
+    "data": "2026-11-16"
   }
 ]
