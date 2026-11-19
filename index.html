@@ -736,6 +736,20 @@
   function placeholderCover(){
     return 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="160" viewBox="0 0 120 160"><rect width="100%" height="100%" fill="#0b0e13"/><rect x="10" y="10" width="100" height="140" rx="8" ry="8" fill="#0f141d" stroke="#1d2230"/><text x="60" y="83" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="14" fill="#5e657a">Copertina</text></svg>');
   }
+  // Le card mostrano la miniatura alta 320 px che scripts/copertine.py
+  // prepara accanto a ogni copertina (mini/<file>), ~17 kB invece di ~120:
+  // con le copertine intere ogni visita alla home scaricava 24 MB dallo
+  // Storage e il piano gratuito di Supabase non reggeva. La regola del nome
+  // e' la stessa di file_nostro() nello script. Se la miniatura non c'e'
+  // ancora (scheda approvata da poco), si ripiega sulla copertina intera.
+  const PREFISSO_COPERTINE = SUPABASE_URL + '/storage/v1/object/public/copertine/';
+  function impostaCopertinaCard(img, url){
+    const nome = (url||'').startsWith(PREFISSO_COPERTINE) ? url.slice(PREFISSO_COPERTINE.length) : '';
+    if(!url){ img.src = placeholderCover(); return; }
+    if(!nome || /[\/?]/.test(nome)){ img.src = url; return; }
+    img.onerror = () => { img.onerror = null; img.src = url; };
+    img.src = PREFISSO_COPERTINE + 'mini/' + nome;
+  }
 
   /* ==== Caricamento da Supabase (unica fonte pubblica) ==== */
   async function caricaDati(){
@@ -921,7 +935,11 @@
   function bookCard(b){
     const el=document.createElement('div'); el.className='card';
     if(b.featured){ const bd=document.createElement('div'); bd.className='badge'; bd.textContent='Consigliato'; el.appendChild(bd); }
-    const img=document.createElement('img'); img.className='cover'; img.alt='Copertina di '+(b.title||''); img.src=b.coverUrl||placeholderCover();
+    // lazy: si scaricano solo le copertine che arrivano sullo schermo, non
+    // tutte quelle del catalogo. width/height danno le proporzioni (2:3) al
+    // segnaposto prima del caricamento; la misura vera la decide il CSS.
+    const img=document.createElement('img'); img.className='cover'; img.loading='lazy'; img.decoding='async';
+    img.width=213; img.height=320; img.alt='Copertina di '+(b.title||''); impostaCopertinaCard(img, b.coverUrl);
     const aCover=linkLibro(b); aCover.appendChild(img);
     const meta=document.createElement('div'); meta.className='meta';
     const h3=document.createElement('h3');

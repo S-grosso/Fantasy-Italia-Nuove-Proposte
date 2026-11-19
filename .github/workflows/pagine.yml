@@ -45,6 +45,9 @@ jobs:
       # Prima le copertine, poi le pagine: così le schede generate puntano
       # già alle immagini ospitate da noi. Se questo passaggio va storto le
       # pagine si fanno lo stesso, con le copertine vecchie.
+      # Lo stesso script prepara le miniature per le card della home
+      # (copertine/mini/) e crea quelle che mancano: il primo giro dopo il
+      # 19 novembre 2026 le fa tutte, un paio di minuti in piu'.
       - name: Porta le copertine sul nostro Storage
         continue-on-error: true
         env:
