@@ -128,6 +128,7 @@
   dialog#requisitiDialog::backdrop{background:rgba(6,7,10,.78)}
   #requisitiDialog h2{margin:0 0 10px;font-size:19px}
   #requisitiDialog p{margin:8px 0}
+  #requisitiDialog a{color:var(--accent)}
   .requisiti-azioni{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px}
   .requisiti-azioni .btn{padding:10px 14px;font-weight:600}
   @media (max-width:480px){
@@ -586,13 +587,16 @@
      propone dichiara che il libro rispetta i requisiti prima di compilare. -->
 <dialog id="requisitiDialog" aria-labelledby="requisitiTitolo">
   <h2 id="requisitiTitolo">Prima di proporre un romanzo</h2>
-  <p>Fantasy Italia raccoglie romanzi fantasy di lunghezza piena, la misura tipica del genere:</p>
+  <p>Fantasy Italia raccoglie romanzi fantasy della lunghezza tipica del genere:</p>
   <ul class="requisiti-elenco">
     <li><strong>almeno 80.000 parole</strong>, circa 300 pagine nell'edizione cartacea;</li>
-    <li><strong>almeno 60.000 parole</strong> per i romanzi young adult, pubblicati o presentati come tali, circa 230 pagine nell'edizione cartacea.</li>
+    <li><strong>almeno 60.000 parole</strong> per i soli romanzi young adult, circa 230 pagine nell'edizione cartacea.</li>
   </ul>
   <p>Per i libri usciti solo in ebook vale la «lunghezza stampa» indicata da Amazon.</p>
   <p>Non possiamo accettare novelle, romanzi brevi, racconti, antologie o raccolte di racconti. Ogni proposta viene verificata prima di entrare in catalogo.</p>
+  <!-- La spiegazione, con le fonti, sta nella guida: qui basta il link, per
+       non allungare la finestra su telefono. -->
+  <p class="small"><a href="/articoli/guida-pratica-come-proporre-un-romanzo-a-fantasy-italia-nuove-proposte/">Perché questi limiti?</a></p>
   <div class="requisiti-azioni">
     <button id="requisitiNo" class="btn" type="button">Torna al catalogo</button>
     <button id="requisitiSi" class="btn primary" type="button">Il romanzo rispetta questi requisiti</button>
