@@ -110,9 +110,30 @@
   .right{margin-left:auto}
   .muted{color:var(--muted)}
   .small{font-size:12px}
-  /* L'avvertenza in testa al modulo delle proposte: si deve notare, ma
-     senza il rosso di un errore, perche' non lo e'. */
-  .avvertenza{margin:0 0 12px;padding:10px 14px;border-left:3px solid var(--accent);background:#141a2a;border-radius:8px;font-size:14px;line-height:1.5;color:var(--ink)}
+  /* I requisiti di lunghezza stanno nella finestra #requisitiDialog; nel
+     modulo resta una riga sola, con il link per rileggerli. Un riquadro con
+     l'elenco completo, su telefono, occupava mezzo schermo. */
+  .requisiti-promemoria{margin:0 0 12px;font-size:14px;line-height:1.5;color:var(--ink)}
+  .link-btn{background:none;border:0;padding:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer}
+  .requisiti-elenco{margin:6px 0 8px;padding-left:20px}
+  .requisiti-elenco li{margin:3px 0}
+
+  /* La finestra dei requisiti, prima del modulo delle proposte */
+  dialog#requisitiDialog{
+    width:min(540px,calc(100vw - 32px));padding:18px 20px;
+    border:1px solid var(--accent);border-radius:14px;
+    background:#10121a;color:var(--ink);line-height:1.55;font-size:15px;
+    box-shadow:0 24px 60px rgba(0,0,0,.55);
+  }
+  dialog#requisitiDialog::backdrop{background:rgba(6,7,10,.78)}
+  #requisitiDialog h2{margin:0 0 10px;font-size:19px}
+  #requisitiDialog p{margin:8px 0}
+  .requisiti-azioni{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px}
+  .requisiti-azioni .btn{padding:10px 14px;font-weight:600}
+  @media (max-width:480px){
+    .requisiti-azioni{flex-direction:column-reverse}
+    .requisiti-azioni .btn{width:100%}
+  }
   .banner{background:#142036;border:1px solid #223a66;color:#cfe;border-radius:12px;padding:8px 12px;margin:8px 0;display:none}
   .notice{display:none;border-radius:12px;padding:10px 12px;font-size:13px}
   .notice.show{display:block}
@@ -242,11 +263,12 @@
 
   <!-- Proponi un romanzo -->
   <section id="nuovo" class="tab" style="display:none">
-    <!-- Il catalogo raccoglie solo romanzi: dirlo prima dei campi evita di
-         compilare tutto il modulo per un libro che verrebbe scartato. -->
-    <p class="avvertenza">
-      <strong>Solo romanzi.</strong> Il catalogo raccoglie romanzi fantasy: non possiamo accettare
-      romanzi brevi, novelle, racconti, antologie o raccolte di racconti.
+    <!-- I requisiti completi li mostra la finestra #requisitiDialog, che si
+         apre con questa sezione (dal 20 novembre 2026). Qui resta il minimo,
+         con le stesse soglie: se cambiano, vanno cambiate in tutti e due. -->
+    <p class="requisiti-promemoria">
+      <strong>Solo romanzi da almeno 80.000 parole</strong> (60.000 per il young adult).
+      <button id="requisitiRivedi" class="link-btn" type="button">Rivedi i requisiti</button>
     </p>
     <div class="muted" style="margin-bottom:12px">
       Hai scritto un romanzo fantasy italiano che non trovi in catalogo, o ne conosci uno?
@@ -559,6 +581,23 @@
     <a href="#contatti">Contatti</a>
   </div>
 </footer>
+
+<!-- Si apre insieme a "Proponi un romanzo", una volta per visita: chi
+     propone dichiara che il libro rispetta i requisiti prima di compilare. -->
+<dialog id="requisitiDialog" aria-labelledby="requisitiTitolo">
+  <h2 id="requisitiTitolo">Prima di proporre un romanzo</h2>
+  <p>Fantasy Italia raccoglie romanzi fantasy di lunghezza piena, la misura tipica del genere:</p>
+  <ul class="requisiti-elenco">
+    <li><strong>almeno 80.000 parole</strong>, circa 300 pagine nell'edizione cartacea;</li>
+    <li><strong>almeno 60.000 parole</strong> per i romanzi young adult, pubblicati o presentati come tali, circa 230 pagine nell'edizione cartacea.</li>
+  </ul>
+  <p>Per i libri usciti solo in ebook vale la «lunghezza stampa» indicata da Amazon.</p>
+  <p>Non possiamo accettare novelle, romanzi brevi, racconti, antologie o raccolte di racconti. Ogni proposta viene verificata prima di entrare in catalogo.</p>
+  <div class="requisiti-azioni">
+    <button id="requisitiNo" class="btn" type="button">Torna al catalogo</button>
+    <button id="requisitiSi" class="btn primary" type="button">Il romanzo rispetta questi requisiti</button>
+  </div>
+</dialog>
 
 <dialog id="bookDialog" aria-label="Scheda del libro">
   <div class="dlg-scroll">
@@ -1510,7 +1549,39 @@ ${testo}`;
     $$('.tab').forEach(s=>s.style.display='none');
     $('#'+tab).style.display='';
     $$('#navPublic button, #navAdmin button').forEach(b=>b.classList.toggle('active', b.getAttribute('data-tab')===tab));
+    if(tab === 'nuovo') chiediRequisiti();
   }
+
+  // La finestra dei requisiti di lunghezza, prima del modulo delle proposte.
+  // Una volta per visita: sessionStorage si svuota chiudendo la scheda del
+  // browser. Se il browser non lo concede (navigazione privata, browser
+  // interni delle app), vale la variabile, cioe' fino al ricaricamento.
+  const dlgRequisiti = $('#requisitiDialog');
+  const CHIAVE_REQUISITI = 'fi_requisiti_visti';
+  let requisitiVisti = false;
+  function chiediRequisiti(){
+    if(!dlgRequisiti || dlgRequisiti.open || requisitiVisti) return;
+    try{ if(sessionStorage.getItem(CHIAVE_REQUISITI)){ requisitiVisti = true; return; } }catch(e){}
+    dlgRequisiti.showModal();
+  }
+  function tornaAlCatalogo(){
+    dlgRequisiti.close();
+    $('#navPublic button[data-tab="catalogo"]')?.click();
+  }
+  $('#requisitiSi')?.addEventListener('click', () => {
+    requisitiVisti = true;
+    try{ sessionStorage.setItem(CHIAVE_REQUISITI, '1'); }catch(e){}
+    dlgRequisiti.close();
+  });
+  $('#requisitiNo')?.addEventListener('click', tornaAlCatalogo);
+  $('#requisitiRivedi')?.addEventListener('click', () => { if(!dlgRequisiti.open) dlgRequisiti.showModal(); });
+  // Esc vale come "Torna al catalogo": chiudere la finestra senza scegliere
+  // non deve lasciare davanti il modulo. Se i requisiti li ha gia' accettati
+  // e li sta solo rileggendo ("Rivedi i requisiti"), Esc chiude e basta.
+  dlgRequisiti?.addEventListener('cancel', ev => {
+    if(requisitiVisti) return;
+    ev.preventDefault(); tornaAlCatalogo();
+  });
   function handleRoute(){
     const hash=(location.hash||'').replace(/^#/, '');
     if(hash.startsWith('news/')){ const id=decodeURIComponent(hash.slice(5)); if(!openNewsById(id)){ alert('Articolo non trovato.'); showTab('notizie'); } return; }
