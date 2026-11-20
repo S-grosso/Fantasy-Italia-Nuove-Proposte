@@ -196,6 +196,10 @@
   .news-meta{color:var(--muted);font-size:12px;margin-bottom:10px}
   /* La riga "Condividi" sta fra la data e il testo: serve aria sotto. */
   #articleShare{margin-bottom:16px}
+  /* Link nel corpo dell'articolo: senza regola restavano nel blu del
+     browser, illeggibile sul fondo scuro. Stesso azzurro delle pagine
+     statiche degli articoli (.corpo a in scripts/genera_pagine.py). */
+  #articleBody a{color:#9fc8ff}
   #articleShare .dlg-share{margin-top:0}
 
   /* Footer */
@@ -1557,15 +1561,15 @@ ${testo}`;
   }
 
   // La finestra dei requisiti di lunghezza, prima del modulo delle proposte.
-  // Una volta per visita: sessionStorage si svuota chiudendo la scheda del
-  // browser. Se il browser non lo concede (navigazione privata, browser
-  // interni delle app), vale la variabile, cioe' fino al ricaricamento.
+  // Compare ogni volta che si apre "Proponi un romanzo" (dal 20 novembre
+  // 2026; prima una volta per visita): chi propone conferma i requisiti a
+  // ogni proposta. requisitiVisti vale per l'apertura in corso e serve solo
+  // a Esc: rileggendo con "Rivedi i requisiti" chiude e basta.
   const dlgRequisiti = $('#requisitiDialog');
-  const CHIAVE_REQUISITI = 'fi_requisiti_visti';
   let requisitiVisti = false;
   function chiediRequisiti(){
-    if(!dlgRequisiti || dlgRequisiti.open || requisitiVisti) return;
-    try{ if(sessionStorage.getItem(CHIAVE_REQUISITI)){ requisitiVisti = true; return; } }catch(e){}
+    if(!dlgRequisiti || dlgRequisiti.open) return;
+    requisitiVisti = false;
     dlgRequisiti.showModal();
   }
   function tornaAlCatalogo(){
@@ -1574,14 +1578,12 @@ ${testo}`;
   }
   $('#requisitiSi')?.addEventListener('click', () => {
     requisitiVisti = true;
-    try{ sessionStorage.setItem(CHIAVE_REQUISITI, '1'); }catch(e){}
     dlgRequisiti.close();
   });
   $('#requisitiNo')?.addEventListener('click', tornaAlCatalogo);
   $('#requisitiRivedi')?.addEventListener('click', () => { if(!dlgRequisiti.open) dlgRequisiti.showModal(); });
   // Esc vale come "Torna al catalogo": chiudere la finestra senza scegliere
-  // non deve lasciare davanti il modulo. Se i requisiti li ha gia' accettati
-  // e li sta solo rileggendo ("Rivedi i requisiti"), Esc chiude e basta.
+  // non deve lasciare davanti il modulo.
   dlgRequisiti?.addEventListener('cancel', ev => {
     if(requisitiVisti) return;
     ev.preventDefault(); tornaAlCatalogo();
@@ -1629,6 +1631,12 @@ ${testo}`;
         location.href = 'catalogo-admin.html'; return;
       }
       if(tab==='notizie') renderNews();
+
+      // Gia' su #nuovo: assegnare lo stesso hash non fa scattare hashchange,
+      // e la finestra dei requisiti deve ricomparire a ogni clic.
+      if(tab==='nuovo' && location.pathname === '/' && location.hash === '#nuovo'){
+        showTab('nuovo'); return;
+      }
 
       // La sezione si chiama Articoli: l'indirizzo lo dice, ma #notizie
       // continua a funzionare per chi l'ha salvato.
