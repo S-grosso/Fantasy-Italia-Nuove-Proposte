@@ -837,13 +837,14 @@ Visto che è un esordio, se ti fa piacere possiamo organizzare un'intervista da 
       img.alt = ''; img.loading = 'lazy';
       img.src = b.cover_url || 'data:image/svg+xml;utf8,'
         + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="52" height="74"/>');
-      // In elenco basta la miniatura (vedi scripts/copertine.py); se non
-      // c'e' ancora, si torna alla copertina intera.
+      // In elenco basta la miniatura, servita da GitHub Pages (vedi
+      // scripts/copertine.py); se non c'e' ancora, si torna alla copertina
+      // intera (per esempio per una scheda tolta dal catalogo).
       const PREF = SUPABASE_URL + '/storage/v1/object/public/copertine/';
       const nomeCop = (b.cover_url || '').startsWith(PREF) ? b.cover_url.slice(PREF.length) : '';
-      if(nomeCop && !/[\/?]/.test(nomeCop)){
+      if(/^[a-z0-9][a-z0-9-]*\.jpg$/.test(nomeCop)){
         img.onerror = () => { img.onerror = null; img.src = b.cover_url; };
-        img.src = PREF + 'mini/' + nomeCop;
+        img.src = '/copertine/mini/' + nomeCop;
       }
 
       const info = document.createElement('div'); info.className = 'info';

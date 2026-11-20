@@ -16,10 +16,11 @@ Cosa scrive sulla scheda:
     cover_source_url  -> da dove veniva l'immagine (non si perde mai)
     cover_error       -> il motivo, se il download o il caricamento fallisce
 
-Accanto a ogni copertina carica una miniatura, mini/<slug>.jpg, alta
-MINI_ALTEZZA pixel: e' quella che la home mostra nelle card. A ogni giro
-crea anche le miniature che mancano, cosi' una copertina gia' migrata prima
-che le miniature esistessero si sistema da sola.
+Accanto a ogni copertina prepara una miniatura alta MINI_ALTEZZA pixel e la
+salva nel repository, in copertine/mini/<slug>.jpg: e' quella che la home
+mostra nelle card, servita da GitHub Pages. A ogni giro crea le miniature
+che mancano e toglie quelle dei libri non piu' in catalogo; il workflow le
+committa insieme alle pagine.
 
 Serve la service key: le scritture sul catalogo e sullo Storage non passano
 dalla chiave pubblica.
@@ -63,7 +64,9 @@ QUALITA = 82
 # Dal 19 novembre 2026: la home caricava 191 copertine intere a ogni visita,
 # in media 122 kB l'una, e in pochi giorni il traffico in uscita dallo
 # Storage ha superato i 5 GB del piano gratuito. Una miniatura pesa ~17 kB.
-MINI_CARTELLA = "mini"
+# Dal 20 novembre 2026 le miniature stanno nel repository e le serve GitHub
+# Pages: il traffico delle card non pesa piu' sulla quota di Supabase.
+DIR_MINI = ROOT / "copertine" / "mini"
 MINI_ALTEZZA = 320
 MINI_QUALITA = 78
 
@@ -126,24 +129,6 @@ def carica_su_storage(nome, dati):
     )
     r.raise_for_status()
     return PREFISSO_NOSTRO + nome
-
-
-def miniature_presenti():
-    """Nomi dei file gia' nella cartella delle miniature (senza la cartella)."""
-    nomi, offset, pagina = set(), 0, 1000
-    while True:
-        r = requests.post(
-            f"{SUPABASE_URL}/storage/v1/object/list/{BUCKET}",
-            headers={**testate(), "Content-Type": "application/json"},
-            data=json.dumps({"prefix": MINI_CARTELLA, "limit": pagina, "offset": offset}),
-            timeout=TIMEOUT,
-        )
-        r.raise_for_status()
-        voci = r.json()
-        nomi.update(v["name"] for v in voci if v.get("name"))
-        if len(voci) < pagina:
-            return nomi
-        offset += pagina
 
 
 def aggiorna_scheda(book_id, campi):
@@ -214,47 +199,73 @@ def file_nostro(url):
     """
     Il nome del file di una copertina sul nostro Storage ('<slug>.jpg'),
     o None se l'indirizzo e' altrui. La home ricava la miniatura dallo stesso
-    nome (mini/<nome>), quindi le due regole devono restare uguali.
+    nome (/copertine/mini/<nome>), quindi le due regole devono restare
+    uguali. Il nome finisce in un percorso su disco: solo lettere minuscole,
+    cifre e trattini.
     """
     url = (url or "").strip()
     if not url.startswith(PREFISSO_NOSTRO):
         return None
     nome = url[len(PREFISSO_NOSTRO):]
-    return nome if nome and "/" not in nome and "?" not in nome else None
+    return nome if re.fullmatch(r"[a-z0-9][a-z0-9-]*\.jpg", nome) else None
 
 
-def crea_miniature_mancanti(schede, dry_run=False):
+def scrivi_mini(nome, dati):
+    DIR_MINI.mkdir(parents=True, exist_ok=True)
+    percorso = DIR_MINI / nome
+    if percorso.exists() and percorso.read_bytes() == dati:
+        return False
+    percorso.write_bytes(dati)
+    return True
+
+
+def sistema_miniature(schede, dry_run=False):
     """
-    Miniature per le copertine gia' sul nostro Storage che non ne hanno una.
-    Al primo giro sono tutte; poi solo quelle migrate senza riuscire a
-    caricarne la miniatura. Restituisce (create, fallite).
+    Allinea copertine/mini/ al catalogo: crea le miniature che mancano (dalla
+    copertina sul nostro Storage) e toglie quelle dei libri non piu'
+    approvati. Restituisce (create, rimosse, fallite).
     """
-    presenti = miniature_presenti() if SERVICE_KEY else set()
-    mancanti = [b for b in schede
-                if file_nostro(b.get("cover_url")) and file_nostro(b["cover_url"]) not in presenti]
-    if not mancanti:
-        print("Miniature: tutte presenti.")
-        return 0, 0
+    attese = {}
+    for b in schede:
+        nome = file_nostro(b.get("cover_url"))
+        if nome:
+            attese[nome] = b["cover_url"]
 
-    print(f"Miniature da creare: {len(mancanti)}")
+    mancanti = [n for n in attese if not (DIR_MINI / n).exists()]
     create, fallite, prima, dopo = 0, 0, 0, 0
-    for b in mancanti:
+    if mancanti:
+        print(f"Miniature da creare: {len(mancanti)}")
+    for nome in mancanti:
         try:
-            r = requests.get(b["cover_url"], timeout=TIMEOUT)
+            r = requests.get(attese[nome], timeout=TIMEOUT)
             r.raise_for_status()
             mini = miniatura(r.content)
             prima += len(r.content)
             dopo += len(mini)
             if not dry_run:
-                carica_su_storage(f"{MINI_CARTELLA}/{file_nostro(b['cover_url'])}", mini)
+                scrivi_mini(nome, mini)
             create += 1
         except Exception as errore:
             fallite += 1
-            print(f"  MINIATURA FALLITA {b['slug']}: {type(errore).__name__}: {errore}"[:300])
+            print(f"  MINIATURA FALLITA {nome}: {type(errore).__name__}: {errore}"[:300])
     if create:
         print(f"Miniature {'misurate' if dry_run else 'create'}: {create} — "
               f"in media {prima // create // 1024} kB -> {dopo // create // 1024} kB")
-    return create, fallite
+
+    # Le rimozioni solo con un catalogo vero davanti: una lettura a vuoto
+    # non deve cancellare tutte le miniature.
+    rimosse = 0
+    if attese and DIR_MINI.exists():
+        for f in DIR_MINI.glob("*.jpg"):
+            if f.name not in attese:
+                if not dry_run:
+                    f.unlink()
+                rimosse += 1
+        if rimosse:
+            print(f"Miniature {'da togliere' if dry_run else 'tolte'}: {rimosse}")
+    if not mancanti and not rimosse:
+        print("Miniature: tutte allineate al catalogo.")
+    return create, rimosse, fallite
 
 
 def scrivi_report(dati):
@@ -325,7 +336,7 @@ def main():
                 # card. Se non riesce, la ricrea il passaggio delle mancanti,
                 # e nel frattempo la home ripiega sulla copertina intera.
                 try:
-                    carica_su_storage(f"{MINI_CARTELLA}/{b['slug']}.jpg", miniatura(grezza))
+                    scrivi_mini(b["slug"] + ".jpg", miniatura(grezza))
                 except Exception as errore:
                     print(f"  miniatura non caricata per {titolo}: {type(errore).__name__}: {errore}"[:300])
                 # La provenienza si scrive una volta sola: se lo script gira di
@@ -359,13 +370,12 @@ def main():
     else:
         scrivi_report({"falliti": [], "quando": time.strftime("%Y-%m-%d %H:%M")})
 
-    # Le miniature non toccano il report: un giro che ne crea qualcuna non
-    # deve produrre un commit. Se il passaggio non riesce, la home usa le
-    # copertine intere, come prima.
+    # Le miniature non toccano il report. Se il passaggio non riesce, la home
+    # usa le copertine intere dallo Storage, come prima.
     try:
         if fatte and not args.dry_run:
             schede = schede_approvate()  # ora con gli indirizzi appena migrati
-        crea_miniature_mancanti(schede, dry_run=args.dry_run)
+        sistema_miniature(schede, dry_run=args.dry_run)
     except Exception as errore:
         print(f"Miniature non controllate: {type(errore).__name__}: {errore}"[:300])
     return 0

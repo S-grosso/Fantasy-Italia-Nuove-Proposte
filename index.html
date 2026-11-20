@@ -737,21 +737,54 @@
     return 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="160" viewBox="0 0 120 160"><rect width="100%" height="100%" fill="#0b0e13"/><rect x="10" y="10" width="100" height="140" rx="8" ry="8" fill="#0f141d" stroke="#1d2230"/><text x="60" y="83" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="14" fill="#5e657a">Copertina</text></svg>');
   }
   // Le card mostrano la miniatura alta 320 px che scripts/copertine.py
-  // prepara accanto a ogni copertina (mini/<file>), ~17 kB invece di ~120:
-  // con le copertine intere ogni visita alla home scaricava 24 MB dallo
-  // Storage e il piano gratuito di Supabase non reggeva. La regola del nome
-  // e' la stessa di file_nostro() nello script. Se la miniatura non c'e'
-  // ancora (scheda approvata da poco), si ripiega sulla copertina intera.
+  // prepara per ogni copertina, ~17 kB invece di ~120: con le copertine
+  // intere ogni visita alla home scaricava 24 MB dallo Storage e il piano
+  // gratuito di Supabase non reggeva. Dal 20 novembre 2026 le miniature
+  // stanno nel repository (/copertine/mini/<file>) e le serve GitHub Pages,
+  // fuori dalla quota di Supabase. Percorso assoluto: con una scheda aperta
+  // l'indirizzo e' /libri/<slug>/. La regola del nome e' la stessa di
+  // file_nostro() nello script. Se la miniatura non c'e' ancora (scheda
+  // approvata da poco), si ripiega sulla copertina intera.
   const PREFISSO_COPERTINE = SUPABASE_URL + '/storage/v1/object/public/copertine/';
   function impostaCopertinaCard(img, url){
     const nome = (url||'').startsWith(PREFISSO_COPERTINE) ? url.slice(PREFISSO_COPERTINE.length) : '';
     if(!url){ img.src = placeholderCover(); return; }
-    if(!nome || /[\/?]/.test(nome)){ img.src = url; return; }
+    if(!/^[a-z0-9][a-z0-9-]*\.jpg$/.test(nome)){ img.src = url; return; }
     img.onerror = () => { img.onerror = null; img.src = url; };
-    img.src = PREFISSO_COPERTINE + 'mini/' + nome;
+    img.src = '/copertine/mini/' + nome;
   }
 
-  /* ==== Caricamento da Supabase (unica fonte pubblica) ==== */
+  /* ==== Caricamento del catalogo ==== */
+  // Prima la copia statica che scripts/genera_pagine.py scrive a ogni giro
+  // delle pagine, servita da GitHub Pages: leggere il database a ogni visita
+  // costava 126 kB di traffico Supabase senza cache, la quota che con piu'
+  // visite si sarebbe esaurita per prima. 'no-cache' fa chiedere al browser
+  // se il file e' cambiato: se no, la risposta e' vuota. Una scheda appena
+  // approvata compare dopo il giro, come la sua pagina. Se la copia manca o
+  // e' rotta, si legge Supabase come prima.
+  async function caricaCatalogoStatico(){
+    try{
+      const res = await fetch('/data/catalogo-pubblico.json', { cache: 'no-cache' });
+      if(!res.ok) return null;
+      const books = await res.json();
+      return Array.isArray(books) && books.length ? books : null;
+    }catch(e){
+      console.warn('Catalogo statico non disponibile, leggo Supabase:', e);
+      return null;
+    }
+  }
+  async function caricaCatalogoSupabase(){
+    const res = await fetch(BOOKS_ENDPOINT, {
+      cache: 'no-store',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY
+      }
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status + ' — ' + await res.text());
+    return res.json();
+  }
+
   async function caricaDati(){
     const bann=$('#banner'); bann.style.display='none';
 
@@ -759,15 +792,7 @@
     // il catalogo deve restare in piedi. Prima erano nella stessa
     // Promise.all e un problema su Supabase buttava giù tutto il sito.
     try{
-      const res = await fetch(BOOKS_ENDPOINT, {
-        cache: 'no-store',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_KEY
-        }
-      });
-      if(!res.ok) throw new Error('HTTP ' + res.status + ' — ' + await res.text());
-      const books = await res.json();
+      const books = await caricaCatalogoStatico() || await caricaCatalogoSupabase();
       state.remoteBooks = (books||[]).map(x=>normalizeBook(x));
     }catch(e){
       console.error(e);

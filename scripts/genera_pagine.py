@@ -56,8 +56,20 @@ SUPABASE_KEY = (
 )
 
 CAMPI = (
-    "slug,title,author,publisher,year,series,isbn,cover_url,description,"
-    "store_amazon_url,store_publisher_url,is_debut,genre,labels,updated_at"
+    "id,slug,title,author,publisher,year,series,isbn,cover_url,description,"
+    "store_amazon_url,store_publisher_url,is_debut,genre,labels,featured,updated_at"
+)
+
+# Il catalogo che legge la home, servito da GitHub Pages invece che dal
+# database. Dal 20 novembre 2026: ogni visita scaricava le 191 schede da
+# Supabase (126 kB compressi), traffico che il piano gratuito conta senza
+# cache e che con piu' visite avrebbe sforato i 5 GB al mese. Pages regge
+# circa 100 GB al mese. Se il file manca, la home torna a leggere Supabase.
+CATALOGO_PUBBLICO = ROOT / "data" / "catalogo-pubblico.json"
+CAMPI_HOME = (
+    "id", "slug", "title", "author", "publisher", "year", "series", "isbn",
+    "cover_url", "description", "store_amazon_url", "store_publisher_url",
+    "is_debut", "genre", "labels", "featured",
 )
 
 CAMPI_NEWS = "slug,title,body_html,published_at,updated_at"
@@ -793,6 +805,16 @@ def scrivi(percorso, contenuto, scritti):
     return True
 
 
+def catalogo_pubblico(libri):
+    """
+    Le schede approvate con i soli campi che la home chiede a Supabase.
+    Niente updated_at: cambierebbe il file, e quindi un commit, anche per
+    modifiche che il sito non mostra. L'ordine lo decide la home.
+    """
+    schede = [{**{c: b.get(c) for c in CAMPI_HOME}, "status": "approved"} for b in libri]
+    return json.dumps(schede, ensure_ascii=False, separators=(",", ":")) + "\n"
+
+
 def rimuovi_orfane(radice, slug_validi):
     """Pagine tolte o con slug cambiato: via le cartelle che non servono piu'."""
     rimosse = []
@@ -877,6 +899,7 @@ def main():
         for b in validi:
             scrivi(DIR_LIBRI / b["slug"] / "index.html", pagina_libro(b), scritti)
         scrivi(DIR_LIBRI / "index.html", pagina_indice(validi), scritti)
+        scrivi(CATALOGO_PUBBLICO, catalogo_pubblico(validi), scritti)
 
     if fai_articoli:
         for a in articoli_validi:

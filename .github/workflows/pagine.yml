@@ -45,9 +45,9 @@ jobs:
       # Prima le copertine, poi le pagine: così le schede generate puntano
       # già alle immagini ospitate da noi. Se questo passaggio va storto le
       # pagine si fanno lo stesso, con le copertine vecchie.
-      # Lo stesso script prepara le miniature per le card della home
-      # (copertine/mini/) e crea quelle che mancano: il primo giro dopo il
-      # 19 novembre 2026 le fa tutte, un paio di minuti in piu'.
+      # Lo stesso script prepara le miniature per le card della home e le
+      # salva nel repository (copertine/mini/), dove le serve GitHub Pages:
+      # crea quelle che mancano e toglie quelle dei libri usciti dal catalogo.
       - name: Porta le copertine sul nostro Storage
         continue-on-error: true
         env:
@@ -94,9 +94,13 @@ jobs:
 
           # Si aggiungono solo i percorsi che esistono davvero: 'git add' su
           # una cartella mai creata fallisce e fermerebbe tutto il passaggio.
+          # catalogo-pubblico.json e copertine/mini sono cio' che la home legge
+          # al posto di Supabase (dal 20 novembre 2026).
           PERCORSI="sitemap.xml robots.txt data/copertine-report.json"
+          [ -f data/catalogo-pubblico.json ] && PERCORSI="$PERCORSI data/catalogo-pubblico.json"
           [ -d libri ]    && PERCORSI="$PERCORSI libri"
           [ -d articoli ] && PERCORSI="$PERCORSI articoli"
+          [ -d copertine ] && PERCORSI="$PERCORSI copertine"
           git add -A $PERCORSI
 
           # --cached confronta con l'indice: vede anche i file nuovi e le
